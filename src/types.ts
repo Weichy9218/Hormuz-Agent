@@ -1,5 +1,5 @@
 // Shared frontend types mirroring the forecast checkpoint contract.
-export type SourceStatus = "fresh" | "lagging" | "missing";
+export type SourceStatus = "fresh" | "lagging" | "missing" | "pending";
 
 export interface SignalSource {
   id: string;
@@ -10,40 +10,28 @@ export interface SignalSource {
 
 export type SourceGroup =
   | "official"
-  | "map"
-  | "flow"
   | "market"
-  | "news"
-  | "agent"
+  | "maritime"
   | "conflict"
-  | "evaluation";
-export type SourceReliability =
-  | "source-of-truth"
-  | "proxy"
-  | "placeholder"
-  | "reference";
-export type SourceUseBoundary =
-  | "structural_baseline"
-  | "live_operational"
-  | "market_benchmark"
-  | "historical_backtest"
+  | "news"
   | "pending";
+export type SourceReliability = "high" | "medium" | "low";
 export type ScenarioId =
   | "normal"
-  | "controlled_disruption"
-  | "severe_disruption"
+  | "controlled"
+  | "severe"
   | "closure";
 
 export interface SourceRegistryEntry {
   id: string;
   name: string;
-  group: SourceGroup;
+  category: SourceGroup;
   status: SourceStatus;
   reliability: SourceReliability;
-  boundary: SourceUseBoundary;
   refreshCadence: string;
   usage: string;
   caveat: string;
+  pending: boolean;
   url?: string;
   crossChecks?: string[];
 }
@@ -89,14 +77,23 @@ export interface MarketSeries {
   unit: string;
   color: string;
   source: string;
+  sourceId: string;
   sourceUrl?: string;
   verifiedAt?: string;
   caveat?: string;
+  pending?: boolean;
   points: MarketPoint[];
 }
 
+export interface MarketRead {
+  title: string;
+  summary: string;
+  supportsScenario: ScenarioId | "uncertain";
+  evidenceIds: string[];
+}
+
 export interface DetailPage {
-  id: "overview" | "map" | "market" | "forecast";
+  id: "overview" | "market" | "forecast";
   label: string;
 }
 
@@ -109,8 +106,8 @@ export interface Scenario {
 
 export interface ScenarioProbabilities {
   normal: number;
-  controlled_disruption: number;
-  severe_disruption: number;
+  controlled: number;
+  severe: number;
   closure: number;
 }
 
@@ -125,15 +122,6 @@ export interface Checkpoint {
   keyEvidence: string[];
   counterevidence: string[];
   unresolvedConcerns: string[];
-}
-
-export interface FlowMetric {
-  id: string;
-  label: string;
-  value: string;
-  unit: string;
-  detail: string;
-  tone: "info" | "warning" | "critical";
 }
 
 export interface DailyBrief {

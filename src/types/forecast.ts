@@ -1,40 +1,45 @@
 // Core forecast contract shared by the agent API seam, store, and UI.
 import type { AgentRunEvent } from "./agentEvents";
 
-export type ScenarioKey =
+export type ScenarioId =
   | "normal"
-  | "controlled_disruption"
-  | "severe_disruption"
+  | "controlled"
+  | "severe"
   | "closure";
+
+export type ScenarioKey = ScenarioId;
 
 export type AssetForecastTarget =
   | "brent"
   | "wti"
   | "gold"
-  | "usd_broad"
-  | "usdcny"
+  | "broad_usd"
+  | "usd_cny"
+  | "usd_cnh"
   | "us10y"
   | "vix"
   | "sp500";
 
-export type WarTrendForecastTarget =
-  | "escalation_7d"
+export type RiskForecastTarget =
+  | "regional_escalation_7d"
   | "transit_disruption_7d"
-  | "spillover_30d"
-  | "deescalation_14d";
+  | "state_on_state_strike_14d"
+  | "deescalation_signal_14d";
 
-export type ForecastTarget = AssetForecastTarget | WarTrendForecastTarget;
+export type ForecastTarget = AssetForecastTarget | RiskForecastTarget;
 
 export type ForecastHorizon = "24h" | "7d" | "14d" | "30d";
 
-export type ForecastSignal = "up" | "down" | "flat" | "uncertain";
+export type ForecastDirection = "up" | "down" | "flat" | "uncertain";
 
 export interface TargetForecast {
   target: ForecastTarget;
   horizon: ForecastHorizon;
-  signal: ForecastSignal;
+  direction: ForecastDirection;
   confidence: number;
+  deltaLabel: string;
   rationale: string;
+  sourceIds: string[];
 }
 
 export interface ForecastCheckpoint {
@@ -46,7 +51,7 @@ export interface ForecastCheckpoint {
 export interface ForecastRunResponse {
   runId: string;
   generatedAt: string;
-  scenarioDistribution: Record<ScenarioKey, number>;
+  scenarioDistribution: Record<ScenarioId, number>;
   targetForecasts: TargetForecast[];
   events: AgentRunEvent[];
   checkpoint: ForecastCheckpoint;

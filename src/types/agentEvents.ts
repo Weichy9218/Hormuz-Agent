@@ -1,21 +1,23 @@
 // Event stream model for evidence-driven forecast revisions.
-import type { ForecastHorizon, ForecastTarget, ScenarioKey } from "./forecast";
+import type { ScenarioId, TargetForecast } from "./forecast";
 import type { SourceStatus } from "../types";
 
 export type EvidencePolarity = "support" | "counter" | "uncertain";
+export type EvidenceConfidence = "low" | "medium" | "high";
 
 export type MechanismTag =
   | "transit_risk_up"
+  | "traffic_flow_down"
   | "insurance_cost_up"
   | "naval_presence_up"
   | "mine_or_swarm_risk_up"
+  | "gnss_or_ais_interference"
   | "energy_supply_risk_up"
   | "diplomatic_deescalation"
-  | "oil_flow_resilient"
   | "market_not_pricing_closure"
   | "market_pricing_risk_premium";
 
-export type EvidenceAffects = "scenario" | "market" | "war_trend" | "watchlist";
+export type EvidenceAffects = "scenario" | "target" | "market" | "watchlist";
 
 export type AgentRunEvent =
   | {
@@ -40,11 +42,12 @@ export type AgentRunEvent =
       at: string;
       evidenceId: string;
       title: string;
-      summary: string;
+      evidence: string;
       sourceIds: string[];
       polarity: EvidencePolarity;
       mechanismTags: MechanismTag[];
       affects: EvidenceAffects[];
+      confidence: EvidenceConfidence;
     }
   | {
       type: "judgement_updated";
@@ -52,16 +55,10 @@ export type AgentRunEvent =
       at: string;
       title: string;
       reason: string;
-      previousScenario: Record<ScenarioKey, number>;
-      currentScenario: Record<ScenarioKey, number>;
-      scenarioDelta: Record<ScenarioKey, number>;
-      targetDeltas: Array<{
-        target: ForecastTarget;
-        horizon: ForecastHorizon;
-        previous: string | number;
-        current: string | number;
-        deltaLabel: string;
-      }>;
+      previousScenario: Record<ScenarioId, number>;
+      currentScenario: Record<ScenarioId, number>;
+      scenarioDelta: Partial<Record<ScenarioId, number>>;
+      targetDeltas: TargetForecast[];
     }
   | {
       type: "checkpoint_written";

@@ -79,9 +79,10 @@ export function JudgementDeltaCard({
           <span>selected target</span>
           <strong>{targetLabel[selectedForecast.target]}</strong>
           <p>
-            {selectedForecast.horizon} · {selectedForecast.signal} · confidence{" "}
+            {selectedForecast.horizon} · {selectedForecast.direction} · confidence{" "}
             {(selectedForecast.confidence * 100).toFixed(0)}%
           </p>
+          <em>{selectedForecast.deltaLabel}</em>
           <small>{selectedForecast.rationale}</small>
         </div>
       ) : null}
@@ -91,7 +92,8 @@ export function JudgementDeltaCard({
         {targetDeltas.map((delta) => (
           <p key={`${delta.target}-${delta.horizon}`}>
             <b>{targetLabel[delta.target]}</b>
-            {delta.horizon}: {delta.previous} → {delta.current}
+            {delta.horizon}: {delta.direction} · confidence{" "}
+            {(delta.confidence * 100).toFixed(0)}%
             <em>{delta.deltaLabel}</em>
           </p>
         ))}

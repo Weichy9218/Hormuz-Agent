@@ -21,19 +21,20 @@ const polarityLabel = {
 
 const affectsLabel = {
   scenario: "情景",
+  target: "预测目标",
   market: "市场",
-  war_trend: "战争趋势",
   watchlist: "观察项",
 };
 
 const mechanismLabel = {
   transit_risk_up: "transit risk up",
+  traffic_flow_down: "traffic flow down",
   insurance_cost_up: "insurance cost up",
   naval_presence_up: "naval presence up",
   mine_or_swarm_risk_up: "mine / swarm risk up",
+  gnss_or_ais_interference: "GNSS / AIS interference",
   energy_supply_risk_up: "energy supply risk up",
   diplomatic_deescalation: "diplomatic de-escalation",
-  oil_flow_resilient: "oil flow resilient",
   market_not_pricing_closure: "market not pricing closure",
   market_pricing_risk_premium: "market pricing risk premium",
 };
@@ -44,6 +45,8 @@ function eventSummary(event: AgentRunEvent) {
       return event.reason;
     case "checkpoint_written":
       return event.revisionReason;
+    case "evidence_added":
+      return event.evidence;
     default:
       return event.summary;
   }
@@ -158,6 +161,7 @@ function AgentEventDetails({
         <div className="evidence-row">
           <span className={`polarity ${event.polarity}`}>{polarityLabel[event.polarity]}</span>
           <strong>{event.affects.map((target) => affectsLabel[target]).join(" / ")}</strong>
+          <em>{event.confidence}</em>
         </div>
         <div className="stream-chips">
           {event.mechanismTags.map((tag) => (
@@ -179,7 +183,7 @@ function AgentEventDetails({
         <div className="probability-delta-grid" aria-label="概率修订">
           {Object.entries(event.currentScenario).map(([scenarioKey, current]) => {
             const key = scenarioKey as keyof typeof event.currentScenario;
-            const delta = event.scenarioDelta[key];
+            const delta = event.scenarioDelta[key] ?? 0;
             const previous = event.previousScenario[key];
 
             return (
@@ -197,8 +201,10 @@ function AgentEventDetails({
           {event.targetDeltas.map((delta) => (
             <span key={`${delta.target}-${delta.horizon}`}>
               <b>{delta.target}</b>
-              {delta.horizon}: {delta.previous} → {delta.current}
+              {delta.horizon}: {delta.direction} · confidence{" "}
+              {(delta.confidence * 100).toFixed(0)}%
               <em>{delta.deltaLabel}</em>
+              <small>{delta.rationale}</small>
             </span>
           ))}
         </div>
