@@ -8,6 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "audit:data": "node scripts/audit-data.mjs",
+    "audit:evidence": "node scripts/audit-evidence.mjs",
+    "audit:forecast": "node scripts/audit-forecast.mjs",
+    "audit:legacy": "node scripts/audit-legacy.mjs",
+    "audit:replay": "node scripts/audit-replay.mjs",
+    "audit": "npm run audit:data && npm run audit:evidence && npm run audit:forecast && npm run audit:replay && npm run audit:legacy",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

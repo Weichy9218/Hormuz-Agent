@@ -1,25 +1,25 @@
-// Domain-shaped demo data for the Hormuz forecasting case room.
-// Responsibility: provide fixed, reproducible demo inputs (events, signals, scenarios, checkpoints).
+// UI-presentational demo data: map geometry, shipping lanes, market series for charts,
+// page tabs, and narrative events.
+//
+// Business state (scenario distribution, evidence, mechanism, judgement, checkpoint)
+// lives in src/state/canonicalStore.ts and is accessed through projections.
 import type {
-  Checkpoint,
-  DailyBrief,
   DetailPage,
-  EventItem,
-  MarketRead,
+  NarrativeEvent,
   MapCountry,
   MarketSeries,
-  Scenario,
   ShippingLane,
 } from "./types";
-export { sourceGroups, sourceRegistry } from "./data/sourceRegistry";
+export { sourceGroups, sourceRegistry, sourceBoundaryFacts } from "./data/sourceRegistry";
 
 export const detailPages: DetailPage[] = [
   { id: "overview", label: "概览" },
   { id: "market", label: "市场" },
+  { id: "news", label: "新闻" },
   { id: "forecast", label: "预测" },
 ];
 
-export const events: EventItem[] = [
+export const narrativeEvents: NarrativeEvent[] = [
   {
     id: "e1",
     time: "T-36h",
@@ -342,125 +342,6 @@ export const marketSeries: MarketSeries[] = [
       { date: "2026-04-14", value: 6967.38 }, { date: "2026-04-21", value: 7064.01 },
       { date: "2026-04-28", value: 7138.8 }, { date: "2026-05-05", value: 7259.22 },
       { date: "2026-05-08", value: 7398.93 },
-    ],
-  },
-];
-
-export const marketRead: MarketRead = {
-  title: "Market is pricing disruption risk, not full closure",
-  summary:
-    "Oil is pricing a Hormuz risk premium, while VIX, equity, rates, and Broad USD do not yet show a closure-style shock.",
-  supportsScenario: "controlled",
-  evidenceIds: ["fred-market", "ev-market-risk-premium"],
-};
-
-export const dailyBriefs: DailyBrief[] = [
-  {
-    id: "brief-2026-05-08",
-    date: "2026-05-08 08:30 GMT+8",
-    headline: "已出现局部压力，但尚无“已确认的封锁”",
-    riskLevel: "elevated",
-    anomalies: [
-      "原油风险溢价与“可控扰动”一致。",
-      "可追溯事实中未出现“广泛停航”。",
-      "下一步重点观察“官方通告措辞是否升级”。",
-    ],
-    analystNote:
-      "系统只应在“流量证据”或“官方通告措辞”变化时更新概率，不能仅被“新闻措辞/口头表态”带动。",
-  },
-  {
-    id: "brief-2026-05-09",
-    date: "2026-05-09 08:30 GMT+8",
-    headline: "当前主线是“保险与官方通告”的观测",
-    riskLevel: "elevated",
-    anomalies: [
-      "“可控扰动”仍是主情景，“严重扰动”为活跃尾部。",
-      "Gold 与 USD/CNH 仍是 pending source，不能伪装成 live evidence。",
-      "流量数据存在滞后，避免过度解读单日市场波动。",
-    ],
-    analystNote:
-      "每日更新应保留昨日预测轨迹（forecast trace），只追加简短的修订原因（revision reason）。",
-  },
-];
-
-export const baseScenarios: Scenario[] = [
-  {
-    id: "normal",
-    label: "正常通行",
-    color: "#94a3b8",
-    posture: "风险缓和趋势，但仍需保持高频监测",
-  },
-  {
-    id: "controlled",
-    label: "可控扰动",
-    color: "#0b66f6",
-    posture: "选择性延误 + 保险溢价上行，但无“全面封锁”证据",
-  },
-  {
-    id: "severe",
-    label: "严重扰动",
-    color: "#ff9f1c",
-    posture: "重复事件或官方限制开始实质影响通行流量",
-  },
-  {
-    id: "closure",
-    label: "封锁（尾部情景）",
-    color: "#ef2b2d",
-    posture: "尾部情景：需要强于“新闻措辞/口头表态”的实证信号",
-  },
-];
-
-export const checkpoints: Checkpoint[] = [
-  {
-    id: "cp1",
-    label: "Checkpoint 01",
-    time: "2026-05-07 08:00 GMT+8",
-    forecast: "controlled",
-    confidence: "med",
-    probabilities: {
-      normal: 23,
-      controlled: 52,
-      severe: 18,
-      closure: 7,
-    },
-    revision:
-      "上轮“封锁（尾部情景）”概率偏高，因为新闻措辞权重超过了通行与流量证据。",
-    keyEvidence: [
-      "官方能源基线说明该 chokepoint 具有结构性重要性。",
-      "案例状态中未出现广泛通行中断信号。",
-    ],
-    counterevidence: [
-      "军事与外交信号仍可能快速升级。",
-    ],
-    unresolvedConcerns: [
-      "官方海事通告是否从 monitoring 转向 avoidance。",
-    ],
-  },
-  {
-    id: "cp2",
-    label: "Checkpoint 02",
-    time: "2026-05-08 20:00 GMT+8",
-    forecast: "controlled",
-    confidence: "med",
-    probabilities: {
-      normal: 14,
-      controlled: 58,
-      severe: 22,
-      closure: 6,
-    },
-    revision:
-      "“严重扰动”上调，因为 oil risk premium 确认了压力；“封锁（尾部情景）”下调，因为 VIX、权益、利率与流量层仍缺少 closure-style stress。",
-    keyEvidence: [
-      "Oil risk premium 上行，但 VIX/权益/利率组合尚未确认 closure-style shock。",
-      "通行/流量代理层仍指向局部压力，而不是全面封锁。",
-      "外交信号仍不支持 hard blockade 作为 base case。",
-    ],
-    counterevidence: [
-      "避险信号存在噪声，可能反映更宽泛的 macro risk。",
-    ],
-    unresolvedConcerns: [
-      "insurance 与 chartering data 可能滞后于真实通行压力。",
-      "单条官方海事通告就可能显著改变情景概率分布。",
     ],
   },
 ];

@@ -1,4 +1,5 @@
-// Source registry for data lineage, refresh cadence, and demo caveats.
+// Source registry for data lineage, refresh cadence, license status, and caveats.
+// Hard constraints: pending sources cannot produce high-confidence live evidence.
 import type { SignalSource, SourceRegistryEntry } from "../types";
 
 export const sourceRegistry: SourceRegistryEntry[] = [
@@ -9,8 +10,11 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "fresh",
     reliability: "high",
     refreshCadence: "quarterly / manual review",
+    expectedLatency: "weeks",
+    licenseStatus: "open",
     usage: "structural oil transit baseline and bypass capacity range",
-    caveat: "这是 chokepoint 结构性基线，不是实时船流或当日 throughput；精确拆分必须绑定可审计原始表。",
+    caveat:
+      "这是 chokepoint 结构性基线，不是实时船流或当日 throughput；精确拆分必须绑定可审计原始表。",
     pending: false,
     url: "https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz",
     crossChecks: [
@@ -25,11 +29,17 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "fresh",
     reliability: "high",
     refreshCadence: "manual / versioned",
+    expectedLatency: "n/a",
+    licenseStatus: "open",
     usage: "country boundaries and regional coastline context",
-    caveat: "适合静态地理边界，不是 nautical chart，也不代表实时航行风险。",
+    caveat:
+      "适合静态地理边界，不是 nautical chart，也不代表实时航行风险。",
     pending: false,
     url: "https://www.naturalearthdata.com/",
-    crossChecks: ["Natural Earth terms/versioned downloads", "local coordinate bounds smoke test"],
+    crossChecks: [
+      "Natural Earth terms/versioned downloads",
+      "local coordinate bounds smoke test",
+    ],
   },
   {
     id: "global-shipping-lanes",
@@ -38,11 +48,17 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "fresh",
     reliability: "medium",
     refreshCadence: "monthly check",
+    expectedLatency: "weeks",
+    licenseStatus: "open",
     usage: "public lane geometry around Hormuz",
-    caveat: "展示主干航线结构；不是实时 AIS，也不含船舶逐点轨迹。",
+    caveat:
+      "展示主干航线结构；不是实时 AIS，也不含船舶逐点轨迹。",
     pending: false,
     url: "https://github.com/newzealandpaul/Shipping-Lanes",
-    crossChecks: ["public GeoJSON repository", "route coordinates clipped to Gulf of Oman / Hormuz bounds"],
+    crossChecks: [
+      "public GeoJSON repository",
+      "route coordinates clipped to Gulf of Oman / Hormuz bounds",
+    ],
   },
   {
     id: "fred-market",
@@ -51,11 +67,19 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "fresh",
     reliability: "high",
     refreshCadence: "daily after market close",
-    usage: "Brent, WTI, USD/CNY, VIX, Broad USD, US10Y, S&P 500 since 2026-03-02",
-    caveat: "页面展示为抽样快照，不是逐日全量图；Gold 尚未接入稳定源；FRED 序列有发布时间滞后。",
+    expectedLatency: "1 business day",
+    licenseStatus: "open",
+    usage:
+      "Brent, WTI, USD/CNY, VIX, Broad USD, US10Y, S&P 500 since 2026-03-02",
+    caveat:
+      "页面展示为抽样快照，不是逐日全量图；Gold 尚未接入稳定源；FRED 序列有发布时间滞后。",
     pending: false,
     url: "https://fred.stlouisfed.org/docs/api/fred/",
-    crossChecks: ["FRED CSV endpoint", "series-specific FRED pages", "local audit:data script"],
+    crossChecks: [
+      "FRED CSV endpoint",
+      "series-specific FRED pages",
+      "local audit:data script",
+    ],
   },
   {
     id: "official-advisory",
@@ -64,10 +88,17 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "fresh",
     reliability: "high",
     refreshCadence: "daily + event triggered",
+    expectedLatency: "hours",
+    licenseStatus: "open",
     usage: "official maritime advisory escalation trigger",
-    caveat: "官方措辞变化才应触发概率更新；媒体转述只作为 candidate evidence。",
+    caveat:
+      "官方措辞变化才应触发概率更新；媒体转述只作为 candidate evidence。",
     pending: false,
-    crossChecks: ["UKMTO official feed", "MARAD alerts/advisories", "JMIC releases when available"],
+    crossChecks: [
+      "UKMTO official feed",
+      "MARAD alerts/advisories",
+      "JMIC releases when available",
+    ],
   },
   {
     id: "ais-flow-pending",
@@ -76,10 +107,16 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "pending",
     reliability: "low",
     refreshCadence: "pending licensed source",
+    expectedLatency: "pending",
+    licenseStatus: "pending",
     usage: "flow-watch UI placeholder until licensed AIS or stable public snapshot exists",
-    caveat: "当前不是授权实时 AIS；数值只用于 demo，不进入真实 forecast evidence。",
+    caveat:
+      "当前不是授权实时 AIS；数值只用于 demo，不进入真实 forecast evidence。",
     pending: true,
-    crossChecks: ["commercial AIS needed for production", "do not treat Shipxy-style UI as data source"],
+    crossChecks: [
+      "commercial AIS needed for production",
+      "do not treat Shipxy-style UI as data source",
+    ],
   },
   {
     id: "gdelt-news",
@@ -88,11 +125,18 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "lagging",
     reliability: "medium",
     refreshCadence: "daily + event triggered",
+    expectedLatency: "hours",
+    licenseStatus: "open",
     usage: "detect candidate incidents and rhetoric changes",
-    caveat: "新闻层只提出候选证据；进入 checkpoint 前必须去重和核验来源。",
+    caveat:
+      "新闻层只提出候选证据；进入 checkpoint 前必须去重和核验来源。",
     pending: false,
     url: "https://www.gdeltproject.org/",
-    crossChecks: ["official advisory feed", "multiple independent news reports", "timestamp/geography deduplication"],
+    crossChecks: [
+      "official advisory feed",
+      "multiple independent news reports",
+      "timestamp/geography deduplication",
+    ],
   },
   {
     id: "baseagent",
@@ -101,8 +145,11 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "fresh",
     reliability: "medium",
     refreshCadence: "on demand",
+    expectedLatency: "seconds",
+    licenseStatus: "restricted",
     usage: "interactive explanation and forecast note generation",
-    caveat: "当前是 dev proxy + fallback；生产应迁到 galaxy-selfevolve backend。",
+    caveat:
+      "当前是 dev proxy + fallback；生产应迁到 galaxy / galaxy-selfevolve backend。",
     pending: false,
     crossChecks: ["dev proxy smoke test", "deterministic fallback response"],
   },
@@ -113,10 +160,15 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "pending",
     reliability: "low",
     refreshCadence: "pending",
+    expectedLatency: "pending",
+    licenseStatus: "pending",
     usage: "safe-haven channel once stable source is wired",
     caveat: "未接入前保持 pending，不生成虚假走势。",
     pending: true,
-    crossChecks: ["Stooq or LBMA candidate", "must pass audit:data before promoted"],
+    crossChecks: [
+      "Stooq or LBMA candidate",
+      "must pass audit:data before promoted",
+    ],
   },
   {
     id: "usdcnh-pending",
@@ -125,10 +177,16 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "pending",
     reliability: "low",
     refreshCadence: "pending",
+    expectedLatency: "pending",
+    licenseStatus: "pending",
     usage: "offshore RMB channel once stable daily source is wired",
-    caveat: "未接入稳定源前保持 pending，不生成 live USD/CNH 走势或高置信判断。",
+    caveat:
+      "未接入稳定源前保持 pending，不生成 live USD/CNH 走势或高置信判断。",
     pending: true,
-    crossChecks: ["stable daily provider required", "must pass audit:data before promoted"],
+    crossChecks: [
+      "stable daily provider required",
+      "must pass audit:data before promoted",
+    ],
   },
   {
     id: "acled-conflict",
@@ -137,11 +195,18 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "lagging",
     reliability: "medium",
     refreshCadence: "near-real-time / licensed access dependent",
+    expectedLatency: "days",
+    licenseStatus: "restricted",
     usage: "candidate conflict event layer for escalation probability targets",
-    caveat: "进入预测前仍需地理、时间戳和事件类型核验；不能替代官方海事通告。",
+    caveat:
+      "进入预测前仍需地理、时间戳和事件类型核验；不能替代官方海事通告。",
     pending: false,
     url: "https://acleddata.com/",
-    crossChecks: ["official statements", "maritime advisory feed", "independent reporting"],
+    crossChecks: [
+      "official statements",
+      "maritime advisory feed",
+      "independent reporting",
+    ],
   },
   {
     id: "ucdp-ged",
@@ -150,8 +215,11 @@ export const sourceRegistry: SourceRegistryEntry[] = [
     status: "lagging",
     reliability: "medium",
     refreshCadence: "annual / versioned release",
+    expectedLatency: "months",
+    licenseStatus: "open",
     usage: "historical baseline, label design, and backtest reference",
-    caveat: "不是 live trigger；不能作为当前 7d/14d escalation target 主证据。",
+    caveat:
+      "不是 live trigger；不能作为当前 7d/14d escalation target 主证据。",
     pending: false,
     url: "https://ucdp.uu.se/downloads/",
     crossChecks: ["dataset version", "event coding notes"],

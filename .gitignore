@@ -6,7 +6,10 @@ vite.config.d.ts
 .DS_Store
 .playwright-cli/
 .jez/
+.claude/settings.local.json
 output/
+tmp/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+scripts/.snapshot.json

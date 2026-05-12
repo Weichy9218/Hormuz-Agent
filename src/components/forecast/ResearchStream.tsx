@@ -1,16 +1,18 @@
 // Renders the agent run as an auditable evidence stream.
 import { CheckCircle2 } from "lucide-react";
 import type { AgentRunEvent } from "../../types/agentEvents";
+import type { ForecastDirection, ScenarioId } from "../../types/forecast";
 import type { SourceRegistryEntry } from "../../types";
+import { targetLabel } from "../../state/forecastStore";
 import { eventTypeTitle } from "./eventLabels";
 
 const eventTypeLabel: Record<AgentRunEvent["type"], string> = {
-  run_started: "run",
-  source_read: "source",
-  evidence_added: "evidence",
-  judgement_updated: "judgement",
-  checkpoint_written: "checkpoint",
-  run_completed: "complete",
+  run_started: "启动",
+  source_read: "读 source",
+  evidence_added: "登记 evidence",
+  judgement_updated: "改判",
+  checkpoint_written: "写 checkpoint",
+  run_completed: "完成",
 };
 
 const polarityLabel = {
@@ -26,7 +28,20 @@ const affectsLabel = {
   watchlist: "观察项",
 };
 
-const mechanismLabel = {
+const confidenceLabel = {
+  low: "低",
+  medium: "中",
+  high: "高",
+};
+
+const directionLabel: Record<ForecastDirection, string> = {
+  up: "上行",
+  down: "下行",
+  flat: "持平",
+  uncertain: "不确定",
+};
+
+const mechanismLabel: Record<string, string> = {
   transit_risk_up: "transit risk up",
   traffic_flow_down: "traffic flow down",
   insurance_cost_up: "insurance cost up",
@@ -67,7 +82,7 @@ interface ResearchStreamProps {
   visibleCount: number;
   isRunning: boolean;
   sourceRegistry: SourceRegistryEntry[];
-  scenarioLabels: Record<string, string>;
+  scenarioLabels: Record<ScenarioId, string>;
 }
 
 export function ResearchStream({
@@ -97,15 +112,10 @@ export function ResearchStream({
       {visibleEvents.map((event, index) => {
         const active = isRunning && index === visibleEvents.length - 1;
         const done = !active;
-        const eventKey =
-          event.type === "evidence_added"
-            ? event.evidenceId
-            : `${event.runId}-${event.type}-${event.at}`;
-
         return (
           <article
             className={`${event.type} ${active ? "active" : ""} ${done ? "done" : ""}`}
-            key={eventKey}
+            key={event.eventId}
           >
             <span className="stream-step">
               {done ? <CheckCircle2 size={16} /> : index + 1}
@@ -136,7 +146,7 @@ function AgentEventDetails({
 }: {
   event: AgentRunEvent;
   sourceRegistry: SourceRegistryEntry[];
-  scenarioLabels: Record<string, string>;
+  scenarioLabels: Record<ScenarioId, string>;
 }) {
   if (event.type === "run_started" || event.type === "run_completed") {
     return null;
@@ -161,11 +171,11 @@ function AgentEventDetails({
         <div className="evidence-row">
           <span className={`polarity ${event.polarity}`}>{polarityLabel[event.polarity]}</span>
           <strong>{event.affects.map((target) => affectsLabel[target]).join(" / ")}</strong>
-          <em>{event.confidence}</em>
+          <em>confidence {confidenceLabel[event.confidence]}</em>
         </div>
         <div className="stream-chips">
           {event.mechanismTags.map((tag) => (
-            <span key={tag}>{mechanismLabel[tag]}</span>
+            <span key={tag}>{mechanismLabel[tag] ?? tag}</span>
           ))}
         </div>
         <div className="stream-chips subdued">
@@ -181,37 +191,62 @@ function AgentEventDetails({
     return (
       <>
         <div className="probability-delta-grid" aria-label="概率修订">
-          {Object.entries(event.currentScenario).map(([scenarioKey, current]) => {
-            const key = scenarioKey as keyof typeof event.currentScenario;
-            const delta = event.scenarioDelta[key] ?? 0;
-            const previous = event.previousScenario[key];
-
-            return (
-              <div className={delta > 0 ? "up" : delta < 0 ? "down" : "flat"} key={key}>
-                <span>{scenarioLabels[key] ?? key}</span>
-                <strong>
-                  {previous}% → {current}%
-                </strong>
-                <b>{formatDelta(delta)}</b>
-              </div>
-            );
-          })}
+          {(Object.entries(event.currentScenario) as Array<[ScenarioId, number]>).map(
+            ([key, current]) => {
+              const delta = event.scenarioDelta[key] ?? 0;
+              const previous = event.previousScenario[key];
+              return (
+                <div className={delta > 0 ? "up" : delta < 0 ? "down" : "flat"} key={key}>
+                  <span>{scenarioLabels[key] ?? key}</span>
+                  <strong>
+                    {previous}% → {current}%
+                  </strong>
+                  <b>{formatDelta(delta)}</b>
+                </div>
+              );
+            },
+          )}
         </div>
         <div className="target-delta-list">
           {event.targetDeltas.map((delta) => (
             <span key={`${delta.target}-${delta.horizon}`}>
-              <b>{delta.target}</b>
-              {delta.horizon}: {delta.direction} · confidence{" "}
+              <b>{targetLabel[delta.target]}</b>
+              {delta.horizon}: {directionLabel[delta.direction]} · confidence{" "}
               {(delta.confidence * 100).toFixed(0)}%
               <em>{delta.deltaLabel}</em>
               <small>{delta.rationale}</small>
             </span>
           ))}
         </div>
+        {event.appliedGuardrails.length > 0 ? (
+          <div className="stream-detail-block guardrails">
+            <span>已应用 guardrails</span>
+            <div className="stream-chips">
+              {event.appliedGuardrails.map((g) => (
+                <span key={`${g.scenarioId}-${g.reasonCode}`}>
+                  {scenarioLabels[g.scenarioId]} ≤ {g.cappedTo}% · {g.reasonCode}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {event.sensitivity.length > 0 ? (
+          <div className="stream-detail-block sensitivity">
+            <span>Sensitivity</span>
+            <div className="stream-chips">
+              {event.sensitivity.map((s) => (
+                <span key={s.sensitivityId} title={s.statement}>
+                  {s.expectedFailureMode} · {s.target === "scenario" ? "情景" : targetLabel[s.target]}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </>
     );
   }
 
+  // checkpoint_written
   return (
     <div className="stream-detail-block checkpoint-note">
       <span>{event.checkpointId}</span>
@@ -219,6 +254,14 @@ function AgentEventDetails({
       <div className="watch-list-inline">
         {event.nextWatch.map((watch) => (
           <p key={watch}>{watch}</p>
+        ))}
+      </div>
+      <div className="stream-chips subdued">
+        {event.reusedState.activeEvidenceIds.map((id) => (
+          <span key={`active-${id}`}>active: {id}</span>
+        ))}
+        {event.reusedState.pendingSourceIds.map((id) => (
+          <span key={`pending-${id}`}>pending: {id}</span>
         ))}
       </div>
     </div>

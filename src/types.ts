@@ -1,5 +1,12 @@
-// Shared frontend types mirroring the forecast checkpoint contract.
-export type SourceStatus = "fresh" | "lagging" | "missing" | "pending";
+// UI-presentational types and source-registry types. Forecast business types
+// live in src/types/forecast.ts and src/types/agentEvents.ts.
+import type {
+  LicenseStatus,
+  SourceFreshness,
+} from "./types/forecast";
+
+export type { ScenarioId } from "./types/forecast";
+export type SourceStatus = SourceFreshness;
 
 export interface SignalSource {
   id: string;
@@ -16,11 +23,6 @@ export type SourceGroup =
   | "news"
   | "pending";
 export type SourceReliability = "high" | "medium" | "low";
-export type ScenarioId =
-  | "normal"
-  | "controlled"
-  | "severe"
-  | "closure";
 
 export interface SourceRegistryEntry {
   id: string;
@@ -29,6 +31,8 @@ export interface SourceRegistryEntry {
   status: SourceStatus;
   reliability: SourceReliability;
   refreshCadence: string;
+  expectedLatency: string;
+  licenseStatus: LicenseStatus;
   usage: string;
   caveat: string;
   pending: boolean;
@@ -38,7 +42,7 @@ export interface SourceRegistryEntry {
 
 export type EventSeverity = "stable" | "watch" | "elevated";
 
-export interface EventItem {
+export interface NarrativeEvent {
   id: string;
   time: string;
   title: string;
@@ -85,50 +89,7 @@ export interface MarketSeries {
   points: MarketPoint[];
 }
 
-export interface MarketRead {
-  title: string;
-  summary: string;
-  supportsScenario: ScenarioId | "uncertain";
-  evidenceIds: string[];
-}
-
 export interface DetailPage {
-  id: "overview" | "market" | "forecast";
+  id: "overview" | "market" | "news" | "forecast";
   label: string;
-}
-
-export interface Scenario {
-  id: ScenarioId;
-  label: string;
-  color: string;
-  posture: string;
-}
-
-export interface ScenarioProbabilities {
-  normal: number;
-  controlled: number;
-  severe: number;
-  closure: number;
-}
-
-export interface Checkpoint {
-  id: string;
-  label: string;
-  time: string;
-  forecast: ScenarioId;
-  confidence: "low" | "med" | "high";
-  probabilities: ScenarioProbabilities;
-  revision: string;
-  keyEvidence: string[];
-  counterevidence: string[];
-  unresolvedConcerns: string[];
-}
-
-export interface DailyBrief {
-  id: string;
-  date: string;
-  headline: string;
-  riskLevel: "normal" | "elevated" | "critical";
-  anomalies: string[];
-  analystNote: string;
 }
