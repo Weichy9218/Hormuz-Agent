@@ -32,5 +32,6 @@ export interface PolymarketQuestionRef {
   raw_path: string;
   source_hash?: `sha256:${string}` | null;
   selected_for_overview: boolean;
+  stale?: boolean;
   caveat: string;
 }

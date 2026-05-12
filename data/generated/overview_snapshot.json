@@ -1,0 +1,284 @@
+{
+  "built_at": "2026-05-12T16:48:32.108Z",
+  "data_as_of": "2026-05-12T15:33:10.060Z",
+  "baseline": [
+    {
+      "fact_id": "oil-flow",
+      "label": "Hormuz petroleum liquids flow",
+      "value": "≈20",
+      "unit": "mb/d",
+      "as_of": "2025",
+      "source_id": "eia-iea-hormuz",
+      "source_url": "https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz",
+      "cross_check_source_url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf",
+      "retrieved_at": "2026-05-12T00:00:00+08:00",
+      "license_status": "open",
+      "detail": "IEA 2025 petroleum liquids baseline；产品层只使用公开 rounded baseline。",
+      "caveat": "结构性 chokepoint baseline，不是 current-day throughput。"
+    },
+    {
+      "fact_id": "bypass-capacity",
+      "label": "Alternative export route capacity",
+      "value": "3.5–5.5",
+      "unit": "mb/d",
+      "as_of": "2025",
+      "source_id": "eia-iea-hormuz",
+      "source_url": "https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz",
+      "cross_check_source_url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf",
+      "retrieved_at": "2026-05-12T00:00:00+08:00",
+      "license_status": "open",
+      "detail": "IEA 替代出口路线能力区间；不能完全吸收 chokepoint shock。",
+      "caveat": "结构性 capacity baseline；精确拆分必须绑定可审计原始表。"
+    },
+    {
+      "fact_id": "asia-exposure",
+      "label": "Asia-heavy energy exposure",
+      "value": "Asia-heavy",
+      "unit": "crude / products",
+      "as_of": "2025",
+      "source_id": "eia-iea-hormuz",
+      "source_url": "https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz",
+      "cross_check_source_url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf",
+      "retrieved_at": "2026-05-12T00:00:00+08:00",
+      "license_status": "open",
+      "detail": "Hormuz disruption primarily transmits through Middle East energy exports and Asia-facing crude/product flows.",
+      "caveat": "结构性 exposure anchor；不是 country-level current flow estimate。"
+    },
+    {
+      "fact_id": "lng-relevance",
+      "label": "LNG relevance",
+      "value": "material",
+      "unit": "LNG channel",
+      "as_of": "2025",
+      "source_id": "eia-iea-hormuz",
+      "source_url": "https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz",
+      "cross_check_source_url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf",
+      "retrieved_at": "2026-05-12T00:00:00+08:00",
+      "license_status": "open",
+      "detail": "LNG exposure matters for interpreting broader energy and inflation channels around Hormuz risk.",
+      "caveat": "结构性 LNG relevance；不是 live cargo count。"
+    }
+  ],
+  "current_severity": "routine",
+  "latest_events": [
+    {
+      "event_id": "evt-advisory-ukmto-recent-incidents",
+      "event_at": "2026-05-12T13:26:30.360Z",
+      "title": "Recent Incidents",
+      "description": "UKMTO advisory snapshot for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea. Entry is mirrored from the official advisory index for background timeline context only.",
+      "source_type": "official",
+      "source_id": "official-advisory",
+      "source_name": "UKMTO",
+      "source_url": "https://www.ukmto.org/recent-incidents",
+      "retrieved_at": "2026-05-12T13:26:30.360Z",
+      "raw_path": "data/raw/advisories/ukmto/recent-incidents/2026-05-12T13-26-30-360Z-index.html",
+      "source_hash": "sha256:0f120e99bdef602253ed6752bb00a68323203ce2e170cc7df50709b42bdc7104",
+      "severity_hint": "routine",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman",
+        "Arabian Sea"
+      ],
+      "cross_check_source_urls": [],
+      "related_advisory_ids": [
+        "ukmto-recent-incidents"
+      ],
+      "related_market_targets": [
+        "traffic"
+      ],
+      "tags": [
+        "advisory",
+        "ukmto"
+      ],
+      "curated_by": "curate-events.mjs",
+      "curated_at": "2026-05-12T15:01:00.351Z"
+    },
+    {
+      "event_id": "evt-advisory-marad-msci-alerts",
+      "event_at": "2026-05-12T13:26:30.360Z",
+      "title": "USA Banner",
+      "description": "MARAD advisory snapshot for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea. Entry is mirrored from the official advisory index for background timeline context only.",
+      "source_type": "official",
+      "source_id": "official-advisory",
+      "source_name": "MARAD",
+      "source_url": "https://www.maritime.dot.gov/msci-alerts",
+      "retrieved_at": "2026-05-12T13:26:30.360Z",
+      "raw_path": "data/raw/advisories/marad/alerts/2026-05-12T13-26-30-360Z-index.html",
+      "source_hash": "sha256:2c8b1388727b616e5a15682c35ccbcea99a67362f745ae2521908facb796b30c",
+      "severity_hint": "routine",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman",
+        "Arabian Sea"
+      ],
+      "cross_check_source_urls": [],
+      "related_advisory_ids": [
+        "marad-msci-alerts"
+      ],
+      "related_market_targets": [
+        "traffic"
+      ],
+      "tags": [
+        "advisory",
+        "marad"
+      ],
+      "curated_by": "curate-events.mjs",
+      "curated_at": "2026-05-12T15:01:00.351Z"
+    },
+    {
+      "event_id": "evt-advisory-marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-o",
+      "event_at": "2026-05-12T13:26:30.360Z",
+      "title": "2026-0001B-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Mili...",
+      "description": "MARAD advisory snapshot for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea. Entry is mirrored from the official advisory index for background timeline context only.",
+      "source_type": "official",
+      "source_id": "official-advisory",
+      "source_name": "MARAD",
+      "source_url": "https://www.maritime.dot.gov/msci/2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
+      "retrieved_at": "2026-05-12T13:26:30.360Z",
+      "raw_path": "data/raw/advisories/marad/alerts/2026-05-12T13-26-30-360Z-marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and.html",
+      "source_hash": "sha256:7eb9c6a1483a7b85ec94fe2d8cba3ebc2313ed4f387f1f0fa2896e7088d11600",
+      "severity_hint": "elevated",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman",
+        "Arabian Sea"
+      ],
+      "cross_check_source_urls": [],
+      "related_advisory_ids": [
+        "marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and"
+      ],
+      "related_market_targets": [
+        "traffic"
+      ],
+      "tags": [
+        "advisory",
+        "marad"
+      ],
+      "curated_by": "curate-events.mjs",
+      "curated_at": "2026-05-12T15:01:00.351Z"
+    }
+  ],
+  "traffic_snapshot": {
+    "latest_date": "2026-05-10",
+    "latest_value": 4,
+    "avg_7d": 1.57,
+    "baseline_1y_same_window": 107.29,
+    "delta_vs_baseline_pct": -96.27,
+    "vessel_type": "all",
+    "source_id": "imf-portwatch-hormuz",
+    "retrieved_at": "2026-05-12T15:33:10.060Z",
+    "caveat": "PortWatch chokepoint6 Strait of Hormuz; AIS/GNSS caveat applies. n_tanker=2; n_cargo=2; capacity=450300."
+  },
+  "market_snapshot": [
+    {
+      "target": "brent",
+      "label": "Brent spot proxy",
+      "value": 118.26,
+      "unit": "USD/bbl",
+      "delta_1d": -5.97999999999999,
+      "delta_7d": 6.400000000000006,
+      "source_id": "fred-market",
+      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "status": "active",
+      "caveat": "FRED normalized local snapshot."
+    },
+    {
+      "target": "wti",
+      "label": "WTI spot proxy",
+      "value": 109.76,
+      "unit": "USD/bbl",
+      "delta_1d": 4.38000000000001,
+      "delta_7d": 9.870000000000005,
+      "source_id": "fred-market",
+      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "status": "active",
+      "caveat": "FRED normalized local snapshot."
+    },
+    {
+      "target": "vix",
+      "label": "VIX",
+      "value": 17.19,
+      "unit": "index",
+      "delta_1d": 0.11000000000000298,
+      "delta_7d": 0.20000000000000284,
+      "source_id": "fred-market",
+      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "status": "active",
+      "caveat": "FRED normalized local snapshot."
+    },
+    {
+      "target": "broad_usd",
+      "label": "Broad USD",
+      "value": 118.0392,
+      "unit": "index",
+      "delta_1d": 0.02759999999999252,
+      "delta_7d": -0.3534000000000077,
+      "source_id": "fred-market",
+      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "status": "active",
+      "caveat": "FRED normalized local snapshot."
+    },
+    {
+      "target": "gold",
+      "label": "Gold",
+      "value": null,
+      "unit": "USD/oz",
+      "source_id": "gold-pending",
+      "retrieved_at": "2026-05-12T16:48:32.108Z",
+      "status": "pending_source",
+      "caveat": "Pending stable daily source."
+    },
+    {
+      "target": "usd_cnh",
+      "label": "USD/CNH",
+      "value": null,
+      "unit": "CNH per USD",
+      "source_id": "usdcnh-pending",
+      "retrieved_at": "2026-05-12T16:48:32.108Z",
+      "status": "pending_source",
+      "caveat": "Pending offshore CNH source."
+    }
+  ],
+  "polymarket_refs": [
+    {
+      "question_id": "strait-of-hormuz-traffic-returns-to-normal-by-end-of-june",
+      "event_slug": "strait-of-hormuz-traffic-returns-to-normal-by-end-of-june",
+      "question_url": "https://polymarket.com/event/strait-of-hormuz-traffic-returns-to-normal-by-end-of-june",
+      "title": "Strait of Hormuz traffic returns to normal by end of June?",
+      "description": "Seed reference for the Polymarket question about whether Strait of Hormuz traffic returns to normal by the end of June. Live odds are filled by curate-polymarket.mjs.",
+      "resolution_criteria": "Resolution criteria must be read from the Polymarket event page and preserved by the curation script before reviewer-facing use.",
+      "market_type": "binary",
+      "outcomes": [
+        {
+          "outcome_id": "yes",
+          "last_price": null,
+          "last_volume": null
+        },
+        {
+          "outcome_id": "no",
+          "last_price": null,
+          "last_volume": null
+        }
+      ],
+      "closes_at": null,
+      "total_volume_usd": null,
+      "tags": [
+        "Hormuz",
+        "Traffic"
+      ],
+      "topic_tags": [
+        "hormuz"
+      ],
+      "source": "polymarket",
+      "source_endpoint": "gamma-api/events",
+      "retrieved_at": "2026-05-12T00:00:00.000Z",
+      "raw_path": "data/raw/polymarket/events/pending.json",
+      "source_hash": null,
+      "selected_for_overview": true,
+      "caveat": "External market, not our forecast; seeded reference only until curate-polymarket.mjs refreshes live metadata."
+    }
+  ]
+}
