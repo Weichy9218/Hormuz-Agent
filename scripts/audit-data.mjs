@@ -13,6 +13,7 @@ const sourceRegistryUrl = new URL("../src/data/sourceRegistry.ts", import.meta.u
 const canonicalStoreUrl = new URL("../src/state/canonicalStore.ts", import.meta.url);
 const normalizedFredUrl = new URL("../data/normalized/market/fred_series.csv", import.meta.url);
 const generatedMarketUrl = new URL("../data/generated/market_series.json", import.meta.url);
+const generatedMarketChartUrl = new URL("../data/generated/market_chart.json", import.meta.url);
 const baselineUrl = new URL("../data/normalized/baseline/hormuz_baseline.json", import.meta.url);
 const sourceRegistryJsonUrl = new URL("../data/registry/sources.json", import.meta.url);
 const advisoriesUrl = new URL("../data/normalized/maritime/advisories.jsonl", import.meta.url);
@@ -109,16 +110,34 @@ function parseJsonl(text) {
 
 async function fetchFredCsv(seriesId) {
   const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${seriesId}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`${seriesId}: FRED request failed with ${response.status}`);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`FRED request failed with ${response.status}`);
+    }
+    return parseFredCsvText(await response.text());
+  } catch (error) {
+    console.warn(`${seriesId}: FRED live check unavailable (${error.message}); using latest local raw snapshot.`);
+    return readLatestRawFredCsv(seriesId);
   }
-  const rows = (await response.text()).trim().split("\n").slice(1);
+}
+
+function parseFredCsvText(text) {
+  const rows = text.trim().split("\n").slice(1);
   return new Map(
     rows
       .map((line) => line.split(","))
       .filter(([date, value]) => date && value && value !== "."),
   );
+}
+
+async function readLatestRawFredCsv(seriesId) {
+  const files = (await readdir(resolve(rawFredDir, seriesId)))
+    .filter((file) => file.endsWith(".csv"))
+    .sort();
+  const latest = files.at(-1);
+  if (!latest) throw new Error(`${seriesId}: no local raw FRED snapshot available.`);
+  return parseFredCsvText(await readFile(resolve(rawFredDir, seriesId, latest), "utf8"));
 }
 
 async function hasRawSnapshot(seriesId) {
@@ -470,11 +489,43 @@ function auditLocalCode(dataFile, sourceRegistryFile, canonicalStoreFile, source
   }
 }
 
+async function auditGeneratedMarketChart(bundle) {
+  if (!bundle || !Array.isArray(bundle.series)) {
+    throw new Error("market_chart.json must expose a series array.");
+  }
+
+  for (const series of bundle.series) {
+    if (series.evidenceEligible !== false) {
+      throw new Error(`${series.id ?? series.target}: market_chart series evidenceEligible must be false.`);
+    }
+    if (
+      series.status === "pending_source" &&
+      ((series.points?.length ?? 0) > 0 || (series.value !== undefined && series.value !== null))
+    ) {
+      throw new Error(`${series.id ?? series.target}: pending market_chart series must not contain values or points.`);
+    }
+    if (series.baseline_points && series.baseline_points.length > 0) {
+      if (series.group !== "traffic" || series.source_id !== "imf-portwatch-hormuz") {
+        throw new Error(
+          `${series.id ?? series.target}: baseline_points are only allowed on PortWatch traffic series.`,
+        );
+      }
+      if (!/portwatch/i.test(`${series.id ?? ""} ${series.target ?? ""} ${series.label ?? ""}`)) {
+        throw new Error(
+          `${series.id ?? series.target}: PortWatch baseline_points must stay attached to a PortWatch traffic row.`,
+        );
+      }
+      await assertRawHash(series, `${series.id ?? series.target}:market_chart`);
+    }
+  }
+}
+
 const dataFile = await readFile(dataUrl, "utf8");
 const sourceRegistryFile = await readFile(sourceRegistryUrl, "utf8");
 const canonicalStoreFile = await readFile(canonicalStoreUrl, "utf8");
 const normalizedRows = parseCsv(await readFile(normalizedFredUrl, "utf8"));
 const generatedMarketSeries = JSON.parse(await readFile(generatedMarketUrl, "utf8"));
+const generatedMarketChart = JSON.parse(await readFile(generatedMarketChartUrl, "utf8"));
 const baselineFacts = JSON.parse(await readFile(baselineUrl, "utf8"));
 const sourceRegistry = JSON.parse(await readFile(sourceRegistryJsonUrl, "utf8"));
 const advisoryRecords = parseJsonl(await readFile(advisoriesUrl, "utf8"));
@@ -488,6 +539,7 @@ auditBaseline(baselineFacts);
 auditSourceRegistry(sourceRegistry);
 await auditAdvisories(advisoryRecords);
 await auditTraffic(transitRows);
+await auditGeneratedMarketChart(generatedMarketChart);
 auditGeneratedCanonicalArtifacts({
   observations: sourceObservations,
   evidenceClaims,
@@ -497,5 +549,5 @@ auditGeneratedCanonicalArtifacts({
 auditLocalCode(dataFile, sourceRegistryFile, canonicalStoreFile, sourceRegistry, generatedMarketSeries, baselineFacts);
 
 console.log(
-  `audit:data passed: ${normalizedRows.length} local FRED rows, ${generatedMarketSeries.length} generated market series, ${baselineFacts.length} baseline facts, ${advisoryRecords.length} advisory snapshots, ${transitRows.length} traffic rows, ${sourceObservations.length} observations, ${evidenceClaims.length} evidence claims, source ids, pending data, and event contract are consistent.`,
+  `audit:data passed: ${normalizedRows.length} local FRED rows, ${generatedMarketSeries.length} generated market series, ${generatedMarketChart.series.length} market_chart series, ${baselineFacts.length} baseline facts, ${advisoryRecords.length} advisory snapshots, ${transitRows.length} traffic rows, ${sourceObservations.length} observations, ${evidenceClaims.length} evidence claims, source ids, pending data, and event contract are consistent.`,
 );

@@ -2,6 +2,7 @@
 // snapshots and never feeds odds into EvidenceClaim, canonical_inputs, or
 // forecast state.
 import { createHash } from "node:crypto";
+import https from "node:https";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,10 @@ const root = resolve(here, "..");
 const RETRIEVED_AT = new Date().toISOString();
 const SAFE_RETRIEVED_AT = RETRIEVED_AT.replace(/[:.]/g, "-");
 const ENDPOINT = "https://gamma-api.polymarket.com/events?limit=200&closed=false&order=volume24hr&ascending=false";
+const REQUEST_TIMEOUT_MS = Number(process.env.POLYMARKET_REQUEST_TIMEOUT_MS ?? 30000);
+const FETCH_ATTEMPTS = Number(process.env.POLYMARKET_FETCH_ATTEMPTS ?? 2);
+const RETRY_DELAY_MS = 1500;
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const TOPIC_ORDER = ["hormuz", "us_iran", "oil", "regional", "iran_domestic"];
 const HUMAN_FIELDS = ["selected_for_overview", "caveat"];
 const EXTERNAL_CAVEAT = "External market, not our forecast";
@@ -43,31 +48,81 @@ async function readJson(path, fallback) {
   }
 }
 
+function sleep(ms) {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+}
+
+function requestText(url) {
+  return new Promise((resolveRequest, rejectRequest) => {
+    const request = https.get(
+      url,
+      {
+        family: 4,
+        headers: { "user-agent": "hormuz-risk-interface polymarket curation" },
+        timeout: REQUEST_TIMEOUT_MS,
+      },
+      (response) => {
+        response.setEncoding("utf8");
+        let text = "";
+        response.on("data", (chunk) => {
+          text += chunk;
+        });
+        response.on("end", () => {
+          resolveRequest({
+            ok: response.statusCode >= 200 && response.statusCode < 300,
+            status: response.statusCode,
+            text,
+          });
+        });
+      },
+    );
+    request.on("timeout", () => {
+      request.destroy(new Error(`request timed out after ${REQUEST_TIMEOUT_MS}ms`));
+    });
+    request.on("error", rejectRequest);
+  });
+}
+
+async function fetchTextWithRetry(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await requestText(url);
+      if (!RETRY_STATUSES.has(result.status) || attempt === FETCH_ATTEMPTS) {
+        return { ...result, attempt };
+      }
+      await sleep(RETRY_DELAY_MS * attempt);
+    } catch (error) {
+      lastError = error;
+      if (attempt < FETCH_ATTEMPTS) await sleep(RETRY_DELAY_MS * attempt);
+    }
+  }
+  throw new Error(lastError?.message ?? "fetch failed");
+}
+
 async function fetchRawSnapshot() {
   await mkdir(paths.rawDir, { recursive: true });
   const rawPath = resolve(paths.rawDir, `${SAFE_RETRIEVED_AT}.json`);
-  let response;
   let text = "";
+  let result;
   try {
-    response = await fetch(ENDPOINT, {
-      headers: { "user-agent": "hormuz-risk-interface polymarket curation" },
-    });
-    text = await response.text();
+    result = await fetchTextWithRetry(ENDPOINT);
+    text = result.text;
   } catch (error) {
     await writeFile(rawPath, JSON.stringify({ ok: false, fetch_error: error.message }, null, 2));
     throw new Error(`Polymarket fetch failed: ${error.message}`);
   }
 
-  if (!response.ok) {
-    await writeFile(rawPath, JSON.stringify({ ok: false, status: response.status, body: text }, null, 2));
-    throw new Error(`Polymarket HTTP ${response.status}`);
+  if (!result.ok) {
+    await writeFile(rawPath, JSON.stringify({ ok: false, status: result.status, attempt: result.attempt, body: text }, null, 2));
+    throw new Error(`Polymarket HTTP ${result.status}`);
   }
 
   let json;
   try {
     json = JSON.parse(text);
   } catch (error) {
-    await writeFile(rawPath, JSON.stringify({ ok: false, parse_error: error.message, body: text }, null, 2));
+    await writeFile(rawPath, JSON.stringify({ ok: false, parse_error: error.message, attempt: result.attempt, body: text }, null, 2));
     throw new Error(`Polymarket JSON parse failed: ${error.message}`);
   }
 
@@ -256,7 +311,11 @@ async function main() {
 
   const outputRefs = sortRefs([...selectedById.values()])
     .slice(0, 20)
-    .map(({ _volume24h, ...ref }) => ref);
+    .map((ref) => {
+      const cleanRef = { ...ref };
+      delete cleanRef._volume24h;
+      return cleanRef;
+    });
   await mkdir(dirname(paths.external), { recursive: true });
   await writeFile(paths.external, `${JSON.stringify(outputRefs, null, 2)}\n`);
 

@@ -450,6 +450,129 @@ function edgeLabelForAction(action) {
   return "continues";
 }
 
+const stopWords = new Set([
+  "the", "and", "that", "this", "with", "from", "into", "will", "would", "about",
+  "forecast", "prediction", "evidence", "source", "based", "current", "price",
+  "brent", "hormuz", "strait", "usd", "bbl", "because", "while", "there", "their",
+  "截至", "显示", "来源", "证据", "预测", "目前", "仍然", "因为", "没有", "已经",
+]);
+
+function searchableActionText(action) {
+  return [
+    action.title,
+    action.summary,
+    action.query,
+    action.argsSummary,
+    action.sourceUrl,
+    action.rawPreview?.text,
+  ].filter(Boolean).join(" ");
+}
+
+function tokens(text) {
+  return [
+    ...new Set(
+      String(text ?? "")
+        .toLowerCase()
+        .match(/[a-z0-9]{3,}|[\u4e00-\u9fa5]{2,}/g) ?? [],
+    ),
+  ].filter((token) => !stopWords.has(token));
+}
+
+function urls(text) {
+  return String(text ?? "")
+    .match(/https?:\/\/[^\s)"']+/g) ?? [];
+}
+
+function actionScoreForSignal(action, signal, signalIndex) {
+  const haystack = searchableActionText(action).toLowerCase();
+  const signalText = String(signal ?? "").toLowerCase();
+  if (!haystack || !signalText) return 0;
+  let score = 0;
+  for (const url of urls(signalText)) {
+    if (haystack.includes(url.toLowerCase())) score += 120;
+  }
+  if (signalText.length > 24 && haystack.includes(signalText.slice(0, 220))) score += 80;
+  const signalTokens = tokens(signalText);
+  const haystackTokens = new Set(tokens(haystack));
+  const overlap = signalTokens.filter((token) => haystackTokens.has(token));
+  if (overlap.length >= 2) score += overlap.length * 14;
+  if (/\b(FRED|DCOILBRENTEU|Brent|Reuters|AP|Bloomberg|UKMTO|JMIC|MARAD|PortWatch)\b/i.test(haystack)) {
+    score += 8;
+  }
+  if (action.kind === "tool_result" || action.kind === "artifact_read") score += 10;
+  if (action.kind === "tool_call") score += 4;
+  if (score > 0) score += Math.max(0, action.index - signalIndex) * 0.01;
+  return score;
+}
+
+function markCritical(action, reason) {
+  if (!action) return;
+  action.criticalPath = true;
+  action.criticalReason ||= reason;
+}
+
+function markCriticalAncestors(action, actionsById, reason) {
+  for (const parentId of action?.parentActionIds ?? []) {
+    const parent = actionsById.get(parentId);
+    if (!parent) continue;
+    if (parent.kind === "tool_call" || parent.kind === "assistant_note" || parent.kind === "evidence_synthesis") {
+      markCritical(parent, reason);
+    }
+  }
+}
+
+function markCriticalPath(actions) {
+  const actionsById = new Map(actions.map((action) => [action.actionId, action]));
+  const finalActions = actions.filter((action) => action.kind === "final_forecast");
+  for (const action of finalActions) markCritical(action, "record_forecast / boxed answer");
+  const checkpoint = actions.find((action) => action.kind === "checkpoint");
+  markCritical(checkpoint, "checkpoint after final forecast");
+  const question = actions.find((action) => action.kind === "question");
+  markCritical(question, "forecast question");
+
+  const finalPayload =
+    [...finalActions].reverse().find((action) => action.forecastPayload)?.forecastPayload ?? {};
+  const evidenceSignals = [
+    ...(finalPayload.keyEvidenceItems ?? []),
+    ...(finalPayload.counterEvidenceItems ?? []),
+    finalPayload.rationale,
+  ].filter(Boolean);
+
+  let matchedCount = 0;
+  const candidates = actions.filter((action) =>
+    action.toolName !== "record_forecast" &&
+    (action.kind === "tool_result" || action.kind === "artifact_read" || action.kind === "tool_call")
+  );
+  evidenceSignals.forEach((signal, index) => {
+    const ranked = candidates
+      .map((action) => ({ action, score: actionScoreForSignal(action, signal, index) }))
+      .filter((item) => item.score >= 28)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2);
+    for (const { action } of ranked) {
+      markCritical(action, `ref'd by record_forecast evidence #${index + 1}`);
+      markCriticalAncestors(action, actionsById, `parent of evidence #${index + 1}`);
+      matchedCount += 1;
+    }
+  });
+
+  if (matchedCount < 2) {
+    const fallback = [...actions]
+      .filter((action) =>
+        action.toolName !== "record_forecast" &&
+        (action.kind === "tool_result" || action.kind === "artifact_read" || action.kind === "tool_call")
+      )
+      .slice(-6);
+    for (const action of fallback) {
+      markCritical(action, "fallback: nearest evidence before record_forecast");
+      markCriticalAncestors(action, actionsById, "fallback parent before record_forecast");
+    }
+  }
+
+  for (const action of finalActions) markCriticalAncestors(action, actionsById, "parent of record_forecast");
+  if (checkpoint) markCriticalAncestors(checkpoint, actionsById, "parent of checkpoint");
+}
+
 function buildActionGraph(actions) {
   const actionIds = new Set(actions.map((action) => action.actionId));
   const nodes = actions.map((action) => ({
@@ -465,6 +588,8 @@ function buildActionGraph(actions) {
       toolName: action.toolName,
       current: action.status === "running",
       terminal: action.kind === "final_forecast",
+      criticalPath: Boolean(action.criticalPath),
+      criticalReason: action.criticalReason,
     },
   }));
   const edges = [];
@@ -476,6 +601,7 @@ function buildActionGraph(actions) {
         source: parentId,
         target: action.actionId,
         label: edgeLabelForAction(action),
+        criticalPath: Boolean(action.criticalPath && actions.find((item) => item.actionId === parentId)?.criticalPath),
       });
     }
   }
@@ -769,6 +895,8 @@ export async function buildActionTrace({
     });
   }
 
+  markCriticalPath(actions);
+
   return {
     traceId: `trace-${question.task_id}`,
     runDir: relative(root, taskDir),
@@ -805,6 +933,10 @@ function isBrentWeeklyHighQuestion(question) {
   return question?.metadata?.question_kind === "brent_weekly_high";
 }
 
+function fallbackPrediction(question) {
+  return isBrentWeeklyHighQuestion(question) ? "pending" : "B";
+}
+
 function sourceObservationId(prefix, dateText) {
   return `obs-galaxy-${prefix}-${dateText}`;
 }
@@ -838,7 +970,7 @@ function buildPreviousState() {
 function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedAt, status, summaryRecord, finalize, note, stats, actionTrace, command, error }) {
   const runArtifactPath = resolve(outputDir, "run-artifact.json");
   const forecastedAt = summaryRecord?.ended_at ?? new Date().toISOString();
-  const prediction = summaryRecord?.prediction || finalize?.prediction || "B";
+  const prediction = summaryRecord?.prediction || finalize?.prediction || fallbackPrediction(question);
   const predictedScenario = scenarioFromPrediction(prediction);
   const brentWeeklyHigh = isBrentWeeklyHighQuestion(question);
   const sourceObservations = [

@@ -21,6 +21,8 @@
     "galaxy:hormuz:run": "node scripts/run-galaxy-hormuz.mjs --execute",
     "forecast-agent:run": "node scripts/forecast-agent/runner.mjs",
     "audit:data": "node scripts/audit-data.mjs",
+    "audit:events": "node scripts/audit-events.mjs",
+    "audit:polymarket": "node scripts/audit-polymarket.mjs",
     "audit:galaxy": "node scripts/audit-galaxy.mjs",
     "audit:forecast-agent": "node scripts/audit-forecast-agent.mjs",
     "audit:evidence": "node scripts/audit-evidence.mjs",
@@ -31,7 +33,7 @@
     "audit:market-providers": "node scripts/audit-market-providers.mjs",
     "audit:pending-sources": "node scripts/audit-pending-sources.mjs",
     "audit:market-lineage": "node scripts/audit-market-lineage.mjs",
-    "audit": "npm run audit:data && npm run audit:market-providers && npm run audit:pending-sources && npm run audit:market-lineage && npm run audit:galaxy && npm run audit:forecast-agent && npm run audit:evidence && npm run audit:forecast && npm run audit:replay && npm run audit:legacy && npm run audit:ui",
+    "audit": "npm run audit:data && npm run audit:events && npm run audit:polymarket && npm run audit:market-providers && npm run audit:pending-sources && npm run audit:market-lineage && npm run audit:galaxy && npm run audit:forecast-agent && npm run audit:evidence && npm run audit:forecast && npm run audit:replay && npm run audit:legacy && npm run audit:ui",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

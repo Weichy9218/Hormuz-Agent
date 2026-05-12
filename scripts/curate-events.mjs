@@ -5,6 +5,7 @@
 // query succeeded), and the process exits non-zero. Only all 8 successful queries
 // flip gdelt-news.status to fresh.
 import { createHash } from "node:crypto";
+import https from "node:https";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,15 +19,23 @@ const SAFE_RETRIEVED_AT = RETRIEVED_AT.replace(/[:.]/g, "-");
 const GDELT_ENDPOINT = "https://api.gdeltproject.org/api/v2/doc/doc";
 const GDELT_MAX_RECORDS = "75";
 const GDELT_TIMESPAN = "14d";
+const GDELT_FETCH_ATTEMPTS = Number(process.env.GDELT_FETCH_ATTEMPTS ?? 3);
+const GDELT_RETRY_DELAY_MS = 1500;
+const GDELT_REQUEST_TIMEOUT_MS = Number(process.env.GDELT_REQUEST_TIMEOUT_MS ?? 60000);
+const GDELT_QUERY_DELAY_MS = 3000;
+const GDELT_RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const GDELT_QUERIES = [
-  "\"Strait of Hormuz\"",
-  "\"Hormuz\" AND (tanker OR vessel OR ship)",
-  "\"Hormuz\" AND (advisory OR incident OR attack)",
-  "IRGC OR \"Revolutionary Guard\" \"Hormuz\"",
-  "\"Gulf of Oman\" AND (incident OR attack OR seized)",
-  "Iran \"US Navy\" \"Persian Gulf\"",
-  "\"Bandar Abbas\" AND (navy OR drill OR missile)",
-  "Iran sanctions oil export",
+  { sourceQuery: "\"Strait of Hormuz\"" },
+  { sourceQuery: "\"Hormuz\" AND (tanker OR vessel OR ship)" },
+  { sourceQuery: "\"Hormuz\" AND (advisory OR incident OR attack)" },
+  {
+    sourceQuery: "IRGC OR \"Revolutionary Guard\" \"Hormuz\"",
+    apiQuery: "(IRGC OR \"Revolutionary Guard\") \"Hormuz\"",
+  },
+  { sourceQuery: "\"Gulf of Oman\" AND (incident OR attack OR seized)" },
+  { sourceQuery: "Iran \"US Navy\" \"Persian Gulf\"" },
+  { sourceQuery: "\"Bandar Abbas\" AND (navy OR drill OR missile)" },
+  { sourceQuery: "Iran sanctions oil export" },
 ];
 const ALLOWLIST_DOMAINS = new Set([
   "reuters.com",
@@ -203,35 +212,89 @@ function gdeltUrl(query) {
   return `${GDELT_ENDPOINT}?${params.toString()}`;
 }
 
+function sleep(ms) {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+}
+
+function requestText(url) {
+  return new Promise((resolveRequest, rejectRequest) => {
+    const request = https.get(
+      url,
+      {
+        family: 4,
+        headers: { "user-agent": "hormuz-risk-interface event curation" },
+        timeout: GDELT_REQUEST_TIMEOUT_MS,
+      },
+      (response) => {
+        response.setEncoding("utf8");
+        let text = "";
+        response.on("data", (chunk) => {
+          text += chunk;
+        });
+        response.on("end", () => {
+          resolveRequest({
+            ok: response.statusCode >= 200 && response.statusCode < 300,
+            status: response.statusCode,
+            text,
+          });
+        });
+      },
+    );
+    request.on("timeout", () => {
+      request.destroy(new Error(`request timed out after ${GDELT_REQUEST_TIMEOUT_MS}ms`));
+    });
+    request.on("error", rejectRequest);
+  });
+}
+
+async function fetchTextWithRetry(url, label) {
+  let lastError;
+  let lastResult;
+  for (let attempt = 1; attempt <= GDELT_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      lastResult = { ...(await requestText(url)), attempt };
+      if (!GDELT_RETRY_STATUSES.has(lastResult.status) || attempt === GDELT_FETCH_ATTEMPTS) {
+        return lastResult;
+      }
+      await sleep(GDELT_RETRY_DELAY_MS * attempt);
+    } catch (error) {
+      lastError = error;
+      if (attempt < GDELT_FETCH_ATTEMPTS) {
+        await sleep(GDELT_RETRY_DELAY_MS * attempt);
+      }
+    }
+  }
+  throw new Error(`${label}: ${lastError?.message ?? "fetch failed"}`);
+}
+
 async function fetchGdeltQuery(query) {
-  const slug = slugify(query, "query");
-  if (process.env.CURATE_EVENTS_FAIL_QUERY === slug || process.env.CURATE_EVENTS_FAIL_QUERY === query) {
-    throw new Error(`simulated query failure for ${query}`);
+  const sourceQuery = query.sourceQuery;
+  const apiQuery = query.apiQuery ?? query.sourceQuery;
+  const slug = slugify(sourceQuery, "query");
+  if (process.env.CURATE_EVENTS_FAIL_QUERY === slug || process.env.CURATE_EVENTS_FAIL_QUERY === sourceQuery) {
+    throw new Error(`simulated query failure for ${sourceQuery}`);
   }
 
-  const response = await fetch(gdeltUrl(query), {
-    headers: { "user-agent": "hormuz-risk-interface event curation" },
-  });
-  const text = await response.text();
+  const { ok, status, text, attempt } = await fetchTextWithRetry(gdeltUrl(apiQuery), `GDELT ${sourceQuery}`);
   const rawDir = resolve(root, "data", "raw", "gdelt", slug);
   await mkdir(rawDir, { recursive: true });
   const rawPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}.json`);
 
-  if (!response.ok) {
-    await writeFile(rawPath, JSON.stringify({ ok: false, status: response.status, body: text }, null, 2));
-    throw new Error(`GDELT ${query}: HTTP ${response.status}`);
+  if (!ok) {
+    await writeFile(rawPath, JSON.stringify({ ok: false, status, attempt, body: text }, null, 2));
+    throw new Error(`GDELT ${sourceQuery}: HTTP ${status}`);
   }
 
   let json;
   try {
     json = JSON.parse(text);
   } catch (error) {
-    await writeFile(rawPath, JSON.stringify({ ok: false, parse_error: error.message, body: text }, null, 2));
-    throw new Error(`GDELT ${query}: JSON parse failed: ${error.message}`);
+    await writeFile(rawPath, JSON.stringify({ ok: false, parse_error: error.message, attempt, body: text }, null, 2));
+    throw new Error(`GDELT ${sourceQuery}: JSON parse failed: ${error.message}`);
   }
 
   await writeFile(rawPath, text);
-  return { query, slug, rawPath, json };
+  return { query: sourceQuery, slug, rawPath, json };
 }
 
 function candidateFromArticle(article, sourceQuery) {
@@ -390,6 +453,7 @@ async function main() {
   const successes = [];
   const failures = [];
   for (const query of GDELT_QUERIES) {
+    if (successes.length + failures.length > 0) await sleep(GDELT_QUERY_DELAY_MS);
     try {
       successes.push(await fetchGdeltQuery(query));
     } catch (error) {
@@ -415,7 +479,7 @@ async function main() {
 
   if (failures.length > 0) {
     for (const failure of failures) {
-      console.error(`curate:events failed query: ${failure.query}: ${failure.error.message}`);
+      console.error(`curate:events failed query: ${failure.query.sourceQuery}: ${failure.error.message}`);
     }
     process.exitCode = 1;
   }
