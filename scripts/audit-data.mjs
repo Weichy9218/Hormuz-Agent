@@ -110,8 +110,10 @@ function parseJsonl(text) {
 
 async function fetchFredCsv(seriesId) {
   const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${seriesId}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4_000);
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: controller.signal });
     if (!response.ok) {
       throw new Error(`FRED request failed with ${response.status}`);
     }
@@ -119,6 +121,8 @@ async function fetchFredCsv(seriesId) {
   } catch (error) {
     console.warn(`${seriesId}: FRED live check unavailable (${error.message}); using latest local raw snapshot.`);
     return readLatestRawFredCsv(seriesId);
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

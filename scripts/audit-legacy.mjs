@@ -171,12 +171,18 @@ async function collectBackgroundDependencyFiles(entryFiles) {
   return [...visited];
 }
 
-const backgroundEntryFiles = [
+const pageFile = resolve(root, "src/App.tsx");
+const pageContent = await readFile(pageFile, "utf8");
+const backgroundEntryRelFiles = [
   "src/pages/OverviewPage.tsx",
   "src/pages/NewsPage.tsx",
-  "src/pages/NewsTimelinePage.tsx",
   "src/pages/MarketPage.tsx",
-]
+];
+if (/NewsTimelinePage/.test(pageContent)) {
+  backgroundEntryRelFiles.push("src/pages/NewsTimelinePage.tsx");
+}
+
+const backgroundEntryFiles = backgroundEntryRelFiles
   .map((file) => resolve(root, file))
   .filter((file) => files.includes(file));
 
@@ -189,8 +195,6 @@ for (const file of await collectBackgroundDependencyFiles(backgroundEntryFiles))
   }
 }
 
-const pageFile = resolve(root, "src/App.tsx");
-const pageContent = await readFile(pageFile, "utf8");
 for (const rule of BACKGROUND_FORBIDDEN) {
   violations.push(...formatMatches("src/App.tsx", pageContent, rule));
 }
