@@ -465,6 +465,47 @@
   overflow-wrap: anywhere;
 }
 
+.forecast-page .galaxy-runtime-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.forecast-page .galaxy-runtime-switch button {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  color: #475569;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.forecast-page .galaxy-runtime-switch button.selected {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(11, 102, 246, 0.1);
+}
+
+.forecast-page .galaxy-runtime-switch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+}
+
+.forecast-page .galaxy-runtime-switch strong {
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.forecast-page .galaxy-runtime-switch span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
 .forecast-page .galaxy-run-kv {
   display: grid;
   gap: 7px;
@@ -867,6 +908,92 @@
   font-size: 0.78rem;
   line-height: 1.38;
   overflow-wrap: anywhere;
+}
+
+.forecast-page .galaxy-raw-preview {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.forecast-page .galaxy-raw-preview > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.forecast-page .galaxy-raw-preview span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.forecast-page .galaxy-raw-preview strong {
+  font-size: 0.88rem;
+}
+
+.forecast-page .galaxy-raw-preview small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.forecast-page .galaxy-raw-preview pre,
+.forecast-page .galaxy-tool-call-list code {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #dfe7f1;
+  border-radius: 7px;
+  color: #0f172a;
+  background: #f8fafc;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.forecast-page .galaxy-raw-preview button {
+  width: fit-content;
+  padding: 7px 10px;
+  border: 1px solid #cfe0f5;
+  border-radius: 7px;
+  color: var(--blue);
+  background: #f8fbff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.forecast-page .galaxy-boxed-answer {
+  width: fit-content;
+  padding: 6px 9px;
+  border: 1px solid #f4c56e;
+  border-radius: 7px;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.forecast-page .galaxy-tool-call-list {
+  display: grid;
+  gap: 8px;
+}
+
+.forecast-page .galaxy-tool-call-list p {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.forecast-page .galaxy-tool-call-list b {
+  color: var(--text);
+  font-size: 0.75rem;
 }
 
 .forecast-page .galaxy-inspector-empty {

@@ -22,11 +22,16 @@ if (questionRows.length !== 1) {
   violations.push(`daily question file must contain exactly one row, found ${questionRows.length}`);
 }
 const question = questionRows[0];
-if (!question?.task_id?.startsWith("hormuz-traffic-risk-")) {
-  violations.push("question.task_id must use hormuz-traffic-risk-<date>");
+const questionKind = question?.metadata?.question_kind || "hormuz_traffic_risk";
+const isBrentWeeklyHigh = questionKind === "brent_weekly_high";
+if (!/^hormuz-(traffic-risk|brent-weekly-high)-\d{4}-\d{2}-\d{2}$/.test(question?.task_id ?? "")) {
+  violations.push("question.task_id must use hormuz-traffic-risk-<date> or hormuz-brent-weekly-high-<date>");
 }
-if (!question?.task_question?.includes("\\boxed{letter}")) {
-  violations.push("question must preserve FutureWorld-style boxed answer format");
+if (!question?.task_question?.includes(isBrentWeeklyHigh ? "\\boxed{number}" : "\\boxed{letter}")) {
+  violations.push("question must preserve boxed final answer format");
+}
+if (isBrentWeeklyHigh && question?.metadata?.target_series !== "DCOILBRENTEU") {
+  violations.push("Brent weekly-high question must declare FRED DCOILBRENTEU as target_series");
 }
 if (!question?.task_description?.includes("Market data is evidence input only")) {
   violations.push("question description must state market-data boundary");
@@ -99,6 +104,29 @@ if (!artifact.actionTrace || !Array.isArray(artifact.actionTrace.actions)) {
   }
   if (artifact.actionTrace.actions.some((action) => Object.hasOwn(action, "hiddenReason"))) {
     violations.push("actionTrace must not include hiddenReason fields");
+  }
+  const graph = artifact.actionTrace.graph;
+  if (!graph || !Array.isArray(graph.nodes) || graph.nodes.length === 0) {
+    violations.push("actionTrace.graph must include graph nodes for the Forecast viewer");
+  }
+  if (!graph || !Array.isArray(graph.edges)) {
+    violations.push("actionTrace.graph must include graph edges for the Forecast viewer");
+  } else {
+    const graphNodeIds = new Set((graph.nodes ?? []).map((node) => node.id));
+    for (const edge of graph.edges) {
+      if (!graphNodeIds.has(edge.source) || !graphNodeIds.has(edge.target)) {
+        violations.push(`actionTrace.graph edge ${edge.id} must connect existing nodes`);
+      }
+    }
+  }
+  if (!artifact.actionTrace.actions.some((action) => action.kind === "tool_call" && action.rawPreview?.text)) {
+    violations.push("tool_call actions must include rawPreview argument payloads");
+  }
+  if (!artifact.actionTrace.actions.some((action) => action.kind === "tool_result" && action.rawPreview?.text)) {
+    violations.push("tool_result actions must include rawPreview result content");
+  }
+  if (!artifact.actionTrace.actions.some((action) => action.kind === "final_forecast" && action.rawPreview?.text)) {
+    violations.push("final_forecast actions must include rawPreview payloads");
   }
   const actionsById = new Map(artifact.actionTrace.actions.map((action) => [action.actionId, action]));
   const toolCallsByTurn = new Map();

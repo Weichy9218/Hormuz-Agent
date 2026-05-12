@@ -17,6 +17,8 @@ const galaxyRepo =
 const questionPath = resolve(root, "data/galaxy/hormuz-daily-question.jsonl");
 const latestArtifactPath = resolve(root, "data/galaxy/latest-run.json");
 const defaultOutputRoot = resolve(root, "data/galaxy/runs");
+const defaultQuestionKind = "brent-weekly-high";
+const supportedQuestionKinds = new Set(["brent-weekly-high", "hormuz-traffic-risk"]);
 
 function galaxyVenvPath() {
   return process.env.GALAXY_VENV || resolve(galaxyRepo, ".venv");
@@ -81,6 +83,7 @@ function parseArgs(argv) {
     agentProfile: "forecast",
     agentLlm: "codex_sub2api",
     agentTool: "default",
+    questionKind: defaultQuestionKind,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -116,8 +119,12 @@ function parseArgs(argv) {
     } else if (arg === "--agent-tool") {
       args.agentTool = argv[index + 1] ?? args.agentTool;
       index += 1;
+    } else if (arg === "--question-kind") {
+      args.questionKind = argv[index + 1] ?? args.questionKind;
+      index += 1;
     }
   }
+  if (!supportedQuestionKinds.has(args.questionKind)) args.questionKind = defaultQuestionKind;
   return args;
 }
 
@@ -132,7 +139,61 @@ function addDays(dateText, days) {
   }).format(date);
 }
 
-function buildQuestion(dateText) {
+function tradingWeekEnd(dateText) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const calendarDate = new Date(Date.UTC(year, month - 1, day));
+  const utcDay = calendarDate.getUTCDay();
+  const daysUntilFriday = (5 - utcDay + 7) % 7;
+  return addDays(dateText, daysUntilFriday);
+}
+
+export function buildQuestion(dateText, questionKind = defaultQuestionKind) {
+  if (questionKind === "brent-weekly-high") {
+    const targetDate = tradingWeekEnd(dateText);
+    return {
+      task_id: `hormuz-brent-weekly-high-${dateText}`,
+      task_question:
+        `You are an agent that can predict future numeric market outcomes. The event to be predicted:\n` +
+        `\"\"\"\n` +
+        `During the trading week containing ${dateText} (UTC+8), from ${dateText} through ${targetDate} inclusive, ` +
+        `what will be the highest daily Brent crude oil spot price, in USD per barrel, reported by FRED series DCOILBRENTEU?\n` +
+        `\"\"\"\n\n` +
+        `Resolve this by taking the maximum released FRED DCOILBRENTEU daily observation whose observation date falls inside that window. ` +
+        `Ignore weekends or holidays with no released observation.\n\n` +
+        `Your goal is to make a numeric prediction.\n\n` +
+        `IMPORTANT: Your final answer MUST end with this exact format:\n` +
+        `\\boxed{number}\n\n` +
+        `The number must be USD/bbl rounded to two decimals. Do not use any other final format. ` +
+        `Do not refuse to make a prediction. You must make a clear prediction based on the best data currently available.`,
+      task_description:
+        `Scope: This is the Hormuz case-room numeric market question generated for ${dateText} (UTC+8). ` +
+        `Resolution source is FRED series DCOILBRENTEU; the target is the highest daily Brent crude oil spot price from ${dateText} through ${targetDate}. ` +
+        `Hormuz maritime/news evidence may inform risk premium, but the resolved target is numeric Brent price, not a scenario label. ` +
+        `Market data is evidence input only and must be clearly separated from unresolved maritime-flow claims. ` +
+        `The answer must be one numeric USD/bbl value rounded to two decimals.`,
+      metadata: {
+        case_id: "hormuz",
+        question_kind: "brent_weekly_high",
+        generated_for_date: dateText,
+        timezone: "UTC+8",
+        horizon: "this_week",
+        target: "brent",
+        target_series: "DCOILBRENTEU",
+        unit: "USD/bbl",
+        resolution_window: {
+          start_date: dateText,
+          end_date: targetDate,
+          timezone: "UTC+8",
+        },
+        source_boundary: [
+          "fred-market",
+          "official-advisory",
+          "public-news-context",
+          "ais-flow-pending",
+        ],
+      },
+    };
+  }
   const targetDate = addDays(dateText, 7);
   return {
     task_id: `hormuz-traffic-risk-${dateText}`,
@@ -184,6 +245,23 @@ function compact(text, maxLength = 260) {
     .slice(0, maxLength);
 }
 
+function truncateText(text, maxLength = 4096) {
+  const value = String(text ?? "");
+  return {
+    text: value.length > maxLength ? value.slice(0, maxLength) : value,
+    isTruncated: value.length > maxLength,
+    fullLength: value.length,
+  };
+}
+
+function prettyJson(value) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value ?? "");
+  }
+}
+
 function parseJsonMaybe(text) {
   if (!text || typeof text !== "string") return null;
   try {
@@ -205,6 +283,12 @@ function toolCallArguments(call) {
   const args = call?.function?.arguments || call?.arguments;
   if (typeof args === "string") return parseJsonMaybe(args) || {};
   return args && typeof args === "object" ? args : {};
+}
+
+function toolCallArgumentsText(call) {
+  const args = call?.function?.arguments || call?.arguments;
+  if (typeof args === "string") return args;
+  return args && typeof args === "object" ? prettyJson(args) : "{}";
 }
 
 function evidenceRoleForTool(toolName) {
@@ -335,6 +419,87 @@ function actionLaneFor(kind, toolName) {
   return "agent_turn";
 }
 
+function graphLaneForAction(action) {
+  if (action.kind === "question") return "question";
+  if (action.kind === "tool_call" && action.toolName === "search_web") return "search";
+  if (action.kind === "tool_call") return "read";
+  if (action.kind === "tool_result" && action.toolName === "search_web") return "search";
+  if (action.kind === "tool_result" || action.kind === "artifact_read") return "read";
+  if (action.kind === "evidence_synthesis") return "judgement";
+  if (action.kind === "final_forecast") return "forecast";
+  if (action.kind === "checkpoint") return "checkpoint";
+  return "evidence";
+}
+
+function eventTypeForAction(action) {
+  if (action.kind === "question") return "question_loaded";
+  if (action.kind === "tool_call") return "tool_call";
+  if (action.kind === "tool_result" || action.kind === "artifact_read") return "tool_result";
+  if (action.kind === "evidence_synthesis") return "judgement_updated";
+  if (action.kind === "final_forecast") return "final_forecast";
+  if (action.kind === "checkpoint") return "checkpoint_written";
+  return "agent_turn";
+}
+
+function edgeLabelForAction(action) {
+  if (action.kind === "tool_result" || action.kind === "artifact_read") return "returns";
+  if (action.kind === "tool_call") return "calls";
+  if (action.kind === "evidence_synthesis") return "synthesizes";
+  if (action.kind === "final_forecast") return "records";
+  if (action.kind === "checkpoint") return "persists";
+  return "continues";
+}
+
+function buildActionGraph(actions) {
+  const actionIds = new Set(actions.map((action) => action.actionId));
+  const nodes = actions.map((action) => ({
+    id: action.actionId,
+    type: "forecastAgentAction",
+    lane: graphLaneForAction(action),
+    data: {
+      eventType: eventTypeForAction(action),
+      graphRole: action.evidenceRole || action.kind,
+      title: action.title,
+      summary: action.summary,
+      status: action.status,
+      toolName: action.toolName,
+      current: action.status === "running",
+      terminal: action.kind === "final_forecast",
+    },
+  }));
+  const edges = [];
+  for (const action of actions) {
+    for (const parentId of action.parentActionIds ?? []) {
+      if (!actionIds.has(parentId)) continue;
+      edges.push({
+        id: `${parentId}->${action.actionId}`,
+        source: parentId,
+        target: action.actionId,
+        label: edgeLabelForAction(action),
+      });
+    }
+  }
+  return { nodes, edges };
+}
+
+function rawFileRef(taskDir, rowIndex) {
+  return {
+    rawFilePath: relative(root, resolve(taskDir, "main_agent.jsonl")),
+    rawLine: rowIndex + 1,
+  };
+}
+
+function makeRawPreview(kind, title, value, taskDir, rowIndex, extra = {}) {
+  const truncated = truncateText(value, 4096);
+  return {
+    kind,
+    title,
+    ...truncated,
+    ...rawFileRef(taskDir, rowIndex),
+    ...extra,
+  };
+}
+
 async function ensureHormuzRunConfig(args, question, outputDir) {
   if (args.runConfig !== "hormuz_test.yaml") return;
   const configPath = resolve(galaxyRepo, "config/run/hormuz_test.yaml");
@@ -393,6 +558,7 @@ export async function buildActionTrace({
   includeTerminal = true,
 }) {
   const rows = await readJsonlRows(resolve(taskDir, "main_agent.jsonl"));
+  const effectiveFinalize = finalize ?? lastFinalizeFromMessages(rows) ?? undefined;
   const actions = [];
   const toolCallById = new Map();
   let lastSynthesisActionId = "";
@@ -423,10 +589,16 @@ export async function buildActionTrace({
     status: "success",
     evidenceRole: "question_audit",
     rawRole: "user",
+    rawPreview: {
+      kind: "question",
+      title: "Forecast question",
+      ...truncateText(question.task_question, 4096),
+      rawFilePath: relative(root, questionPath),
+    },
   });
   lastSynthesisActionId = questionAction.actionId;
 
-  for (const row of rows) {
+  for (const [rowIndex, row] of rows.entries()) {
     if (row.type === "finalize") continue;
     if (row.role === "system") continue;
     if (row.role === "user") {
@@ -441,6 +613,7 @@ export async function buildActionTrace({
         status: "success",
         parentActionIds: [lastSynthesisActionId],
         rawRole: "user",
+        rawPreview: makeRawPreview("user", "Runtime instruction", row.content, taskDir, rowIndex),
       });
       continue;
     }
@@ -465,6 +638,20 @@ export async function buildActionTrace({
         evidenceRole: assistantTurnCount === 1 ? "question_audit" : "evidence_extract",
         rawRole: "assistant",
         parentActionIds: turnParents.filter(Boolean),
+        rawPreview: makeRawPreview(
+          "assistant",
+          "Assistant turn",
+          row.content || "(empty assistant content)",
+          taskDir,
+          rowIndex,
+          {
+            toolCalls: calls.map((call) => ({
+              id: call.id,
+              name: toolCallName(call),
+              arguments: toolCallArgumentsText(call),
+            })),
+          },
+        ),
       });
       lastSynthesisActionId = turnAction.actionId;
       lastBatchResultIds = [];
@@ -473,6 +660,13 @@ export async function buildActionTrace({
         for (const call of calls) {
           const toolName = toolCallName(call);
           const args = toolCallArguments(call);
+          const argsText = toolCallArgumentsText(call);
+          const rawPreview =
+            toolName === "record_forecast"
+              ? makeRawPreview("record_forecast", "record_forecast payload", prettyJson(args), taskDir, rowIndex, {
+                  boxedAnswer: args.prediction ? `\\boxed{${String(args.prediction).trim().match(/[A-D]/i)?.[0] ?? args.prediction}}` : undefined,
+                })
+              : makeRawPreview("tool_call", `${toolName} arguments`, argsText, taskDir, rowIndex);
           const action = addAction({
             actionId: `ga-call-${call.id || actions.length}`,
             kind: toolName === "record_forecast" ? "final_forecast" : "tool_call",
@@ -489,6 +683,7 @@ export async function buildActionTrace({
             evidenceRole: evidenceRoleForTool(toolName),
             rawRole: "assistant",
             parentActionIds: [turnAction.actionId],
+            rawPreview,
           });
           if (call.id) toolCallById.set(call.id, { action, toolName, args });
         }
@@ -517,14 +712,17 @@ export async function buildActionTrace({
         evidenceRole: evidenceRoleForTool(toolName),
         rawRole: "tool",
         parentActionIds: linked?.action ? [linked.action.actionId] : [lastSynthesisActionId],
+        rawPreview: makeRawPreview("tool_result", `${toolName} result content`, row.content, taskDir, rowIndex, {
+          toolName,
+        }),
       });
       lastBatchResultIds.push(resultAction.actionId);
     }
   }
 
-  const finalPayload = finalize || {};
+  const finalPayload = effectiveFinalize || {};
   const hasRecordForecast = actions.some((action) => action.toolName === "record_forecast");
-  const shouldAddTerminalForecast = includeTerminal && (!hasRecordForecast || finalize || summaryRecord?.prediction);
+  const shouldAddTerminalForecast = includeTerminal && (!hasRecordForecast || effectiveFinalize || summaryRecord?.prediction);
   if (shouldAddTerminalForecast) {
     addAction({
       actionId: hasRecordForecast ? "ga-finalize-payload" : "ga-finalize",
@@ -536,6 +734,15 @@ export async function buildActionTrace({
       forecastPayload: normalizeForecastPayload(finalPayload),
       evidenceRole: "forecast_record",
       parentActionIds: lastBatchResultIds.length > 0 ? lastBatchResultIds : [lastSynthesisActionId],
+      rawPreview: {
+        kind: "record_forecast",
+        title: "finalize payload",
+        ...truncateText(prettyJson(finalPayload), 4096),
+        rawFilePath: relative(root, resolve(taskDir, "main_agent.jsonl")),
+        boxedAnswer: finalPayload.prediction
+          ? `\\boxed{${String(finalPayload.prediction).trim().match(/[A-D]/i)?.[0] ?? finalPayload.prediction}}`
+          : undefined,
+      },
     });
   }
 
@@ -553,6 +760,12 @@ export async function buildActionTrace({
         [...actions].reverse().find((action) => action.kind === "final_forecast")?.actionId ||
           lastSynthesisActionId,
       ],
+      rawPreview: {
+        kind: "checkpoint",
+        title: "checkpoint_note.json",
+        ...truncateText(existsSync(checkpointPath) ? await readFile(checkpointPath, "utf8") : "checkpoint pending", 4096),
+        rawFilePath: relative(root, checkpointPath),
+      },
     });
   }
 
@@ -561,6 +774,7 @@ export async function buildActionTrace({
     runDir: relative(root, taskDir),
     generatedAt: summaryRecord?.ended_at ?? new Date().toISOString(),
     actions,
+    graph: buildActionGraph(actions),
     stats: stats || {},
   };
 }
@@ -585,6 +799,10 @@ function scenarioFromPrediction(prediction) {
   if (letter === "C") return "severe";
   if (letter === "D") return "closure";
   return "controlled";
+}
+
+function isBrentWeeklyHighQuestion(question) {
+  return question?.metadata?.question_kind === "brent_weekly_high";
 }
 
 function sourceObservationId(prefix, dateText) {
@@ -622,6 +840,7 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
   const forecastedAt = summaryRecord?.ended_at ?? new Date().toISOString();
   const prediction = summaryRecord?.prediction || finalize?.prediction || "B";
   const predictedScenario = scenarioFromPrediction(prediction);
+  const brentWeeklyHigh = isBrentWeeklyHighQuestion(question);
   const sourceObservations = [
     {
       observationId: sourceObservationId("question", dateText),
@@ -629,8 +848,10 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       publishedAt: `${dateText}T00:00:00+08:00`,
       retrievedAt: forecastedAt,
       sourceUrl: "data/galaxy/hormuz-daily-question.jsonl",
-      title: "Daily Hormuz FutureWorld-style question",
-      summary: "题目要求在 7d horizon 内预测 Hormuz scenario：normal / controlled / severe / closure。",
+      title: brentWeeklyHigh ? "Weekly Brent high numeric question" : "Daily Hormuz FutureWorld-style question",
+      summary: brentWeeklyHigh
+        ? "题目要求预测本交易周 FRED DCOILBRENTEU Brent daily spot price 的最高值，单位 USD/bbl。"
+        : "题目要求在 7d horizon 内预测 Hormuz scenario：normal / controlled / severe / closure。",
       freshness: "fresh",
       licenseStatus: "open",
     },
@@ -641,7 +862,9 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       retrievedAt: forecastedAt,
       sourceUrl: relative(root, resolve(taskDir, "main_agent.jsonl")),
       title: status === "success" ? "Galaxy final prediction" : "Galaxy adapter final prediction",
-      summary: note?.question_state || `Galaxy prediction maps to ${predictedScenario}.`,
+      summary: brentWeeklyHigh
+        ? note?.question_state || `Galaxy numeric Brent weekly-high prediction is ${prediction} USD/bbl.`
+        : note?.question_state || `Galaxy prediction maps to ${predictedScenario}.`,
       freshness: status === "failed" ? "missing" : "fresh",
       licenseStatus: "open",
     },
@@ -652,7 +875,9 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       retrievedAt: forecastedAt,
       sourceUrl: "data/normalized/market/fred_series.csv",
       title: "FRED market bundle for galaxy adapter",
-      summary: "Brent / WTI risk premium remains relevant, while broad market stress does not support closure-style shock.",
+      summary: brentWeeklyHigh
+        ? "FRED market bundle is the resolution anchor for Brent spot observations and the primary numeric price context."
+        : "Brent / WTI risk premium remains relevant, while broad market stress does not support closure-style shock.",
       freshness: "fresh",
       licenseStatus: "open",
     },
@@ -679,7 +904,9 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
   ];
 
   const predictionEvidenceClaim =
-    predictedScenario === "closure"
+    brentWeeklyHigh
+      ? `Galaxy numeric answer predicts the weekly high Brent spot price at ${prediction} USD/bbl; resolution must be checked against FRED DCOILBRENTEU observations in the target window.`
+      : predictedScenario === "closure"
       ? "Galaxy task answer maps to closure; this remains constrained by the missing verified flow-stop guardrail."
       : predictedScenario === "severe"
         ? "Galaxy task answer maps to severe disruption; this requires official or traffic-flow corroboration before becoming base case."
@@ -689,16 +916,18 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
 
   const evidenceClaims = [
     {
-      evidenceId: "ev-galaxy-final-controlled",
+      evidenceId: brentWeeklyHigh ? "ev-galaxy-final-brent-high" : "ev-galaxy-final-controlled",
       sourceObservationIds: [
         sourceObservationId("question", dateText),
         sourceObservationId("final", dateText),
       ],
       claim: predictionEvidenceClaim,
-      polarity: predictedScenario === "normal" ? "uncertain" : "support",
-      affects: ["scenario", "target"],
+      polarity: brentWeeklyHigh || predictedScenario !== "normal" ? "support" : "uncertain",
+      affects: brentWeeklyHigh ? ["target", "market"] : ["scenario", "target"],
       mechanismTags:
-        predictedScenario === "closure"
+        brentWeeklyHigh
+          ? ["market_pricing_risk_premium"]
+          : predictedScenario === "closure"
           ? ["traffic_flow_down", "mine_or_swarm_risk_up"]
           : predictedScenario === "severe"
             ? ["traffic_flow_down", "energy_supply_risk_up"]
@@ -710,18 +939,26 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
         corroboration: "single_source",
         directness: "direct",
       },
-      targetHints: [
-        { target: "transit_disruption_7d", direction: predictedScenario === "normal" ? "flat" : "up", weight: 0.8 },
-        { target: "regional_escalation_7d", direction: predictedScenario === "normal" ? "flat" : "up", weight: 0.5 },
-      ],
+      targetHints: brentWeeklyHigh
+        ? [
+            { target: "brent", direction: "up", weight: 0.8 },
+          ]
+        : [
+            { target: "transit_disruption_7d", direction: predictedScenario === "normal" ? "flat" : "up", weight: 0.8 },
+            { target: "regional_escalation_7d", direction: predictedScenario === "normal" ? "flat" : "up", weight: 0.5 },
+          ],
     },
     {
       evidenceId: "ev-galaxy-market-mixed",
       sourceObservationIds: [sourceObservationId("fred-market", dateText)],
-      claim: "Market bundle still supports Hormuz risk premium, but cross-asset stress is mixed and does not price a closure shock.",
+      claim: brentWeeklyHigh
+        ? "FRED Brent observations define the numeric resolution target; Hormuz risk premium is relevant only insofar as it moves the Brent weekly high."
+        : "Market bundle still supports Hormuz risk premium, but cross-asset stress is mixed and does not price a closure shock.",
       polarity: "support",
-      affects: ["market", "scenario", "target"],
-      mechanismTags: ["market_pricing_risk_premium", "market_not_pricing_closure"],
+      affects: brentWeeklyHigh ? ["market", "target"] : ["market", "scenario", "target"],
+      mechanismTags: brentWeeklyHigh
+        ? ["market_pricing_risk_premium"]
+        : ["market_pricing_risk_premium", "market_not_pricing_closure"],
       confidence: "medium",
       quality: {
         sourceReliability: "high",
@@ -814,16 +1051,20 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
     sourceObservations,
     evidenceClaims,
     marketRead: {
-      title: "Galaxy market read: mixed risk premium, no closure shock",
-      summary:
-        "FRED market bundle supports controlled disruption risk premium, but does not by itself update forecast state and does not support closure as base case.",
+      title: brentWeeklyHigh
+        ? "Galaxy market read: Brent weekly high numeric target"
+        : "Galaxy market read: mixed risk premium, no closure shock",
+      summary: brentWeeklyHigh
+        ? "FRED DCOILBRENTEU is the resolution source for the numeric Brent target; maritime evidence is context for risk premium, not the resolved unit."
+        : "FRED market bundle supports controlled disruption risk premium, but does not by itself update forecast state and does not support closure as base case.",
       pricingPattern: "mixed",
       evidenceIds: ["ev-galaxy-market-mixed"],
       caveat: "Market read is evidence input only; final scenario update is written only by judgement_updated.",
       asOf: dateText,
     },
     nextWatch: [
-        "Run scripts/run-galaxy-hormuz.mjs --execute to refresh the live galaxy-selfevolve artifact through the existing .venv",
+      "Run scripts/run-galaxy-hormuz.mjs --execute to refresh the live galaxy-selfevolve artifact through the existing .venv",
+      ...(brentWeeklyHigh ? ["FRED DCOILBRENTEU daily observations through the target window close"] : []),
       "UKMTO / JMIC / MARAD avoidance or threat wording escalation",
       "Authorized AIS / tanker / LNG flow turn-down",
       "Insurance / chartering / freight non-linear jump",
@@ -833,7 +1074,7 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const question = buildQuestion(args.date);
+  const question = buildQuestion(args.date, args.questionKind);
   const startedAt = args.startedAt || new Date().toISOString();
   const timestamp = startedAt.replace(/\D/g, "").slice(0, 14) || Date.now().toString();
   const runId = args.runId || `${timestamp}__${question.task_id}`;

@@ -13,3 +13,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 scripts/.snapshot.json
+
+# Reproducible cache artifacts: raw fetched HTML and per-tool caches.
+# Keep main_agent.jsonl / final_forecast / checkpoint / run-meta /
+# run-artifact / task_summary inside data/galaxy/runs/, but never commit
+# the per-call search/web/tool_artifacts caches.
+data/raw/
+data/galaxy/runs/**/search/
+data/galaxy/runs/**/web/
+data/galaxy/runs/**/tool_artifacts/

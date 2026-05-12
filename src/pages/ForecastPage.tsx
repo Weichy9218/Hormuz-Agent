@@ -26,6 +26,7 @@ import type { ForecastAgentRunArtifact } from "../types/forecastAgent";
 
 type ForecastProjection = ReturnType<typeof projectForecastState>;
 type RunStatus = "idle" | "running" | "completed" | "failed";
+type RuntimeKind = "galaxy" | "local";
 
 interface LiveRunStatus {
   runId: string;
@@ -55,6 +56,29 @@ interface TraceResponse {
   trace: GalaxyActionTrace;
   artifact: GalaxyHormuzRunArtifact | ForecastAgentRunArtifact | null;
 }
+
+const runtimeConfig: Record<RuntimeKind, {
+  label: string;
+  detail: string;
+  startPath: string;
+  statusPath: string;
+  tracePath: string;
+}> = {
+  galaxy: {
+    label: "galaxy (.venv)",
+    detail: "real galaxy-selfevolve run",
+    startPath: "/api/galaxy-hormuz/run/start",
+    statusPath: "/api/galaxy-hormuz/run/status",
+    tracePath: "/api/galaxy-hormuz/run/trace",
+  },
+  local: {
+    label: "local deterministic",
+    detail: "offline classroom demo",
+    startPath: "/api/forecast-agent/run/start",
+    statusPath: "/api/forecast-agent/run/status",
+    tracePath: "/api/forecast-agent/run/trace",
+  },
+};
 
 const kindLabel: Record<GalaxyActionKind, string> = {
   question: "question",
@@ -142,6 +166,8 @@ function GalaxyRunHeader({
   finalSource,
   agentArtifact,
   runMessage,
+  runtime,
+  onRuntimeChange,
   onRun,
   onRefresh,
 }: {
@@ -151,6 +177,8 @@ function GalaxyRunHeader({
   finalSource: "current run" | "last completed";
   agentArtifact?: ForecastAgentRunArtifact | null;
   runMessage: string;
+  runtime: RuntimeKind;
+  onRuntimeChange: (runtime: RuntimeKind) => void;
   onRun: () => void;
   onRefresh: () => void;
 }) {
@@ -158,6 +186,7 @@ function GalaxyRunHeader({
   const meta = galaxy?.runMeta;
   const final = finalPayload(projection, actions, finalSource, liveStatus?.runId, agentArtifact);
   const isRunning = liveStatus?.status === "running";
+  const runtimeInfo = runtimeConfig[runtime];
   const status = liveStatus?.status ?? agentArtifact?.runMeta.status ?? meta?.status ?? "last completed";
   const pid = liveStatus?.pid ?? null;
   const elapsed =
@@ -178,24 +207,41 @@ function GalaxyRunHeader({
           <span>pid {pid ?? "none"}</span>
           <span>elapsed {elapsed != null ? `${elapsed}s` : "pending"}</span>
           <span>{taskId}</span>
+          <span>runtime {runtimeInfo.label}</span>
           <span>final {final.prediction} · {finalSource}</span>
         </div>
       </div>
       <div className="galaxy-agent-command">
         <InfoTitle
           title="Run control"
-          subtitle="local start/status/trace live execution"
+          subtitle={`${runtimeInfo.detail} · start/status/trace`}
         />
+        <div className="galaxy-runtime-switch" role="radiogroup" aria-label="Forecast runtime">
+          {(["galaxy", "local"] as const).map((item) => (
+            <button
+              aria-checked={runtime === item}
+              className={runtime === item ? "selected" : ""}
+              disabled={isRunning}
+              key={item}
+              onClick={() => onRuntimeChange(item)}
+              role="radio"
+              type="button"
+            >
+              <strong>{runtimeConfig[item].label}</strong>
+              <span>{runtimeConfig[item].detail}</span>
+            </button>
+          ))}
+        </div>
         <dl className="galaxy-run-kv">
-          <div><dt>runtime</dt><dd>{liveStatus?.runConfig ?? agentArtifact?.runMeta.runner ?? "local-forecast-agent"}</dd></div>
+          <div><dt>runtime</dt><dd>{liveStatus?.runConfig ?? agentArtifact?.runMeta.runner ?? runtimeInfo.label}</dd></div>
           <div><dt>runDir</dt><dd>{runDir}</dd></div>
           <div><dt>last updated</dt><dd>{liveStatus?.lastUpdatedAt ?? agentArtifact?.runMeta.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "unknown"}</dd></div>
         </dl>
-        <code>{command?.join(" ") ?? "node scripts/forecast-agent/runner.mjs"}</code>
+        <code>{command?.join(" ") ?? (runtime === "galaxy" ? ".venv/bin/python main.py --run-config hormuz_test.yaml" : "node scripts/forecast-agent/runner.mjs")}</code>
         <div className="galaxy-run-actions">
           <button type="button" onClick={onRun} disabled={isRunning}>
             {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
-            {isRunning ? "Running live" : "Run local agent"}
+            {isRunning ? "Running live" : runtime === "galaxy" ? "Run galaxy" : "Run local demo"}
           </button>
           <button type="button" onClick={onRefresh}>
             <RefreshCw size={15} />
@@ -286,6 +332,13 @@ function ActionTimeline({
 }
 
 function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
+  const [showFullRaw, setShowFullRaw] = useState(false);
+  useEffect(() => {
+    setShowFullRaw(false);
+  }, [action?.actionId]);
+  const raw = action?.rawPreview;
+  const rawText = raw?.text ?? "";
+  const rawDisplay = showFullRaw ? rawText : rawText.slice(0, 1200);
   return (
     <section className={`console-card galaxy-action-inspector ${action ? "has-action" : ""}`}>
       <InfoTitle title="Inspector" subtitle="selected action provenance" />
@@ -346,6 +399,35 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
               <dd>{action.evidenceRole ?? "source_read"}</dd>
             </div>
           </dl>
+          {raw ? (
+            <div className="galaxy-raw-preview">
+              <div>
+                <span>Raw payload</span>
+                <strong>{raw.title}</strong>
+                <small>
+                  {raw.rawFilePath ?? "generated trace"}
+                  {raw.rawLine ? `:${raw.rawLine}` : ""} · {raw.fullLength} chars
+                </small>
+              </div>
+              {raw.boxedAnswer ? <p className="galaxy-boxed-answer">{raw.boxedAnswer}</p> : null}
+              {raw.toolCalls?.length ? (
+                <div className="galaxy-tool-call-list">
+                  {raw.toolCalls.map((call) => (
+                    <p key={`${call.id ?? call.name}-${call.arguments.slice(0, 20)}`}>
+                      <b>{call.name}</b>
+                      <code>{call.arguments}</code>
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+              <pre>{rawDisplay}{!showFullRaw && rawText.length > rawDisplay.length ? "\n..." : ""}</pre>
+              {rawText.length > 1200 ? (
+                <button type="button" onClick={() => setShowFullRaw((value) => !value)}>
+                  {showFullRaw ? "Collapse payload" : "View full preview"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="galaxy-inspector-empty">
@@ -371,20 +453,40 @@ export function ForecastPage({
   const [liveAgentArtifact, setLiveAgentArtifact] = useState<ForecastAgentRunArtifact | null>(null);
   const [liveTrace, setLiveTrace] = useState<GalaxyActionTrace | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveRunStatus | null>(null);
+  const [liveRuntime, setLiveRuntime] = useState<RuntimeKind | null>(null);
   const [galaxyRunMessage, setGalaxyRunMessage] = useState("");
+  const [runtime, setRuntime] = useState<RuntimeKind>("galaxy");
   const [graphMode, setGraphMode] = useState<"summary" | "full">("summary");
-  const runtimeGalaxyArtifact = liveArtifact ?? latestCompletedArtifact ?? undefined;
+  const runtimeLiveStatus = liveRuntime === runtime ? liveStatus : null;
+  const runtimeGalaxyArtifact =
+    runtime === "galaxy" && liveRuntime === "galaxy" && liveArtifact
+      ? liveArtifact
+      : latestCompletedArtifact ?? undefined;
   const projection = useMemo(
     () => projectForecastState(runtimeGalaxyArtifact ?? undefined),
     [runtimeGalaxyArtifact],
   );
-  const agentArtifact = liveAgentArtifact ?? latestAgentArtifact;
-  const agentTrace = liveTrace ?? agentArtifact?.trace ?? null;
+  const runtimeLiveTrace = liveRuntime === runtime ? liveTrace : null;
+  const agentArtifact =
+    runtime === "local"
+      ? (liveRuntime === "local" ? liveAgentArtifact : null) ?? latestAgentArtifact
+      : null;
+  const agentTrace = runtimeLiveTrace ?? agentArtifact?.trace ?? projection.galaxyRun?.actionTrace ?? null;
+  const traceKey =
+    agentTrace?.runDir ??
+    runtimeLiveStatus?.runDir ??
+    projection.galaxyRun?.runMeta.runDir ??
+    "latest";
   const actions = agentTrace?.actions ?? projection.galaxyRun?.actionTrace?.actions ?? [];
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const selectedAction =
     actions.find((action) => action.actionId === selectedActionId) ?? actions.at(-2) ?? null;
-  const finalSource = liveArtifact || liveStatus?.status === "running" ? "current run" : "last completed";
+  const finalSource =
+    runtimeLiveStatus?.status === "running" ||
+    (runtime === "galaxy" && liveRuntime === "galaxy" && liveArtifact) ||
+    (runtime === "local" && liveRuntime === "local" && liveAgentArtifact)
+      ? "current run"
+      : "last completed";
 
   const refreshGalaxyArtifact = useCallback(async (message = "Artifact refreshed.") => {
     const [agentResponse, galaxyResponse] = await Promise.all([
@@ -403,14 +505,44 @@ export function ForecastPage({
       setLiveAgentArtifact(null);
       setLiveTrace(null);
       setLiveStatus(null);
+      setLiveRuntime(null);
     }
     setGalaxyRunMessage(message);
   }, [liveStatus]);
 
-  const pollLiveRun = useCallback(async (runId: string) => {
+  const mergeTrace = useCallback((incoming: GalaxyActionTrace) => {
+    setLiveTrace((previous) => {
+      if (!incoming.isDelta || !previous) return incoming;
+      const actionMap = new Map(previous.actions.map((action) => [action.actionId, action]));
+      for (const action of incoming.actions) actionMap.set(action.actionId, action);
+      const actions = [...actionMap.values()].sort((a, b) => a.index - b.index);
+      const nodeMap = new Map((previous.graph?.nodes ?? []).map((node) => [node.id, node]));
+      for (const node of incoming.graph?.nodes ?? []) nodeMap.set(node.id, node);
+      const edgeMap = new Map((previous.graph?.edges ?? []).map((edge) => [edge.id, edge]));
+      for (const edge of incoming.graph?.edges ?? []) edgeMap.set(edge.id, edge);
+      return {
+        ...previous,
+        ...incoming,
+        actions,
+        graph: {
+          nodes: [...nodeMap.values()],
+          edges: [...edgeMap.values()],
+        },
+      };
+    });
+  }, []);
+
+  const pollLiveRun = useCallback(async (runId: string, runtimeKind = runtime, forceFullTrace = false) => {
+    const config = runtimeConfig[runtimeKind];
+    const canRequestDelta =
+      !forceFullTrace &&
+      liveRuntime === runtimeKind &&
+      liveStatus?.runId === runId &&
+      liveTrace?.actions.length;
+    const afterIndex = canRequestDelta ? Math.max(...liveTrace.actions.map((action) => action.index)) : -1;
     const [statusResponse, traceResponse] = await Promise.all([
-      fetch(`/api/forecast-agent/run/status?runId=${encodeURIComponent(runId)}`),
-      fetch(`/api/forecast-agent/run/trace?runId=${encodeURIComponent(runId)}`),
+      fetch(`${config.statusPath}?runId=${encodeURIComponent(runId)}`),
+      fetch(`${config.tracePath}?runId=${encodeURIComponent(runId)}&afterIndex=${afterIndex}`),
     ]);
     if (!statusResponse.ok) {
       throw new Error(`status request failed: ${statusResponse.status}`);
@@ -419,7 +551,7 @@ export function ForecastPage({
     setLiveStatus(statusPayload);
     if (traceResponse.ok) {
       const tracePayload = (await traceResponse.json()) as TraceResponse;
-      setLiveTrace(tracePayload.trace);
+      mergeTrace(tracePayload.trace);
       if (tracePayload.artifact?.schemaVersion === "hormuz-forecast-agent-run/v1") {
         setLiveAgentArtifact(tracePayload.artifact);
       } else if (tracePayload.artifact) {
@@ -427,14 +559,14 @@ export function ForecastPage({
       }
     }
     if (statusPayload.status === "completed") {
-      setGalaxyRunMessage("Local forecast-agent run completed; latest artifact now points to this run.");
-      await refreshGalaxyArtifact("Local forecast-agent completed; final forecast is from the current run.");
+      setGalaxyRunMessage(`${runtimeConfig[runtimeKind].label} completed; latest artifact now points to this run.`);
+      await refreshGalaxyArtifact(`${runtimeConfig[runtimeKind].label} completed; final forecast is from the current run.`);
     } else if (statusPayload.status === "failed") {
-      setGalaxyRunMessage(statusPayload.error ?? "Local forecast-agent run failed; keeping the last valid trace.");
+      setGalaxyRunMessage(statusPayload.error ?? `${runtimeConfig[runtimeKind].label} failed; keeping the last valid trace.`);
     } else {
       setGalaxyRunMessage(`Live run ${statusPayload.runId} · ${statusPayload.elapsed}s · ${statusPayload.runDir}`);
     }
-  }, [refreshGalaxyArtifact]);
+  }, [liveRuntime, liveStatus?.runId, liveTrace?.actions, mergeTrace, refreshGalaxyArtifact, runtime]);
 
   useEffect(() => {
     if (!liveStatus?.runId || liveStatus.status !== "running") return;
@@ -460,7 +592,7 @@ export function ForecastPage({
 
   useEffect(() => {
     if (!latestCompletedArtifact) {
-      void refreshGalaxyArtifact("Loaded last completed forecast-agent artifact.");
+      void refreshGalaxyArtifact("Loaded last completed galaxy artifact.");
     }
   }, [latestCompletedArtifact, refreshGalaxyArtifact]);
 
@@ -473,9 +605,10 @@ export function ForecastPage({
   }
 
   async function handleRunGalaxy() {
-    setGalaxyRunMessage("Starting local forecast-agent runtime...");
+    const config = runtimeConfig[runtime];
+    setGalaxyRunMessage(`Starting ${config.label} runtime...`);
     try {
-      const response = await fetch("/api/forecast-agent/run/start", { method: "POST" });
+      const response = await fetch(config.startPath, { method: "POST" });
       const payload = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
         runId?: string;
@@ -488,7 +621,7 @@ export function ForecastPage({
         error?: string;
       };
       if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || `local forecast-agent run failed: ${response.status}`);
+        throw new Error(payload.error || `${config.label} run failed: ${response.status}`);
       }
       const status: LiveRunStatus = {
         runId: payload.runId ?? "",
@@ -500,18 +633,19 @@ export function ForecastPage({
         lastUpdatedAt: payload.startedAt ?? new Date().toISOString(),
         runDir: payload.runDir ?? "",
         outputDir: payload.outputDir ?? "",
-        runConfig: payload.runConfig ?? "local-forecast-agent",
+        runConfig: payload.runConfig ?? config.label,
         exitCode: null,
       };
       setLiveStatus(status);
+      setLiveRuntime(runtime);
       setLiveArtifact(null);
       setLiveAgentArtifact(null);
       setLiveTrace(null);
       setSelectedActionId(null);
-      setGalaxyRunMessage(`Started ${status.runId}; waiting for events.jsonl live trace.`);
-      if (status.runId) await pollLiveRun(status.runId);
+      setGalaxyRunMessage(`Started ${status.runId}; waiting for main_agent.jsonl trace.`);
+      if (status.runId) await pollLiveRun(status.runId, runtime, true);
     } catch (error) {
-      setGalaxyRunMessage(error instanceof Error ? error.message : "Local forecast-agent run failed.");
+      setGalaxyRunMessage(error instanceof Error ? error.message : `${config.label} run failed.`);
     }
   }
 
@@ -520,10 +654,15 @@ export function ForecastPage({
       <GalaxyRunHeader
         projection={projection}
         actions={actions}
-        liveStatus={liveStatus}
+        liveStatus={runtimeLiveStatus}
         finalSource={finalSource}
         agentArtifact={agentArtifact}
         runMessage={galaxyRunMessage}
+        runtime={runtime}
+        onRuntimeChange={(nextRuntime) => {
+          setRuntime(nextRuntime);
+          setSelectedActionId(null);
+        }}
         onRun={handleRunGalaxy}
         onRefresh={handleRefreshGalaxyArtifact}
       />
@@ -533,7 +672,7 @@ export function ForecastPage({
           <section className="console-card galaxy-view-mode">
             <InfoTitle
               title="Visualization mode"
-              subtitle="Summary keeps only decision-relevant actions; full expands tool results."
+              subtitle="Story keeps the decision path; Full preserves every tool call/result for audit."
             />
             <div className="forecast-mode-tabs" role="tablist" aria-label="Galaxy graph mode">
               {(["summary", "full"] as const).map((mode) => (
@@ -545,7 +684,7 @@ export function ForecastPage({
                   role="tab"
                   type="button"
                 >
-                  {mode === "summary" ? "核心动作" : "完整 trace"}
+                  {mode === "summary" ? "Story path" : "Full audit"}
                 </button>
               ))}
             </div>
@@ -554,6 +693,7 @@ export function ForecastPage({
             actions={actions}
             graph={agentTrace?.graph}
             mode={graphMode}
+            traceKey={traceKey}
             selectedActionId={selectedActionId}
             onSelectAction={setSelectedActionId}
           />

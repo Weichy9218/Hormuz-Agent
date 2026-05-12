@@ -23,6 +23,15 @@ interface ApiEnv {
 type GalaxyRunStatus = "running" | "completed" | "failed";
 type ForecastAgentRunStatus = "running" | "completed" | "failed";
 
+interface ActionTraceLike {
+  actions?: unknown[];
+  graph?: {
+    nodes?: unknown[];
+    edges?: unknown[];
+  };
+  [key: string]: unknown;
+}
+
 interface GalaxyRunRecord {
   runId: string;
   taskId: string;
@@ -351,6 +360,7 @@ const GALAXY_RUNS_ROOT = path.resolve(process.cwd(), "data/galaxy/runs");
 const GALAXY_REPO =
   process.env.GALAXY_REPO ||
   "/Users/weichy/Desktop/Doing-Right-Things/FutureX/papers/galaxy-selfevolve";
+const GALAXY_DEFAULT_QUESTION_KIND = "brent-weekly-high";
 
 function shanghaiDate() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -361,7 +371,8 @@ function shanghaiDate() {
   }).format(new Date());
 }
 
-function buildTaskId(date: string) {
+function buildTaskId(date: string, questionKind = GALAXY_DEFAULT_QUESTION_KIND) {
+  if (questionKind === "brent-weekly-high") return `hormuz-brent-weekly-high-${date}`;
   return `hormuz-traffic-risk-${date}`;
 }
 
@@ -448,7 +459,32 @@ function runByRequest(
   runs.forEach((record) => {
     latest = record;
   });
-  return latest;
+  if (latest) return latest;
+  return latestGalaxyRecordFromArtifact();
+}
+
+function latestGalaxyRecordFromArtifact(): GalaxyRunRecord | undefined {
+  const artifact = readJsonIfExists(path.resolve(process.cwd(), "data/galaxy/latest-run.json"));
+  const meta = artifact?.runMeta as Record<string, unknown> | undefined;
+  if (!meta?.runId || !meta?.taskId || !meta?.outputDir || !meta?.runDir) return undefined;
+  const startedAt = String(meta.startedAt || meta.generatedAt || meta.forecastedAt || new Date().toISOString());
+  const completedAt = String(meta.completedAt || meta.forecastedAt || startedAt);
+  return {
+    runId: String(meta.runId),
+    taskId: String(meta.taskId),
+    pid: null,
+    startedAt,
+    lastUpdatedAt: completedAt,
+    outputDir: path.resolve(process.cwd(), String(meta.outputDir)),
+    runDir: path.resolve(process.cwd(), String(meta.runDir)),
+    date: String(meta.questionDate || shanghaiDate()),
+    runConfig: String(meta.runConfig || "hormuz_test.yaml"),
+    status: meta.status === "failed" ? "failed" : "completed",
+    exitCode: meta.status === "failed" ? 1 : 0,
+    command: Array.isArray(meta.command) ? meta.command.map(String) : [],
+    outputTail: "",
+    error: typeof meta.error === "string" ? meta.error : undefined,
+  };
 }
 
 async function liveActionTrace(record: GalaxyRunRecord) {
@@ -463,7 +499,7 @@ async function liveActionTrace(record: GalaxyRunRecord) {
       finalize?: Record<string, unknown>;
       stats?: Record<string, unknown>;
       includeTerminal?: boolean;
-    }) => Promise<unknown>;
+    }) => Promise<ActionTraceLike>;
   };
   const questionPath = path.resolve(process.cwd(), "data/galaxy/hormuz-daily-question.jsonl");
   const question = readJsonIfExists(questionPath) || {
@@ -497,12 +533,53 @@ async function liveActionTrace(record: GalaxyRunRecord) {
   });
 }
 
+function sliceActionTrace(trace: ActionTraceLike, afterIndex: number | null) {
+  if (afterIndex == null || afterIndex < 0) return trace;
+  const allActions = Array.isArray(trace.actions) ? trace.actions : [];
+  const actions = allActions.filter((action) => {
+    if (!action || typeof action !== "object") return false;
+    const index = (action as Record<string, unknown>).index;
+    return typeof index === "number" && index > afterIndex;
+  });
+  const actionIds = new Set(
+    actions
+      .map((action) => (action as Record<string, unknown>).actionId)
+      .filter((id): id is string => typeof id === "string"),
+  );
+  const graph = trace.graph
+    ? {
+        nodes: Array.isArray(trace.graph.nodes)
+          ? trace.graph.nodes.filter((node) => {
+              if (!node || typeof node !== "object") return false;
+              return actionIds.has(String((node as Record<string, unknown>).id));
+            })
+          : [],
+        edges: Array.isArray(trace.graph.edges)
+          ? trace.graph.edges.filter((edge) => {
+              if (!edge || typeof edge !== "object") return false;
+              const target = String((edge as Record<string, unknown>).target ?? "");
+              return actionIds.has(target);
+            })
+          : [],
+      }
+    : undefined;
+  return {
+    ...trace,
+    actions,
+    graph,
+    isDelta: true,
+    afterIndex,
+    totalActions: allActions.length,
+  };
+}
+
 function galaxyRunPlugin() {
   const runs = new Map<string, GalaxyRunRecord>();
 
   function startRun() {
     const date = shanghaiDate();
-    const taskId = buildTaskId(date);
+    const questionKind = GALAXY_DEFAULT_QUESTION_KIND;
+    const taskId = buildTaskId(date, questionKind);
     const startedAt = new Date().toISOString();
     const runId = buildRunId(date, startedAt, taskId);
     const outputDir = path.join(GALAXY_RUNS_ROOT, date, runId);
@@ -523,6 +600,8 @@ function galaxyRunPlugin() {
       outputDir,
       "--run-config",
       "hormuz_test.yaml",
+      "--question-kind",
+      questionKind,
     ];
     const child = spawn(command[0], command.slice(1), {
       cwd: process.cwd(),
@@ -646,7 +725,14 @@ function galaxyRunPlugin() {
           return;
         }
         try {
+          const url = new URL(request.url || "", "http://localhost");
+          const afterParam = url.searchParams.get("afterIndex");
+          const afterIndex = afterParam == null ? null : Number(afterParam);
           const actionTrace = await liveActionTrace(record);
+          const tracePayload =
+            Number.isFinite(afterIndex) && afterIndex != null
+              ? sliceActionTrace(actionTrace, afterIndex)
+              : actionTrace;
           sendJson(response, 200, {
             runId: record.runId,
             status: recordStatus(record).status,
@@ -655,7 +741,7 @@ function galaxyRunPlugin() {
             lastUpdatedAt: record.lastUpdatedAt,
             runDir: record.runDir,
             outputDir: record.outputDir,
-            trace: actionTrace,
+            trace: tracePayload,
             artifact:
               readJsonIfExists(path.join(record.outputDir, "run-artifact.json")) ||
               null,

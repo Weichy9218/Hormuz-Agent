@@ -95,6 +95,22 @@ export interface GalaxyActionTraceItem {
   };
   evidenceRole?: "question_audit" | "source_search" | "source_read" | "evidence_extract" | "forecast_record";
   rawRole?: "user" | "assistant" | "tool" | "system";
+  rawPreview?: {
+    kind: "question" | "user" | "assistant" | "tool_call" | "tool_result" | "record_forecast" | "checkpoint";
+    title: string;
+    text: string;
+    isTruncated: boolean;
+    fullLength: number;
+    rawFilePath?: string;
+    rawLine?: number;
+    toolName?: string;
+    boxedAnswer?: string;
+    toolCalls?: {
+      id?: string;
+      name: string;
+      arguments: string;
+    }[];
+  };
 }
 
 export interface GalaxyActionTrace {
@@ -105,6 +121,9 @@ export interface GalaxyActionTrace {
   stats?: Record<string, unknown>;
   events?: ForecastAgentTrace["events"];
   graph?: ForecastAgentTrace["graph"];
+  isDelta?: boolean;
+  afterIndex?: number;
+  totalActions?: number;
 }
 
 export interface GalaxyHormuzRunArtifact {
