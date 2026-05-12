@@ -1,15 +1,193 @@
 [
   {
     "id": "brent-spot",
-    "label": "Brent 现货",
+    "target": "brent",
+    "label": "Brent spot proxy",
     "unit": "USD/bbl",
-    "color": "#f0b84a",
+    "color": "#2563eb",
     "source": "FRED DCOILBRENTEU",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
     "verifiedAt": "2026-05-01",
-    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:670be47ef3d7e684b62a11bf9bcb3c4ff8fd7076ff383879af3107267d4f0f0e",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/DCOILBRENTEU/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:1df0daa282ded7da3de1a57f2c3342d37864298c83bd929e4482f2f6dc2ca03c",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 118.26,
+    "evidenceEligible": true,
+    "caveat": "FRED Brent spot daily series; used as a source-bound proxy until a licensed continuous futures source is wired. raw sha256:1df0daa282ded7da3de1a57f2c3342d37864298c83bd929e4482f2f6dc2ca03c",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 65.28
+      },
+      {
+        "date": "2025-05-19",
+        "value": 66.25
+      },
+      {
+        "date": "2025-05-27",
+        "value": 64.32
+      },
+      {
+        "date": "2025-06-02",
+        "value": 66.55
+      },
+      {
+        "date": "2025-06-09",
+        "value": 68.73
+      },
+      {
+        "date": "2025-06-16",
+        "value": 75.05
+      },
+      {
+        "date": "2025-06-23",
+        "value": 74.34
+      },
+      {
+        "date": "2025-06-30",
+        "value": 68.15
+      },
+      {
+        "date": "2025-07-07",
+        "value": 71.95
+      },
+      {
+        "date": "2025-07-14",
+        "value": 70.96
+      },
+      {
+        "date": "2025-07-21",
+        "value": 71.92
+      },
+      {
+        "date": "2025-07-28",
+        "value": 70.87
+      },
+      {
+        "date": "2025-08-04",
+        "value": 69.56
+      },
+      {
+        "date": "2025-08-11",
+        "value": 67.36
+      },
+      {
+        "date": "2025-08-18",
+        "value": 68.18
+      },
+      {
+        "date": "2025-08-26",
+        "value": 66.89
+      },
+      {
+        "date": "2025-09-01",
+        "value": 67.09
+      },
+      {
+        "date": "2025-09-08",
+        "value": 65.44
+      },
+      {
+        "date": "2025-09-15",
+        "value": 67.88
+      },
+      {
+        "date": "2025-09-22",
+        "value": 66.87
+      },
+      {
+        "date": "2025-09-29",
+        "value": 69
+      },
+      {
+        "date": "2025-10-06",
+        "value": 67.09
+      },
+      {
+        "date": "2025-10-13",
+        "value": 64.15
+      },
+      {
+        "date": "2025-10-20",
+        "value": 60.71
+      },
+      {
+        "date": "2025-10-27",
+        "value": 65.52
+      },
+      {
+        "date": "2025-11-03",
+        "value": 65.79
+      },
+      {
+        "date": "2025-11-10",
+        "value": 63.01
+      },
+      {
+        "date": "2025-11-17",
+        "value": 63.16
+      },
+      {
+        "date": "2025-11-24",
+        "value": 64.83
+      },
+      {
+        "date": "2025-12-01",
+        "value": 64.22
+      },
+      {
+        "date": "2025-12-08",
+        "value": 63.3
+      },
+      {
+        "date": "2025-12-15",
+        "value": 61.55
+      },
+      {
+        "date": "2025-12-22",
+        "value": 62.22
+      },
+      {
+        "date": "2025-12-29",
+        "value": 63.1
+      },
+      {
+        "date": "2026-01-05",
+        "value": 63
+      },
+      {
+        "date": "2026-01-12",
+        "value": 65.4
+      },
+      {
+        "date": "2026-01-19",
+        "value": 66.91
+      },
+      {
+        "date": "2026-01-26",
+        "value": 67.7
+      },
+      {
+        "date": "2026-02-02",
+        "value": 67.72
+      },
+      {
+        "date": "2026-02-09",
+        "value": 71.19
+      },
+      {
+        "date": "2026-02-16",
+        "value": 70.81
+      },
+      {
+        "date": "2026-02-23",
+        "value": 71.9
+      },
       {
         "date": "2026-03-02",
         "value": 77.24
@@ -54,15 +232,193 @@
   },
   {
     "id": "wti-spot",
-    "label": "WTI 现货",
+    "target": "wti",
+    "label": "WTI spot proxy",
     "unit": "USD/bbl",
-    "color": "#ff8743",
+    "color": "#0f766e",
     "source": "FRED DCOILWTICO",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/DCOILWTICO",
     "verifiedAt": "2026-05-04",
-    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:54d057211926ab58038efe4607375b2d26a2169d0bc9e9de9c9e4d12039477be",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/DCOILWTICO/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:b7a2ba30a6ec327e2963fb2117fc76ae478c287d5c4ca182e33233c7eff49599",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 109.76,
+    "evidenceEligible": true,
+    "caveat": "FRED WTI spot daily series; used as a source-bound proxy until a licensed continuous futures source is wired. raw sha256:b7a2ba30a6ec327e2963fb2117fc76ae478c287d5c4ca182e33233c7eff49599",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 63.32
+      },
+      {
+        "date": "2025-05-19",
+        "value": 63.98
+      },
+      {
+        "date": "2025-05-27",
+        "value": 61.61
+      },
+      {
+        "date": "2025-06-02",
+        "value": 63.27
+      },
+      {
+        "date": "2025-06-09",
+        "value": 65.99
+      },
+      {
+        "date": "2025-06-16",
+        "value": 72.53
+      },
+      {
+        "date": "2025-06-23",
+        "value": 69.36
+      },
+      {
+        "date": "2025-06-30",
+        "value": 66.3
+      },
+      {
+        "date": "2025-07-07",
+        "value": 69.16
+      },
+      {
+        "date": "2025-07-14",
+        "value": 68.19
+      },
+      {
+        "date": "2025-07-21",
+        "value": 68.39
+      },
+      {
+        "date": "2025-07-28",
+        "value": 67.81
+      },
+      {
+        "date": "2025-08-04",
+        "value": 67.33
+      },
+      {
+        "date": "2025-08-11",
+        "value": 65.03
+      },
+      {
+        "date": "2025-08-18",
+        "value": 64.51
+      },
+      {
+        "date": "2025-08-25",
+        "value": 65.18
+      },
+      {
+        "date": "2025-09-02",
+        "value": 65.95
+      },
+      {
+        "date": "2025-09-08",
+        "value": 62.6
+      },
+      {
+        "date": "2025-09-15",
+        "value": 63.66
+      },
+      {
+        "date": "2025-09-22",
+        "value": 62.99
+      },
+      {
+        "date": "2025-09-29",
+        "value": 64.27
+      },
+      {
+        "date": "2025-10-06",
+        "value": 62.49
+      },
+      {
+        "date": "2025-10-14",
+        "value": 59.52
+      },
+      {
+        "date": "2025-10-20",
+        "value": 58.34
+      },
+      {
+        "date": "2025-10-27",
+        "value": 62.13
+      },
+      {
+        "date": "2025-11-03",
+        "value": 61.79
+      },
+      {
+        "date": "2025-11-10",
+        "value": 60.94
+      },
+      {
+        "date": "2025-11-17",
+        "value": 60.66
+      },
+      {
+        "date": "2025-11-24",
+        "value": 59.11
+      },
+      {
+        "date": "2025-12-01",
+        "value": 59.47
+      },
+      {
+        "date": "2025-12-08",
+        "value": 59.04
+      },
+      {
+        "date": "2025-12-15",
+        "value": 56.97
+      },
+      {
+        "date": "2025-12-22",
+        "value": 58.18
+      },
+      {
+        "date": "2025-12-29",
+        "value": 57.89
+      },
+      {
+        "date": "2026-01-05",
+        "value": 58.1
+      },
+      {
+        "date": "2026-01-12",
+        "value": 59.39
+      },
+      {
+        "date": "2026-01-20",
+        "value": 60.3
+      },
+      {
+        "date": "2026-01-26",
+        "value": 60.46
+      },
+      {
+        "date": "2026-02-02",
+        "value": 61.6
+      },
+      {
+        "date": "2026-02-09",
+        "value": 64.53
+      },
+      {
+        "date": "2026-02-17",
+        "value": 62.53
+      },
+      {
+        "date": "2026-02-23",
+        "value": 66.36
+      },
       {
         "date": "2026-03-02",
         "value": 71.13
@@ -107,15 +463,193 @@
   },
   {
     "id": "broad-usd",
+    "target": "broad_usd",
     "label": "Broad USD",
     "unit": "index",
-    "color": "#8bd3c7",
+    "color": "#64748b",
     "source": "FRED DTWEXBGS",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/DTWEXBGS",
     "verifiedAt": "2026-05-08",
-    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:dc4701e26b653dc137af459843c9fe650bface21b08782ba8559f22753c4e2b2",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/DTWEXBGS/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:2f23a86d34d2a8edb5c15c738f82e7fb839e9b638b1b4359ad80562fbfc80675",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 118.0392,
+    "evidenceEligible": true,
+    "caveat": "FRED broad dollar index daily series; publication lag is possible. raw sha256:2f23a86d34d2a8edb5c15c738f82e7fb839e9b638b1b4359ad80562fbfc80675",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 123.4863
+      },
+      {
+        "date": "2025-05-19",
+        "value": 122.4186
+      },
+      {
+        "date": "2025-05-27",
+        "value": 121.6099
+      },
+      {
+        "date": "2025-06-02",
+        "value": 121.1881
+      },
+      {
+        "date": "2025-06-09",
+        "value": 120.9103
+      },
+      {
+        "date": "2025-06-16",
+        "value": 120.1565
+      },
+      {
+        "date": "2025-06-23",
+        "value": 121.1694
+      },
+      {
+        "date": "2025-06-30",
+        "value": 119.4088
+      },
+      {
+        "date": "2025-07-07",
+        "value": 119.6201
+      },
+      {
+        "date": "2025-07-14",
+        "value": 120.2209
+      },
+      {
+        "date": "2025-07-21",
+        "value": 119.9961
+      },
+      {
+        "date": "2025-07-28",
+        "value": 120.6149
+      },
+      {
+        "date": "2025-08-04",
+        "value": 120.9859
+      },
+      {
+        "date": "2025-08-11",
+        "value": 120.6892
+      },
+      {
+        "date": "2025-08-18",
+        "value": 120.5622
+      },
+      {
+        "date": "2025-08-25",
+        "value": 120.4214
+      },
+      {
+        "date": "2025-09-02",
+        "value": 120.6837
+      },
+      {
+        "date": "2025-09-08",
+        "value": 120.0971
+      },
+      {
+        "date": "2025-09-15",
+        "value": 119.5644
+      },
+      {
+        "date": "2025-09-22",
+        "value": 119.8152
+      },
+      {
+        "date": "2025-09-29",
+        "value": 120.115
+      },
+      {
+        "date": "2025-10-06",
+        "value": 120.2722
+      },
+      {
+        "date": "2025-10-14",
+        "value": 121.1822
+      },
+      {
+        "date": "2025-10-20",
+        "value": 120.6209
+      },
+      {
+        "date": "2025-10-27",
+        "value": 120.7988
+      },
+      {
+        "date": "2025-11-03",
+        "value": 121.4512
+      },
+      {
+        "date": "2025-11-10",
+        "value": 121.2984
+      },
+      {
+        "date": "2025-11-17",
+        "value": 121.1146
+      },
+      {
+        "date": "2025-11-24",
+        "value": 121.9171
+      },
+      {
+        "date": "2025-12-01",
+        "value": 120.9862
+      },
+      {
+        "date": "2025-12-08",
+        "value": 120.776
+      },
+      {
+        "date": "2025-12-15",
+        "value": 119.9561
+      },
+      {
+        "date": "2025-12-22",
+        "value": 119.9912
+      },
+      {
+        "date": "2025-12-29",
+        "value": 119.5899
+      },
+      {
+        "date": "2026-01-05",
+        "value": 119.6192
+      },
+      {
+        "date": "2026-01-12",
+        "value": 119.9958
+      },
+      {
+        "date": "2026-01-20",
+        "value": 119.4455
+      },
+      {
+        "date": "2026-01-26",
+        "value": 118.0525
+      },
+      {
+        "date": "2026-02-02",
+        "value": 118.3609
+      },
+      {
+        "date": "2026-02-09",
+        "value": 117.6392
+      },
+      {
+        "date": "2026-02-17",
+        "value": 117.7375
+      },
+      {
+        "date": "2026-02-23",
+        "value": 117.9395
+      },
       {
         "date": "2026-03-02",
         "value": 118.667
@@ -164,15 +698,193 @@
   },
   {
     "id": "usd-cny",
+    "target": "usd_cny",
     "label": "USD/CNY",
     "unit": "CNY",
-    "color": "#d4a5ff",
+    "color": "#7c3aed",
     "source": "FRED DEXCHUS",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/DEXCHUS",
     "verifiedAt": "2026-05-08",
-    "caveat": "FRED 日频源的本地抽样序列；人民币即期序列存在发布滞后。 raw sha256:a72da95ea493a36803bf08d1c2bf16d2bff892386d4ee0f9567142ea70a84da3",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/DEXCHUS/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:7f6a891233cc13cb8008394721c87949830ea16afadecf8b1f00fdb84ae42e94",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 6.8005,
+    "evidenceEligible": false,
+    "caveat": "FRED USD/CNY daily series; RMB spot publications can lag and do not cover offshore CNH. raw sha256:7f6a891233cc13cb8008394721c87949830ea16afadecf8b1f00fdb84ae42e94",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 7.2018
+      },
+      {
+        "date": "2025-05-19",
+        "value": 7.2144
+      },
+      {
+        "date": "2025-05-27",
+        "value": 7.195
+      },
+      {
+        "date": "2025-06-02",
+        "value": 7.1975
+      },
+      {
+        "date": "2025-06-09",
+        "value": 7.1802
+      },
+      {
+        "date": "2025-06-16",
+        "value": 7.179
+      },
+      {
+        "date": "2025-06-23",
+        "value": 7.179
+      },
+      {
+        "date": "2025-06-30",
+        "value": 7.1636
+      },
+      {
+        "date": "2025-07-07",
+        "value": 7.1744
+      },
+      {
+        "date": "2025-07-14",
+        "value": 7.167
+      },
+      {
+        "date": "2025-07-21",
+        "value": 7.176
+      },
+      {
+        "date": "2025-07-28",
+        "value": 7.1778
+      },
+      {
+        "date": "2025-08-04",
+        "value": 7.178
+      },
+      {
+        "date": "2025-08-11",
+        "value": 7.1884
+      },
+      {
+        "date": "2025-08-18",
+        "value": 7.1847
+      },
+      {
+        "date": "2025-08-25",
+        "value": 7.151
+      },
+      {
+        "date": "2025-09-02",
+        "value": 7.139
+      },
+      {
+        "date": "2025-09-08",
+        "value": 7.1293
+      },
+      {
+        "date": "2025-09-15",
+        "value": 7.1186
+      },
+      {
+        "date": "2025-09-22",
+        "value": 7.114
+      },
+      {
+        "date": "2025-09-29",
+        "value": 7.1194
+      },
+      {
+        "date": "2025-10-06",
+        "value": 7.12
+      },
+      {
+        "date": "2025-10-14",
+        "value": 7.1384
+      },
+      {
+        "date": "2025-10-20",
+        "value": 7.1195
+      },
+      {
+        "date": "2025-10-27",
+        "value": 7.1102
+      },
+      {
+        "date": "2025-11-03",
+        "value": 7.1222
+      },
+      {
+        "date": "2025-11-10",
+        "value": 7.1193
+      },
+      {
+        "date": "2025-11-17",
+        "value": 7.1075
+      },
+      {
+        "date": "2025-11-24",
+        "value": 7.102
+      },
+      {
+        "date": "2025-12-01",
+        "value": 7.0717
+      },
+      {
+        "date": "2025-12-08",
+        "value": 7.071
+      },
+      {
+        "date": "2025-12-15",
+        "value": 7.047
+      },
+      {
+        "date": "2025-12-22",
+        "value": 7.0367
+      },
+      {
+        "date": "2025-12-29",
+        "value": 7.0056
+      },
+      {
+        "date": "2026-01-05",
+        "value": 6.988
+      },
+      {
+        "date": "2026-01-12",
+        "value": 6.9731
+      },
+      {
+        "date": "2026-01-20",
+        "value": 6.9599
+      },
+      {
+        "date": "2026-01-26",
+        "value": 6.9542
+      },
+      {
+        "date": "2026-02-02",
+        "value": 6.9463
+      },
+      {
+        "date": "2026-02-09",
+        "value": 6.92
+      },
+      {
+        "date": "2026-02-17",
+        "value": 6.9031
+      },
+      {
+        "date": "2026-02-23",
+        "value": 6.9031
+      },
       {
         "date": "2026-03-02",
         "value": 6.8821
@@ -221,15 +933,193 @@
   },
   {
     "id": "vix",
+    "target": "vix",
     "label": "VIX",
     "unit": "index",
-    "color": "#ff6b45",
+    "color": "#dc2626",
     "source": "FRED VIXCLS",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/VIXCLS",
     "verifiedAt": "2026-05-08",
-    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:5c9f520ac850c36dab9b82b134b871b176ff506edca5cbc82e2bfedf1ca661da",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/VIXCLS/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:ef20d7692982d62e71b6ccb7da58c78438db7e1c3c462b924be6e0bce707ed9d",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 17.19,
+    "evidenceEligible": true,
+    "caveat": "FRED VIX daily close; used to test whether oil stress is broadening into volatility. raw sha256:ef20d7692982d62e71b6ccb7da58c78438db7e1c3c462b924be6e0bce707ed9d",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 18.39
+      },
+      {
+        "date": "2025-05-19",
+        "value": 18.14
+      },
+      {
+        "date": "2025-05-26",
+        "value": 20.57
+      },
+      {
+        "date": "2025-06-02",
+        "value": 18.36
+      },
+      {
+        "date": "2025-06-09",
+        "value": 17.16
+      },
+      {
+        "date": "2025-06-16",
+        "value": 19.11
+      },
+      {
+        "date": "2025-06-23",
+        "value": 19.83
+      },
+      {
+        "date": "2025-06-30",
+        "value": 16.73
+      },
+      {
+        "date": "2025-07-07",
+        "value": 17.79
+      },
+      {
+        "date": "2025-07-14",
+        "value": 17.2
+      },
+      {
+        "date": "2025-07-21",
+        "value": 16.65
+      },
+      {
+        "date": "2025-07-28",
+        "value": 15.03
+      },
+      {
+        "date": "2025-08-04",
+        "value": 17.52
+      },
+      {
+        "date": "2025-08-11",
+        "value": 16.25
+      },
+      {
+        "date": "2025-08-18",
+        "value": 14.99
+      },
+      {
+        "date": "2025-08-25",
+        "value": 14.79
+      },
+      {
+        "date": "2025-09-01",
+        "value": 16.12
+      },
+      {
+        "date": "2025-09-08",
+        "value": 15.11
+      },
+      {
+        "date": "2025-09-15",
+        "value": 15.69
+      },
+      {
+        "date": "2025-09-22",
+        "value": 16.1
+      },
+      {
+        "date": "2025-09-29",
+        "value": 16.12
+      },
+      {
+        "date": "2025-10-06",
+        "value": 16.37
+      },
+      {
+        "date": "2025-10-13",
+        "value": 19.03
+      },
+      {
+        "date": "2025-10-20",
+        "value": 18.23
+      },
+      {
+        "date": "2025-10-27",
+        "value": 15.79
+      },
+      {
+        "date": "2025-11-03",
+        "value": 17.17
+      },
+      {
+        "date": "2025-11-10",
+        "value": 17.6
+      },
+      {
+        "date": "2025-11-17",
+        "value": 22.38
+      },
+      {
+        "date": "2025-11-24",
+        "value": 20.52
+      },
+      {
+        "date": "2025-12-01",
+        "value": 17.24
+      },
+      {
+        "date": "2025-12-08",
+        "value": 16.66
+      },
+      {
+        "date": "2025-12-15",
+        "value": 16.5
+      },
+      {
+        "date": "2025-12-22",
+        "value": 14.08
+      },
+      {
+        "date": "2025-12-29",
+        "value": 14.2
+      },
+      {
+        "date": "2026-01-05",
+        "value": 14.9
+      },
+      {
+        "date": "2026-01-12",
+        "value": 15.12
+      },
+      {
+        "date": "2026-01-19",
+        "value": 18.84
+      },
+      {
+        "date": "2026-01-26",
+        "value": 16.15
+      },
+      {
+        "date": "2026-02-02",
+        "value": 16.34
+      },
+      {
+        "date": "2026-02-09",
+        "value": 17.36
+      },
+      {
+        "date": "2026-02-16",
+        "value": 21.2
+      },
+      {
+        "date": "2026-02-23",
+        "value": 21.01
+      },
       {
         "date": "2026-03-02",
         "value": 21.44
@@ -278,15 +1168,193 @@
   },
   {
     "id": "us10y",
-    "label": "美债 10Y（US10Y）",
+    "target": "us10y",
+    "label": "US10Y",
     "unit": "%",
-    "color": "#9fa8da",
+    "color": "#0891b2",
     "source": "FRED DGS10",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/DGS10",
     "verifiedAt": "2026-05-08",
-    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:517176ef3c02dc6400893b16806937cffad04678b7fbe16d57a7f7469c7960e1",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/DGS10/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:53e7fdb0acb85e4ff15737bf5b23fbf7488c0d313c4a9c1fcb343f9eda59c783",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 4.38,
+    "evidenceEligible": false,
+    "caveat": "FRED 10-year Treasury yield; rate moves mix inflation and haven channels. raw sha256:53e7fdb0acb85e4ff15737bf5b23fbf7488c0d313c4a9c1fcb343f9eda59c783",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 4.45
+      },
+      {
+        "date": "2025-05-19",
+        "value": 4.46
+      },
+      {
+        "date": "2025-05-27",
+        "value": 4.43
+      },
+      {
+        "date": "2025-06-02",
+        "value": 4.46
+      },
+      {
+        "date": "2025-06-09",
+        "value": 4.49
+      },
+      {
+        "date": "2025-06-16",
+        "value": 4.46
+      },
+      {
+        "date": "2025-06-23",
+        "value": 4.34
+      },
+      {
+        "date": "2025-06-30",
+        "value": 4.24
+      },
+      {
+        "date": "2025-07-07",
+        "value": 4.4
+      },
+      {
+        "date": "2025-07-14",
+        "value": 4.43
+      },
+      {
+        "date": "2025-07-21",
+        "value": 4.38
+      },
+      {
+        "date": "2025-07-28",
+        "value": 4.42
+      },
+      {
+        "date": "2025-08-04",
+        "value": 4.22
+      },
+      {
+        "date": "2025-08-11",
+        "value": 4.27
+      },
+      {
+        "date": "2025-08-18",
+        "value": 4.34
+      },
+      {
+        "date": "2025-08-25",
+        "value": 4.28
+      },
+      {
+        "date": "2025-09-02",
+        "value": 4.28
+      },
+      {
+        "date": "2025-09-08",
+        "value": 4.05
+      },
+      {
+        "date": "2025-09-15",
+        "value": 4.05
+      },
+      {
+        "date": "2025-09-22",
+        "value": 4.15
+      },
+      {
+        "date": "2025-09-29",
+        "value": 4.15
+      },
+      {
+        "date": "2025-10-06",
+        "value": 4.18
+      },
+      {
+        "date": "2025-10-14",
+        "value": 4.03
+      },
+      {
+        "date": "2025-10-20",
+        "value": 4
+      },
+      {
+        "date": "2025-10-27",
+        "value": 4.01
+      },
+      {
+        "date": "2025-11-03",
+        "value": 4.13
+      },
+      {
+        "date": "2025-11-10",
+        "value": 4.13
+      },
+      {
+        "date": "2025-11-17",
+        "value": 4.13
+      },
+      {
+        "date": "2025-11-24",
+        "value": 4.04
+      },
+      {
+        "date": "2025-12-01",
+        "value": 4.09
+      },
+      {
+        "date": "2025-12-08",
+        "value": 4.17
+      },
+      {
+        "date": "2025-12-15",
+        "value": 4.18
+      },
+      {
+        "date": "2025-12-22",
+        "value": 4.17
+      },
+      {
+        "date": "2025-12-29",
+        "value": 4.12
+      },
+      {
+        "date": "2026-01-05",
+        "value": 4.17
+      },
+      {
+        "date": "2026-01-12",
+        "value": 4.19
+      },
+      {
+        "date": "2026-01-20",
+        "value": 4.3
+      },
+      {
+        "date": "2026-01-26",
+        "value": 4.22
+      },
+      {
+        "date": "2026-02-02",
+        "value": 4.29
+      },
+      {
+        "date": "2026-02-09",
+        "value": 4.22
+      },
+      {
+        "date": "2026-02-17",
+        "value": 4.05
+      },
+      {
+        "date": "2026-02-23",
+        "value": 4.03
+      },
       {
         "date": "2026-03-02",
         "value": 4.05
@@ -335,15 +1403,193 @@
   },
   {
     "id": "sp500",
-    "label": "标普 500（S&P 500）",
+    "target": "sp500",
+    "label": "S&P 500",
     "unit": "index",
-    "color": "#56b9ff",
+    "color": "#16a34a",
     "source": "FRED SP500",
     "sourceId": "fred-market",
     "sourceUrl": "https://fred.stlouisfed.org/series/SP500",
     "verifiedAt": "2026-05-11",
-    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:a62d645ef7cf93d5844059b78ea42a0cb135e5c893a30fbe8444981faaa7915e",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/SP500/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:0a9d7928b9cc99d30c4ec68bed54e523ac10850cb9eb5949668e42a43fa2cf63",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 7412.84,
+    "evidenceEligible": true,
+    "caveat": "FRED S&P 500 daily close; risk appetite check, not forecast-state input by itself. raw sha256:0a9d7928b9cc99d30c4ec68bed54e523ac10850cb9eb5949668e42a43fa2cf63",
     "points": [
+      {
+        "date": "2025-05-12",
+        "value": 5844.19
+      },
+      {
+        "date": "2025-05-19",
+        "value": 5963.6
+      },
+      {
+        "date": "2025-05-27",
+        "value": 5921.54
+      },
+      {
+        "date": "2025-06-02",
+        "value": 5935.94
+      },
+      {
+        "date": "2025-06-09",
+        "value": 6005.88
+      },
+      {
+        "date": "2025-06-16",
+        "value": 6033.11
+      },
+      {
+        "date": "2025-06-23",
+        "value": 6025.17
+      },
+      {
+        "date": "2025-06-30",
+        "value": 6204.95
+      },
+      {
+        "date": "2025-07-07",
+        "value": 6229.98
+      },
+      {
+        "date": "2025-07-14",
+        "value": 6268.56
+      },
+      {
+        "date": "2025-07-21",
+        "value": 6305.6
+      },
+      {
+        "date": "2025-07-28",
+        "value": 6389.77
+      },
+      {
+        "date": "2025-08-04",
+        "value": 6329.94
+      },
+      {
+        "date": "2025-08-11",
+        "value": 6373.45
+      },
+      {
+        "date": "2025-08-18",
+        "value": 6449.15
+      },
+      {
+        "date": "2025-08-25",
+        "value": 6439.32
+      },
+      {
+        "date": "2025-09-02",
+        "value": 6415.54
+      },
+      {
+        "date": "2025-09-08",
+        "value": 6495.15
+      },
+      {
+        "date": "2025-09-15",
+        "value": 6615.28
+      },
+      {
+        "date": "2025-09-22",
+        "value": 6693.75
+      },
+      {
+        "date": "2025-09-29",
+        "value": 6661.21
+      },
+      {
+        "date": "2025-10-06",
+        "value": 6740.28
+      },
+      {
+        "date": "2025-10-13",
+        "value": 6654.72
+      },
+      {
+        "date": "2025-10-20",
+        "value": 6735.13
+      },
+      {
+        "date": "2025-10-27",
+        "value": 6875.16
+      },
+      {
+        "date": "2025-11-03",
+        "value": 6851.97
+      },
+      {
+        "date": "2025-11-10",
+        "value": 6832.43
+      },
+      {
+        "date": "2025-11-17",
+        "value": 6672.41
+      },
+      {
+        "date": "2025-11-24",
+        "value": 6705.12
+      },
+      {
+        "date": "2025-12-01",
+        "value": 6812.63
+      },
+      {
+        "date": "2025-12-08",
+        "value": 6846.51
+      },
+      {
+        "date": "2025-12-15",
+        "value": 6816.51
+      },
+      {
+        "date": "2025-12-22",
+        "value": 6878.49
+      },
+      {
+        "date": "2025-12-29",
+        "value": 6905.74
+      },
+      {
+        "date": "2026-01-05",
+        "value": 6902.05
+      },
+      {
+        "date": "2026-01-12",
+        "value": 6977.27
+      },
+      {
+        "date": "2026-01-20",
+        "value": 6796.86
+      },
+      {
+        "date": "2026-01-26",
+        "value": 6950.23
+      },
+      {
+        "date": "2026-02-02",
+        "value": 6976.44
+      },
+      {
+        "date": "2026-02-09",
+        "value": 6964.82
+      },
+      {
+        "date": "2026-02-17",
+        "value": 6843.22
+      },
+      {
+        "date": "2026-02-23",
+        "value": 6837.75
+      },
       {
         "date": "2026-03-02",
         "value": 6881.62
@@ -391,25 +1637,457 @@
     ]
   },
   {
+    "id": "nasdaq-composite",
+    "target": "nasdaq",
+    "label": "NASDAQ Composite",
+    "unit": "index",
+    "color": "#0284c7",
+    "source": "FRED NASDAQCOM",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/NASDAQCOM",
+    "verifiedAt": "2026-05-11",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/NASDAQCOM/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:7db8a5791fef1b5262af5d987d97214fd419e435956cb1b8ef057b65d791584f",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 26274.13,
+    "evidenceEligible": false,
+    "caveat": "FRED NASDAQ Composite daily close; included for market-background context, not a forecast target. raw sha256:7db8a5791fef1b5262af5d987d97214fd419e435956cb1b8ef057b65d791584f",
+    "points": [
+      {
+        "date": "2025-05-12",
+        "value": 18708.34
+      },
+      {
+        "date": "2025-05-19",
+        "value": 19215.46
+      },
+      {
+        "date": "2025-05-27",
+        "value": 19199.16
+      },
+      {
+        "date": "2025-06-02",
+        "value": 19242.61
+      },
+      {
+        "date": "2025-06-09",
+        "value": 19591.24
+      },
+      {
+        "date": "2025-06-16",
+        "value": 19701.21
+      },
+      {
+        "date": "2025-06-23",
+        "value": 19630.97
+      },
+      {
+        "date": "2025-06-30",
+        "value": 20369.73
+      },
+      {
+        "date": "2025-07-07",
+        "value": 20412.52
+      },
+      {
+        "date": "2025-07-14",
+        "value": 20640.33
+      },
+      {
+        "date": "2025-07-21",
+        "value": 20974.17
+      },
+      {
+        "date": "2025-07-28",
+        "value": 21178.58
+      },
+      {
+        "date": "2025-08-04",
+        "value": 21053.58
+      },
+      {
+        "date": "2025-08-11",
+        "value": 21385.4
+      },
+      {
+        "date": "2025-08-18",
+        "value": 21629.77
+      },
+      {
+        "date": "2025-08-25",
+        "value": 21449.29
+      },
+      {
+        "date": "2025-09-02",
+        "value": 21279.63
+      },
+      {
+        "date": "2025-09-08",
+        "value": 21798.7
+      },
+      {
+        "date": "2025-09-15",
+        "value": 22348.75
+      },
+      {
+        "date": "2025-09-22",
+        "value": 22788.98
+      },
+      {
+        "date": "2025-09-29",
+        "value": 22591.15
+      },
+      {
+        "date": "2025-10-06",
+        "value": 22941.67
+      },
+      {
+        "date": "2025-10-13",
+        "value": 22694.61
+      },
+      {
+        "date": "2025-10-20",
+        "value": 22990.54
+      },
+      {
+        "date": "2025-10-27",
+        "value": 23637.46
+      },
+      {
+        "date": "2025-11-03",
+        "value": 23834.72
+      },
+      {
+        "date": "2025-11-10",
+        "value": 23527.17
+      },
+      {
+        "date": "2025-11-17",
+        "value": 22708.07
+      },
+      {
+        "date": "2025-11-24",
+        "value": 22872.01
+      },
+      {
+        "date": "2025-12-01",
+        "value": 23275.92
+      },
+      {
+        "date": "2025-12-08",
+        "value": 23545.9
+      },
+      {
+        "date": "2025-12-15",
+        "value": 23057.41
+      },
+      {
+        "date": "2025-12-22",
+        "value": 23428.83
+      },
+      {
+        "date": "2025-12-29",
+        "value": 23474.35
+      },
+      {
+        "date": "2026-01-05",
+        "value": 23395.82
+      },
+      {
+        "date": "2026-01-12",
+        "value": 23733.9
+      },
+      {
+        "date": "2026-01-20",
+        "value": 22954.32
+      },
+      {
+        "date": "2026-01-26",
+        "value": 23601.36
+      },
+      {
+        "date": "2026-02-02",
+        "value": 23592.11
+      },
+      {
+        "date": "2026-02-09",
+        "value": 23238.67
+      },
+      {
+        "date": "2026-02-17",
+        "value": 22578.38
+      },
+      {
+        "date": "2026-02-23",
+        "value": 22627.27
+      },
+      {
+        "date": "2026-03-02",
+        "value": 22748.86
+      },
+      {
+        "date": "2026-03-09",
+        "value": 22695.95
+      },
+      {
+        "date": "2026-03-16",
+        "value": 22374.18
+      },
+      {
+        "date": "2026-03-23",
+        "value": 21946.76
+      },
+      {
+        "date": "2026-03-30",
+        "value": 20794.64
+      },
+      {
+        "date": "2026-04-06",
+        "value": 21996.34
+      },
+      {
+        "date": "2026-04-13",
+        "value": 23183.74
+      },
+      {
+        "date": "2026-04-20",
+        "value": 24404.39
+      },
+      {
+        "date": "2026-04-27",
+        "value": 24887.1
+      },
+      {
+        "date": "2026-05-04",
+        "value": 25067.8
+      },
+      {
+        "date": "2026-05-11",
+        "value": 26274.13
+      }
+    ]
+  },
+  {
+    "id": "us-cpi",
+    "target": "us_cpi",
+    "label": "US CPI",
+    "unit": "index",
+    "color": "#b45309",
+    "source": "FRED CPIAUCSL",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/CPIAUCSL",
+    "verifiedAt": "2026-04-01",
+    "retrieved_at": "2026-05-12T13:26:25.090Z",
+    "raw_path": "data/raw/fred/CPIAUCSL/2026-05-12T13-26-25-090Z.csv",
+    "source_hash": "sha256:9a7e339d081595bbf916bab9ebb50949d3c0bc78b0cb2dea64d6c9d4c7e357a4",
+    "provider_id": "fred",
+    "provider_status": "active",
+    "license_status": "open",
+    "status": "active",
+    "value": 332.407,
+    "evidenceEligible": false,
+    "caveat": "FRED CPIAUCSL is monthly and lagged; useful for inflation background, not event-window evidence. raw sha256:9a7e339d081595bbf916bab9ebb50949d3c0bc78b0cb2dea64d6c9d4c7e357a4",
+    "points": [
+      {
+        "date": "2025-06-01",
+        "value": 321.435
+      },
+      {
+        "date": "2025-07-01",
+        "value": 322.169
+      },
+      {
+        "date": "2025-08-01",
+        "value": 323.291
+      },
+      {
+        "date": "2025-09-01",
+        "value": 324.245
+      },
+      {
+        "date": "2025-11-01",
+        "value": 325.063
+      },
+      {
+        "date": "2025-12-01",
+        "value": 326.031
+      },
+      {
+        "date": "2026-01-01",
+        "value": 326.588
+      },
+      {
+        "date": "2026-02-01",
+        "value": 327.46
+      },
+      {
+        "date": "2026-03-01",
+        "value": 330.293
+      },
+      {
+        "date": "2026-04-01",
+        "value": 332.407
+      }
+    ]
+  },
+  {
+    "id": "brent-futures-pending",
+    "target": "brent_futures_continuous",
+    "label": "Brent futures continuous（pending）",
+    "unit": "pending",
+    "color": "#93c5fd",
+    "source": "Brent futures source pending",
+    "sourceId": "crude-futures-pending",
+    "provider_id": null,
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
+    "caveat": "未接入可审计 continuous futures provider 前，不把 Brent futures 主连写成 live 数据。",
+    "pending": true,
+    "points": [],
+    "candidate_provider_ids": [
+      "databento",
+      "ice"
+    ]
+  },
+  {
+    "id": "wti-futures-pending",
+    "target": "wti_futures_continuous",
+    "label": "WTI futures continuous（pending）",
+    "unit": "pending",
+    "color": "#99f6e4",
+    "source": "WTI futures source pending",
+    "sourceId": "crude-futures-pending",
+    "provider_id": null,
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
+    "caveat": "未接入可审计 continuous futures provider 前，不把 WTI futures 主连写成 live 数据。",
+    "pending": true,
+    "points": [],
+    "candidate_provider_ids": [
+      "databento",
+      "cme-datamine"
+    ]
+  },
+  {
     "id": "gold-pending",
+    "target": "gold_lbma_benchmark",
     "label": "Gold（pending）",
     "unit": "pending",
-    "color": "#ffd166",
+    "color": "#ca8a04",
     "source": "Gold source pending",
     "sourceId": "gold-pending",
+    "provider_id": null,
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
     "caveat": "LBMA benchmark 数据有 licence 要求；未接入授权或稳定 daily source 前不展示 live 金价。",
     "pending": true,
-    "points": []
+    "points": [],
+    "candidate_provider_ids": [
+      "databento",
+      "cme-datamine"
+    ]
+  },
+  {
+    "id": "silver-pending",
+    "target": "silver_lbma_benchmark",
+    "label": "Silver（pending）",
+    "unit": "pending",
+    "color": "#94a3b8",
+    "source": "Silver source pending",
+    "sourceId": "silver-pending",
+    "provider_id": null,
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
+    "caveat": "未接入授权或稳定 daily source 前不展示 live 白银价格。",
+    "pending": true,
+    "points": [],
+    "candidate_provider_ids": [
+      "databento",
+      "cme-datamine"
+    ]
   },
   {
     "id": "usd-cnh-pending",
+    "target": "usd_cnh",
     "label": "USD/CNH（pending）",
     "unit": "pending",
-    "color": "#c7f9cc",
+    "color": "#a78bfa",
     "source": "USD/CNH source pending",
     "sourceId": "usdcnh-pending",
+    "provider_id": null,
+    "provider_status": "candidate_smoke_test",
+    "license_status": "token_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
     "caveat": "未接入稳定 daily provider 前只保留 schema，不渲染为 live market evidence。",
     "pending": true,
-    "points": []
+    "points": [],
+    "candidate_provider_ids": [
+      "alpha-vantage",
+      "twelve-data"
+    ]
+  },
+  {
+    "id": "hstech-pending",
+    "target": "hstech",
+    "label": "Hang Seng Tech（pending）",
+    "unit": "pending",
+    "color": "#38bdf8",
+    "source": "Hang Seng Tech source pending",
+    "sourceId": "hstech-pending",
+    "provider_id": null,
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
+    "caveat": "未接入稳定指数 provider 和 licence boundary 前，只显示 pending，不展示死数据。",
+    "pending": true,
+    "points": [],
+    "candidate_provider_ids": [
+      "hang-seng-licensed-vendor",
+      "akshare",
+      "yfinance"
+    ]
+  },
+  {
+    "id": "shanghai-composite-pending",
+    "target": "shanghai_composite",
+    "label": "Shanghai Composite（pending）",
+    "unit": "pending",
+    "color": "#22c55e",
+    "source": "Shanghai Composite source pending",
+    "sourceId": "shanghai-composite-pending",
+    "provider_id": null,
+    "provider_status": "candidate_smoke_test",
+    "license_status": "token_required",
+    "status": "pending_source",
+    "value": null,
+    "evidenceEligible": false,
+    "caveat": "未接入稳定指数 provider 和 licence boundary 前，只显示 pending，不展示死数据。",
+    "pending": true,
+    "points": [],
+    "candidate_provider_ids": [
+      "tushare",
+      "akshare",
+      "baostock"
+    ]
   }
 ]

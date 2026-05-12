@@ -273,6 +273,9 @@ function findLatestMarketPoint(generatedMarketSeries, source) {
   const series = generatedMarketSeries.find((item) => item.source === source);
   const point = series?.points?.at(-1);
   if (!series || !point) throw new Error(`${source}: generated market point missing.`);
+  if (series.status !== "active" || series.evidenceEligible !== true) {
+    throw new Error(`${source}: market evidence can only consume active evidenceEligible series.`);
+  }
   return { series, point };
 }
 

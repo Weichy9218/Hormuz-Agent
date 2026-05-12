@@ -1,0 +1,169 @@
+[
+  {
+    "provider_id": "fred",
+    "display_name": "FRED",
+    "provider_status": "active",
+    "license_status": "open",
+    "target_ids": ["brent", "wti", "vix", "broad_usd", "usd_cny", "us10y", "sp500", "nasdaq", "us_cpi"],
+    "allowed_use": "production_active",
+    "promotion_gate": [
+      "raw CSV snapshot exists under data/raw/fred/<SERIES_ID>/",
+      "source_hash matches raw CSV payload",
+      "normalized row agrees with generated market_series point",
+      "DEXCHUS maps only to usd_cny, never usd_cnh"
+    ],
+    "caveat": "FRED is active only for listed spot/index/macro series. Brent/WTI are spot proxies, CPI is lagged, and DEXCHUS is USD/CNY only.",
+    "url": "https://fred.stlouisfed.org/docs/api/fred/"
+  },
+  {
+    "provider_id": "tushare",
+    "display_name": "Tushare",
+    "provider_status": "candidate_smoke_test",
+    "license_status": "token_required",
+    "target_ids": ["shanghai_composite", "domestic_futures_main_continuous"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "token configured outside the repo",
+      "usage terms reviewed",
+      "raw payload and metadata snapshots written",
+      "fut_daily values are joined with fut_mapping roll metadata before any active futures row"
+    ],
+    "caveat": "Candidate only. Prefer for China market context after token and lineage checks; not consumed by EvidenceClaim by default.",
+    "url": "https://tushare.pro/"
+  },
+  {
+    "provider_id": "akshare",
+    "display_name": "AkShare",
+    "provider_status": "dev_crosscheck_only",
+    "license_status": "public_terms_unclear",
+    "target_ids": ["hstech", "shanghai_composite", "domestic_futures_main_continuous"],
+    "allowed_use": "dev_crosscheck_only",
+    "promotion_gate": [
+      "must remain dev/cross-check unless legal and production redistribution terms are cleared",
+      "must not be marked active production",
+      "must not feed EvidenceClaim"
+    ],
+    "caveat": "Development cross-check only. Do not promote to active production without an explicit license review.",
+    "url": "https://akshare.akfamily.xyz/"
+  },
+  {
+    "provider_id": "baostock",
+    "display_name": "BaoStock",
+    "provider_status": "dev_crosscheck_only",
+    "license_status": "public_terms_unclear",
+    "target_ids": ["shanghai_composite"],
+    "allowed_use": "dev_crosscheck_only",
+    "promotion_gate": [
+      "must remain cross-check unless production usage terms are cleared",
+      "must not feed EvidenceClaim"
+    ],
+    "caveat": "China equity cross-check candidate only; not a production source.",
+    "url": "http://baostock.com/"
+  },
+  {
+    "provider_id": "alpha-vantage",
+    "display_name": "Alpha Vantage",
+    "provider_status": "candidate_smoke_test",
+    "license_status": "token_required",
+    "target_ids": ["usd_cnh"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "token configured outside the repo",
+      "symbol verified as offshore CNH rather than onshore CNY",
+      "raw payload and metadata snapshots written",
+      "generated row explicitly says candidate until audit promotion"
+    ],
+    "caveat": "USD/CNH candidate only; FRED DEXCHUS cannot substitute for this target.",
+    "url": "https://www.alphavantage.co/documentation/"
+  },
+  {
+    "provider_id": "twelve-data",
+    "display_name": "Twelve Data",
+    "provider_status": "candidate_smoke_test",
+    "license_status": "token_required",
+    "target_ids": ["usd_cnh"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "token configured outside the repo",
+      "symbol verified as offshore CNH",
+      "terms reviewed",
+      "raw lineage audit passes"
+    ],
+    "caveat": "USD/CNH candidate only; not consumed by EvidenceClaim before promotion.",
+    "url": "https://twelvedata.com/docs"
+  },
+  {
+    "provider_id": "databento",
+    "display_name": "Databento",
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "target_ids": ["brent_futures_continuous", "wti_futures_continuous", "gold_comex_futures_proxy", "silver_comex_futures_proxy"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "licensed access approved",
+      "continuous contract methodology selected",
+      "FuturesContractMeta included for every active futures row"
+    ],
+    "caveat": "Licensed futures provider candidate; no active generated values until license and roll metadata are present.",
+    "url": "https://databento.com/"
+  },
+  {
+    "provider_id": "cme-datamine",
+    "display_name": "CME Datamine",
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "target_ids": ["wti_futures_continuous", "gold_comex_futures_proxy", "silver_comex_futures_proxy"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "licensed access approved",
+      "contract mapping and roll rules documented",
+      "FuturesContractMeta included for every active futures row"
+    ],
+    "caveat": "Licensed CME futures candidate; not active.",
+    "url": "https://www.cmegroup.com/market-data/datamine-historical-data.html"
+  },
+  {
+    "provider_id": "ice",
+    "display_name": "ICE / licensed vendor",
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "target_ids": ["brent_futures_continuous"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "licensed access approved",
+      "Brent contract mapping and roll rules documented",
+      "FuturesContractMeta included for every active futures row"
+    ],
+    "caveat": "Licensed Brent futures candidate; not active.",
+    "url": "https://www.ice.com/market-data"
+  },
+  {
+    "provider_id": "hang-seng-licensed-vendor",
+    "display_name": "Hang Seng licensed vendor",
+    "provider_status": "licensed_pending",
+    "license_status": "licensed_required",
+    "target_ids": ["hstech"],
+    "allowed_use": "candidate_smoke_test",
+    "promotion_gate": [
+      "licensed index vendor chosen",
+      "redistribution terms cleared",
+      "raw lineage audit passes"
+    ],
+    "caveat": "Hang Seng Tech requires a licensed provider before active production use."
+  },
+  {
+    "provider_id": "yfinance",
+    "display_name": "yfinance",
+    "provider_status": "dev_crosscheck_only",
+    "license_status": "personal_research_only",
+    "target_ids": ["hstech", "brent_futures_continuous", "wti_futures_continuous", "gold_comex_futures_proxy", "silver_comex_futures_proxy"],
+    "allowed_use": "dev_crosscheck_only",
+    "promotion_gate": [
+      "must remain personal/dev cross-check",
+      "must not be marked active production",
+      "must not feed EvidenceClaim"
+    ],
+    "caveat": "Personal research / development cross-check only. Never active production in this app.",
+    "url": "https://github.com/ranaroussi/yfinance"
+  }
+]

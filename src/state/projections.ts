@@ -14,6 +14,8 @@ import type {
   TargetForecast,
 } from "../types/forecast";
 import type { SourceRegistryEntry } from "../types";
+import type { MarketSeries } from "../types";
+import generatedMarketSeries from "../../data/generated/market_series.json";
 import {
   buildForecastGraph,
   type ForecastGraph,
@@ -34,6 +36,7 @@ import {
   canonicalSourceObservations,
   scenarioOrder,
 } from "./canonicalStore";
+import { marketProviders } from "../data/sourceRegistry";
 import latestGalaxyRun from "../../data/galaxy/latest-run.json";
 import {
   buildRunFromGalaxyArtifact,
@@ -140,11 +143,30 @@ export interface MarketProjection {
   evidence: EvidenceClaim[];
   observations: SourceObservation[];
   pendingSourceIds: string[];
+  series: MarketSeries[];
+  stableSeries: MarketSeries[];
+  pendingSeries: MarketSeries[];
+  sourceCoverage: Array<{
+    sourceId: string;
+    name: string;
+    pending: boolean;
+    status: string;
+    caveat: string;
+  }>;
+  providerCoverage: Array<{
+    providerId: string;
+    name: string;
+    providerStatus: string;
+    licenseStatus: string;
+    targetIds: string[];
+    caveat: string;
+  }>;
 }
 
 export function projectMarketState(
   sourceRegistry: SourceRegistryEntry[],
 ): MarketProjection {
+  const series = generatedMarketSeries as MarketSeries[];
   const referencedEvidence = canonicalEvidenceClaims.filter((c) =>
     canonicalMarketRead.evidenceIds.includes(c.evidenceId),
   );
@@ -157,12 +179,43 @@ export function projectMarketState(
   const pendingSourceIds = sourceRegistry
     .filter((s) => s.pending)
     .map((s) => s.id);
+  const sourceIdsInSeries = new Set(series.map((item) => item.sourceId));
+  const sourceCoverage = sourceRegistry
+    .filter((source) => sourceIdsInSeries.has(source.id))
+    .map((source) => ({
+      sourceId: source.id,
+      name: source.name,
+      pending: source.pending,
+      status: source.status,
+      caveat: source.caveat,
+    }));
+  const providerIdsInSeries = new Set(
+    series.flatMap((item) => [
+      item.provider_id,
+      ...(item.candidate_provider_ids ?? []),
+    ]).filter(Boolean),
+  );
+  const providerCoverage = marketProviders
+    .filter((provider) => providerIdsInSeries.has(provider.provider_id))
+    .map((provider) => ({
+      providerId: provider.provider_id,
+      name: provider.display_name,
+      providerStatus: provider.provider_status,
+      licenseStatus: provider.license_status,
+      targetIds: provider.target_ids,
+      caveat: provider.caveat,
+    }));
 
   return {
     marketRead: canonicalMarketRead,
     evidence: referencedEvidence,
     observations,
     pendingSourceIds,
+    series,
+    stableSeries: series.filter((item) => !item.pending),
+    pendingSeries: series.filter((item) => item.pending),
+    sourceCoverage,
+    providerCoverage,
   };
 }
 

@@ -129,6 +129,25 @@
     ]
   },
   {
+    "id": "polymarket-curated",
+    "name": "Polymarket curated question refs",
+    "category": "external_prediction",
+    "status": "fresh",
+    "reliability": "medium",
+    "refreshCadence": "daily / reviewer curated",
+    "expectedLatency": "real time market; source data resolves later",
+    "licenseStatus": "open",
+    "usage": "external prediction-market reference questions for the Overview Polymarket card",
+    "caveat": "External market, not our forecast; odds are reference values only and never enter EvidenceClaim, canonical_inputs, or forecast state.",
+    "pending": false,
+    "url": "https://gamma-api.polymarket.com/events",
+    "crossChecks": [
+      "Polymarket event rules and question page",
+      "manual selected_for_overview review",
+      "audit:polymarket anti-backflow check"
+    ]
+  },
+  {
     "id": "fred-market",
     "name": "FRED market series",
     "category": "market",
@@ -137,8 +156,8 @@
     "refreshCadence": "daily after market close",
     "expectedLatency": "1 business day",
     "licenseStatus": "open",
-    "usage": "Brent, WTI, USD/CNY, VIX, Broad USD, US10Y, S&P 500 since 2026-03-02",
-    "caveat": "页面展示为抽样快照，不是逐日全量图；Gold 尚未接入稳定源；FRED 序列有发布时间滞后。",
+    "usage": "Brent/WTI spot proxies, Broad USD, USD/CNY, US10Y, VIX, S&P 500, NASDAQ Composite, and US CPI local history",
+    "caveat": "页面展示为本地抽样快照，不是 live endpoint；Brent/WTI 是 spot proxy，不是 futures 主连；CPI 为月频滞后序列。",
     "pending": false,
     "url": "https://fred.stlouisfed.org/docs/api/fred/",
     "crossChecks": [
@@ -166,6 +185,24 @@
     ]
   },
   {
+    "id": "events-curated",
+    "name": "Curated Hormuz events timeline",
+    "category": "events",
+    "status": "fresh",
+    "reliability": "medium",
+    "refreshCadence": "daily + reviewer curated",
+    "expectedLatency": "hours to days",
+    "licenseStatus": "open",
+    "usage": "News timeline, Overview latest events, and Market event overlays",
+    "caveat": "Timeline entries describe sourced events only; they do not imply forecast probability, scenario movement, or judgement updates.",
+    "pending": false,
+    "crossChecks": [
+      "official-advisory mirror entries",
+      "GDELT candidate promote links",
+      "source_url and retrieved_at audit"
+    ]
+  },
+  {
     "id": "ais-flow-pending",
     "name": "AIS flow source pending",
     "category": "pending",
@@ -184,21 +221,21 @@
   },
   {
     "id": "gdelt-news",
-    "name": "GDELT / Serper / Exa news layer",
+    "name": "GDELT DOC 2.0 news discovery",
     "category": "news",
     "status": "lagging",
     "reliability": "medium",
     "refreshCadence": "daily + event triggered",
     "expectedLatency": "hours",
     "licenseStatus": "open",
-    "usage": "detect candidate incidents and rhetoric changes",
-    "caveat": "新闻层只提出候选证据；进入 checkpoint 前必须去重和核验来源。",
+    "usage": "machine-ingested candidate pool for Hormuz / Iran / Gulf of Oman media events",
+    "caveat": "GDELT rows are candidates only; they must be promoted into events_timeline before UI use and never enter forecast evidence directly.",
     "pending": false,
-    "url": "https://www.gdeltproject.org/",
+    "url": "https://api.gdeltproject.org/api/v2/doc/doc",
     "crossChecks": [
-      "official advisory feed",
-      "multiple independent news reports",
-      "timestamp/geography deduplication"
+      "allowlisted domain auto-promote rules",
+      "manual interactive review for non-allowlisted domains",
+      "sha1(url) candidate deduplication"
     ]
   },
   {
@@ -219,6 +256,24 @@
     ]
   },
   {
+    "id": "crude-futures-pending",
+    "name": "Crude futures continuous source",
+    "category": "pending",
+    "status": "pending",
+    "reliability": "low",
+    "refreshCadence": "pending",
+    "expectedLatency": "pending",
+    "licenseStatus": "pending",
+    "usage": "Brent and WTI continuous futures once a stable licensed provider is wired",
+    "caveat": "未接入前只能展示 FRED spot proxy；不能把 futures 主连写成静态网页数据。",
+    "pending": true,
+    "crossChecks": [
+      "licensed futures provider",
+      "contract roll methodology",
+      "audit:data before promotion"
+    ]
+  },
+  {
     "id": "gold-pending",
     "name": "Gold daily source",
     "category": "pending",
@@ -232,6 +287,23 @@
     "pending": true,
     "crossChecks": [
       "Stooq or LBMA candidate",
+      "must pass audit:data before promoted"
+    ]
+  },
+  {
+    "id": "silver-pending",
+    "name": "Silver daily source",
+    "category": "pending",
+    "status": "pending",
+    "reliability": "low",
+    "refreshCadence": "pending",
+    "expectedLatency": "pending",
+    "licenseStatus": "pending",
+    "usage": "safe-haven / precious-metals channel once stable source is wired",
+    "caveat": "未接入前保持 pending，不生成虚假白银走势。",
+    "pending": true,
+    "crossChecks": [
+      "licensed or open daily silver source",
       "must pass audit:data before promoted"
     ]
   },
@@ -250,6 +322,40 @@
     "crossChecks": [
       "stable daily provider required",
       "must pass audit:data before promoted"
+    ]
+  },
+  {
+    "id": "hstech-pending",
+    "name": "Hang Seng Tech index source",
+    "category": "pending",
+    "status": "pending",
+    "reliability": "low",
+    "refreshCadence": "pending",
+    "expectedLatency": "pending",
+    "licenseStatus": "pending",
+    "usage": "Hong Kong growth / China risk-asset context once stable source is wired",
+    "caveat": "未接入前保持 pending，不生成静态指数走势。",
+    "pending": true,
+    "crossChecks": [
+      "stable licensed index provider",
+      "audit:data before promotion"
+    ]
+  },
+  {
+    "id": "shanghai-composite-pending",
+    "name": "Shanghai Composite index source",
+    "category": "pending",
+    "status": "pending",
+    "reliability": "low",
+    "refreshCadence": "pending",
+    "expectedLatency": "pending",
+    "licenseStatus": "pending",
+    "usage": "Mainland China risk-asset context once stable source is wired",
+    "caveat": "未接入前保持 pending，不生成静态指数走势。",
+    "pending": true,
+    "crossChecks": [
+      "stable licensed index provider",
+      "audit:data before promotion"
     ]
   },
   {

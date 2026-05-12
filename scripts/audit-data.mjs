@@ -30,6 +30,8 @@ const fredSeries = {
   DEXCHUS: { label: "USD/CNY", target: "usd_cny" },
   DGS10: { label: "US10Y", target: "us10y" },
   SP500: { label: "S&P 500", target: "sp500" },
+  NASDAQCOM: { label: "NASDAQ Composite", target: "nasdaq" },
+  CPIAUCSL: { label: "US CPI", target: "us_cpi" },
 };
 
 const codeStructuralChecks = [
@@ -448,11 +450,23 @@ function auditLocalCode(dataFile, sourceRegistryFile, canonicalStoreFile, source
     }
   }
 
-  const pendingSeries = generatedMarketSeries.filter((series) =>
-    ["gold-pending", "usdcnh-pending"].includes(series.sourceId),
-  );
-  if (pendingSeries.length !== 2 || pendingSeries.some((series) => !series.pending)) {
-    throw new Error("Gold and USD/CNH pending market rows must be explicitly marked pending.");
+  const expectedPendingSourceIds = [
+    "crude-futures-pending",
+    "gold-pending",
+    "silver-pending",
+    "usdcnh-pending",
+    "hstech-pending",
+    "shanghai-composite-pending",
+  ];
+  const pendingSeries = generatedMarketSeries.filter((series) => series.pending);
+  const pendingSourceIds = new Set(pendingSeries.map((series) => series.sourceId));
+  for (const sourceId of expectedPendingSourceIds) {
+    if (!pendingSourceIds.has(sourceId)) {
+      throw new Error(`${sourceId}: expected pending market row is missing from generated market_series.json.`);
+    }
+  }
+  if (pendingSeries.some((series) => series.points.length > 0 || !series.caveat)) {
+    throw new Error("Pending market rows must have no points and must carry caveats.");
   }
 }
 

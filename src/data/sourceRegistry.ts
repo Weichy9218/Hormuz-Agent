@@ -2,9 +2,12 @@
 // Hard constraints: pending sources cannot produce high-confidence live evidence.
 import type { SignalSource, SourceRegistryEntry } from "../types";
 import sourceRegistryData from "../../data/registry/sources.json";
+import marketProviderData from "../../data/registry/market_providers.json";
 import baselineFacts from "../../data/normalized/baseline/hormuz_baseline.json";
+import type { MarketProviderCandidate } from "../types";
 
 export const sourceRegistry = sourceRegistryData as SourceRegistryEntry[];
+export const marketProviders = marketProviderData as MarketProviderCandidate[];
 
 export const sourceBoundaryFacts = baselineFacts.map((fact) => ({
   id: fact.fact_id,
@@ -38,6 +41,6 @@ export const sourceGroups: SignalSource[] = [
     id: "market",
     name: "市场",
     status: "fresh",
-    detail: "Brent, WTI, Broad USD, US10Y, SPX, VIX；Gold pending",
+    detail: "FRED spot/index/CPI local series；futures, metals, CNH, China indexes pending",
   },
 ];

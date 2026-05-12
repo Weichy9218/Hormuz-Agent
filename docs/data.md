@@ -2,287 +2,144 @@
 
 Last updated: 2026-05-12
 
-本文档定义本项目的数据源优先级、cross-verification 规则和 local persistence 方案。它的目标不是收集尽可能多的数据，而是维护一条可审计的 forecast chain：
+本文件定义**背景三页**（Overview / News / Market）使用的数据：本地存哪些、用什么格式、谁消费、如何审计。Forecast 页（galaxy-selfevolve real run）的数据流见 [`PLANS.md`](../PLANS.md)，本文件只标边界，不重述。
 
-```text
-baseline -> source -> observation -> evidence -> mechanism -> judgement delta -> target forecast -> checkpoint -> next watch
-```
+设计配套见 [`docs/design.md`](design.md)。
 
-核心判断：不是所有可能相关的数据都应该进入系统。P0 只保留能直接支撑 reviewer 判断的问题：
+## 0. 本次重新定位的数据影响
 
-```text
-Hormuz 风险是否改变了跨资产判断？
-如果改变，是哪条新证据导致修订？
-```
+旧 data.md 假设所有数据都为 forecast revision contract（`SourceObservation → EvidenceClaim → judgement_updated → checkpoint`）服务。重新定位后：
 
-## 1. Review Decision
+- **背景三页**不再消费 `EvidenceClaim` / `judgement_updated` / `scenarioDistribution` 任何字段。
+- 现有 `data/observations/source_observations.jsonl` 与 `data/evidence/evidence_claims.jsonl` 保留，但**仅用于**：
+  1. Forecast 页未来扩展（reviewer-annotated evidence 层）；
+  2. audit 验证旧字段不回流到背景三页。
+- 新增/升级三类专用数据：
+  1. `data/events/events_timeline.jsonl` — Hormuz 事件脉络（News 主轴 + Overview top 3 + Market overlay）。
+  2. `data/external/polymarket_questions.json` — 外部预测市场引用（Overview 卡片）。
+  3. PortWatch traffic 升级为 UI 一等公民（Overview 置顶 Traffic 行 + Market 主图 traffic 组）。
+- GDELT 升级为 P0 auto-ingest 通道，灌入 events_timeline 的 candidate 池。
+- `data/galaxy/runs/...` 完全归 Forecast 页使用；背景三页不读它，audit 也不混。
 
-上一版数据清单的问题：
+## 1. Priority Rules
 
-- `forecast-critical`、`candidate discovery`、`UI support`、`external market odds` 混在一个表里。
-- 有些数据源有用，但不是第一阶段必须，例如 ACLED、UCDP、Natural Earth、shipping lanes。
-- Polymarket odds 容易污染 forecast state；它可以做外部对照，不应进入核心 evidence pipeline。
-- Gold、USD/CNH、licensed AIS 都缺稳定授权 source，应继续 pending。
-
-本版做三件事：
-
-- 明确每个 source 的 forecast role。
-- 给出 cross-verification gate：什么可以单源进入，什么必须交叉验证后才能改判。
-- 把实现顺序压到最小可用数据层：先本地持久化 P0，再考虑 P1/P2。
-
-## 2. Priority Rules
-
-| Priority | Meaning | 进入 forecast 的条件 |
+| Priority | Meaning | 进入背景三页的条件 |
 | --- | --- | --- |
-| P0 | Forecast-critical，本系统没有它就无法解释本轮判断 | 必须本地持久化；必须有 source id、retrieved_at、source_url 或 raw_path；关键 judgement update 必须可追溯 |
-| P1 | Corroboration / discovery，帮助确认或发现新证据 | 可本地持久化；默认只产生 candidate evidence；改判前必须被 P0 source 或另一类独立 source 支持 |
-| P2 | Historical / evaluation / UI support | 不阻塞当前 forecast；用于 replay、backtest、地图或解释背景 |
-| Hold | 暂不接入 | 缺授权、缺稳定 API、容易污染判断，或不符合 product boundary |
+| P0 | 没有它背景三页讲不清当前状态 | 本地持久化；source_id、retrieved_at、source_url / raw_path 齐全 |
+| P1 | 帮助 corroborate 或扩展 | 可本地持久化；默认仅 News 引用，不进 Overview headline |
+| P2 | Historical / UI support | 不阻塞当前显示；用于背景图、replay |
+| Hold | 暂不接入 | 缺授权、缺稳定 API，或会污染叙事 |
 
-Forecast importance 和 implementation order 不完全相同：
+## 2. Source Inventory
 
-- 最重要的 forecast evidence 是 `official-advisory` + `traffic-flow proxy`。
-- 最容易先落地的是 `fred-market` + `eia-iea-hormuz`，因为它们稳定、低权限、便于验证。
-- 第一阶段执行顺序应按“低风险落地 -> 高价值 operational source”推进。
+| Priority | source_id | Role | 消费方 | Boundary |
+| --- | --- | --- | --- | --- |
+| P0 | `eia-iea-hormuz` | 结构性 baseline（≈20 mb/d、bypass、Asia exposure、LNG） | Overview baseline strip；News 顶部 context | 永远 baseline；不写成当日 throughput |
+| P0 | `official-advisory` | 官方海事 advisory（UKMTO / MARAD / IMO） | News timeline（official channel）；Overview latest events | 单条 advisory 可产生 timeline entry；severity_hint 必须基于原文 |
+| P0 | `imf-portwatch-hormuz` | 公开 traffic-flow proxy（AIS 反演的**日通过船数**） | **Overview Traffic 行（置顶）** + Market 主图 Traffic 组 + News 事件窗口对照 | baseline 用 PortWatch **自己**的 1y/5y 同期均值（**不**与 IMO `60 7d avg` threshold 跨源拼数）；AIS 局限（spoofing、dark vessels、revision）做 hover caveat；文案只述事实不做 "closure 概率" 解读 |
+| P0 | `imo-hormuz-monthly` | 月度 traffic 交叉验证 | News 背景说明（可选）；**不进 Overview / Market 主图** | 仅作为 PortWatch 趋势的 sanity check；数值未提取前留 chart snapshot |
+| P0 | `fred-market` | 9 个 FRED series：Brent / WTI / VIX / Broad USD / USD/CNY / US10Y / SP500 / NASDAQ / CPI | Market 主图 + sparkline；Overview snapshot（4 series） | 原始数值，不解读 |
+| P0 | `events-curated` *(new)* | curated Hormuz / US-Iran 事件脉络（advisory + GDELT auto-ingest + 人工 review 后入库） | News timeline 主轴；Overview top 3；Market overlay | 每条必须有可追溯 source_url + retrieved_at；GDELT auto-ingest 产生 `status="candidate"`，必须 promote 才进 timeline 渲染 |
+| P0 | `gdelt-news` *(upgraded)* | 自动新闻发现（GDELT DOC 2.0 `/api/v2/doc/doc`），灌入 candidate 池 | 不直接进 UI；只作为 events_timeline candidate 来源 | 仅产生 candidate；query 关键词限定 Hormuz / Iran / IRGC / Persian Gulf / Gulf of Oman / US Navy；按 url SHA1 去重；记录 query 与 retrieved_at |
+| P0 | `polymarket-curated` *(new)* | Polymarket 上 Hormuz / US-Iran / Oil / Regional 相关问题（gamma-api `/events` 抓取后筛） | Overview External prediction card（3–5 条） | 仅作外部对照；**不进入任何 forecast pipeline**；必须显示 "External market, not our forecast"；筛选规则见 §4.8 与 §5 |
+| P1 | `acled-conflict` | 结构化区域冲突 context | News 可选背景层 | 需要 token；不替代 official advisory |
+| P2 | `ucdp-ged` | 历史评估 | replay / 评估 | 非 live |
+| P2 | `natural-earth` | 静态地图底图 | Overview mini map | UI only |
+| P2 | `global-shipping-lanes` | 静态航线 geometry | Overview mini map | UI only |
+| Hold | `ais-flow-pending` | 实时 vessel-level AIS / SAR | — | 无授权前 pending |
 
-## 3. Cross-Verification Gates
+说明：
 
-### 3.1 Structural Baseline
+- PortWatch 是本项目最直接、最量化的 traffic 信号，也是 Polymarket "traffic returns to normal" 类问题事实上的 resolution 数据，必须进 UI。处理边界：(1) baseline 与 delta 全部用 PortWatch 自己的历史序列算，不跨源拼 IMO 阈值；(2) AIS 局限以 caveat 文案 + tooltip 形式展示；(3) 文案只描述事实，不出现 "closure 概率 / scenario" 语言。
+- 旧 `polymarket-hormuz-traffic` 状态合并入 `polymarket-curated`；仅作 Overview 引用卡片来源；任何 forecast pipeline / EvidenceClaim 仍禁止消费。
 
-Examples: oil flow, bypass capacity, LNG relevance, Asia exposure.
-
-Rule:
-
-- 可以使用单个高质量官方 baseline 作为结构性事实，但至少要有一个 cross-check source 或 prior version note。
-- Baseline 不能被写成 current-day throughput。
-- Baseline 不直接改变 scenario probability，只提供判断锚点。
-
-Accepted sources:
-
-- EIA World Oil Transit Chokepoints.
-- IEA oil security / Strait of Hormuz explainer.
-
-### 3.2 Official Maritime Events
-
-Examples: advisory wording, incident, threat area, avoidance instruction.
-
-Rule:
-
-- `source_read` 可以由单个 official source 产生。
-- `evidence_added` 可以登记单源 official advisory，但 confidence 最高为 `medium`，除非有独立 corroboration。
-- `judgement_updated` 如果要显著提高 `severe` 或 `closure`，必须满足至少一个：
-  - official avoidance / closure wording;
-  - verified traffic-flow disruption;
-  - multiple official maritime sources describe the same event;
-  - closure-style market shock corroborates official signal.
-- Media/news recap 不能替代 official advisory。
-
-Primary sources:
-
-- UKMTO recent incidents.
-- MARAD U.S. Maritime Alerts / Advisories.
-- IMO Middle East / Strait of Hormuz hub.
-- JMIC / JMICC only when we have a stable retrievable page or file.
-
-### 3.3 Traffic / Flow Proxy
-
-Examples: transit calls, traffic-normal threshold, sustained traffic drop.
-
-Rule:
-
-- Public AIS-derived aggregate can support `traffic_flow_down`, but cannot by itself prove full closure.
-- High-confidence closure evidence requires official wording or independent flow corroboration.
-- Data must carry AIS/GNSS caveat because spoofing, vessels going dark, and revisions are material risks.
-- Recent data should be re-fetched over a rolling window because PortWatch-style data can revise.
-- Current PortWatch numeric rows use `metric=daily_transit_calls` and `window=daily`.
-  The baseline threshold fact uses `60 7d avg transit calls`. These two must not
-  be compared directly until metric definition and denominator are confirmed.
-- Until that confirmation exists, PortWatch daily rows may produce source
-  observations and metric-boundary caveat evidence, but must not produce
-  `support + traffic_flow_down`, severe, or closure evidence.
-
-Primary sources:
-
-- IMF PortWatch data download / Strait of Hormuz page.
-- IMO monthly transits through the Strait of Hormuz.
-
-### 3.4 Market Pricing
-
-Examples: Brent, WTI, VIX, Broad USD, USD/CNY, US10Y, S&P 500.
-
-Rule:
-
-- Market data is evidence input only; it never directly updates forecast state.
-- A single FRED series can be accepted for that series' observed value.
-- Interpretation must use cross-asset consistency:
-  - oil risk premium alone supports `pricing_controlled_disruption` or `mixed`;
-  - closure-style pricing requires oil shock plus VIX / equity / USD / rates stress.
-- Gold and USD/CNH remain pending until a stable source and license boundary exist.
-
-Primary source:
-
-- FRED API / FRED graph CSV.
-
-### 3.5 News / Conflict Context
-
-Examples: reported incident, rhetoric, regional escalation, conflict event.
-
-Rule:
-
-- News discovery can only create candidate evidence.
-- Candidate evidence becomes forecast evidence only after official, traffic, market, or independent source corroboration.
-- ACLED is useful for structured conflict context, but should not replace maritime official sources.
-- UCDP is mainly for historical replay / evaluation, not current 7d or 14d operational updates.
-
-Sources:
-
-- GDELT Cloud API for discovery.
-- ACLED API for conflict context, subject to account/token.
-- UCDP API for historical datasets, subject to token since 2026.
-
-## 4. Source Priority List
-
-| Priority | source_id | Keep? | Role | Cross-verification requirement | First implementation |
-| --- | --- | --- | --- | --- | --- |
-| P0 | `eia-iea-hormuz` | yes | Structural baseline: oil flow, bypass capacity, LNG relevance, Asia exposure | EIA plus IEA or versioned prior baseline; never treated as live throughput | Manual snapshot into `data/normalized/baseline/hormuz_baseline.json` |
-| P0 | `official-advisory` | yes | Operational maritime signal: incident, advisory, avoidance wording | For large scenario move, corroborate with another official source, traffic proxy, or closure-style market stress | Snapshot UKMTO + MARAD + IMO pages/files into `data/raw/advisories/` |
-| P0 | `imf-portwatch-hormuz` | yes | Public traffic-flow proxy and traffic-normal watch | Cross-check with IMO monthly transits and official advisory context; keep AIS/GNSS caveat | Fetch/download PortWatch data, normalize into `data/normalized/maritime/hormuz_transits.csv` |
-| P0 | `fred-market` | yes | Cross-asset pricing pattern | Value-level check via FRED raw snapshot; interpretation requires cross-series consistency | Fetch seven P0 FRED series into local raw + normalized files |
-| P1 | `gdelt-news` | later | Candidate event/rhetoric discovery | Must be confirmed by P0 source or another independent source before forecast use | Add after P0 local store is stable |
-| P1 | `acled-conflict` | later | Structured regional conflict context | Requires account/token; cannot replace maritime advisories | Add only if escalation target needs structured context |
-| P2 | `ucdp-ged` | later | Historical replay and evaluation labels | Versioned dataset/token; not live trigger | Add during replay/evaluation phase |
-| P2 | `natural-earth` | yes, UI only | Static map context | Versioned download; no forecast evidence | Optional one-time UI asset migration |
-| P2 | `global-shipping-lanes` | maybe, UI only | Static route geometry | Public repository plus local bounds check; no AIS semantics | Optional one-time UI asset migration |
-| Hold | `polymarket-hormuz-traffic` | no for core pipeline | External consensus / question template only | Never ground truth; never direct forecast evidence | Keep out of P0/P1 pipeline |
-| Hold | `gold-pending` | no | Safe-haven target | Need licensed/stable daily source; LBMA benchmark usage may require IBA licence | Keep pending |
-| Hold | `usdcnh-pending` | no | Offshore RMB target | Need stable daily source and licensing boundary | Keep pending |
-| Hold | `ais-flow-pending` | no | Vessel-level AIS / tanker / LNG flow | Need licensed AIS/SAR or production-grade provider | Keep pending |
-
-## 5. Minimal Local Storage Contract
-
-Use the filesystem first. Do not introduce a database until append/update semantics are proven.
+## 3. Directory Layout
 
 ```text
 data/
   registry/
-    sources.json
+    sources.json                  # P0/P1/P2/Hold 源元数据（含新增 events-curated, polymarket-curated, gdelt-news）
+    market_providers.json
   raw/
-    <source_id>/<dataset>/<retrieved_at>.<json|csv|html|pdf>
+    fred/<SERIES_ID>/*.csv
+    advisories/<source_name>/<retrieved_at>.<html|pdf>
+    advisories/<source_name>/<retrieved_at>.meta.json
+    traffic/portwatch/<retrieved_at>.<csv|json>
+    traffic/imo/<retrieved_at>.<html|png>
+    gdelt/<query_slug>/<retrieved_at>.json      # GDELT DOC 2.0 query 原始返回
+    polymarket/events/<retrieved_at>.json       # gamma-api /events 全量列表快照
+    polymarket/event/<slug>/<retrieved_at>.json # 单题详情快照（可选）
+    events/<event_id>/<retrieved_at>.<html|pdf> # 每条 timeline event 的原文 snapshot（如可保存）
   normalized/
     baseline/hormuz_baseline.json
     market/fred_series.csv
     maritime/advisories.jsonl
-    maritime/hormuz_transits.csv
+    maritime/hormuz_transits.csv                # PortWatch + IMO，按 source_id 区分
+  events/
+    events_candidates.jsonl                     # NEW [P0] GDELT 自动 ingest 候选池
+    events_timeline.jsonl                       # NEW [P0] News 主轴（仅 promoted）
+  external/
+    polymarket_questions.json                   # NEW [P0] Overview Polymarket card
   observations/
-    source_observations.jsonl
+    source_observations.jsonl                   # 旧 evidence pipeline；当前阶段背景三页不消费
   evidence/
-    evidence_claims.jsonl
+    evidence_claims.jsonl                       # 同上
   checkpoints/
-    forecast_checkpoints.jsonl
+    forecast_checkpoints.jsonl                  # 同上
   generated/
-    market_series.json
-    canonical_inputs.json
+    overview_snapshot.json                      # NEW
+    news_timeline.json                          # NEW
+    market_chart.json                           # NEW
+    market_series.json                          # 旧；过渡期可与 market_chart 并存
+    canonical_inputs.json                       # 旧；保留供 Forecast 页未来 fallback
+  galaxy/
+    runs/<date>/<task>/...                      # Forecast 页专用 (PLANS.md)
+    latest-run.json
 ```
 
-Rules:
+规则：
 
-- `raw/` is append-only.
-- `normalized/` may upsert by source-native primary key plus date.
-- Every normalized record must include `source_id`, `source_url`, `retrieved_at`, `license_status`, and either `published_at`, `observed_at`, or `date`.
-- `source_hash` is allowed only when raw content exists and has been hashed as `sha256:<64 hex>`.
-- UI reads generated/local data, not live remote endpoints.
-- TypeScript should contain schema, transforms, projections, and labels, not durable factual data.
-- `data/observations/source_observations.jsonl` and `data/evidence/evidence_claims.jsonl`
-  are generated from normalized artifacts by `scripts/build-local-evidence.mjs`.
-- `src/state/canonicalStore.ts` consumes `data/generated/canonical_inputs.json`, not
-  hand-written SourceObservation / EvidenceClaim fixtures.
+- `raw/` 全部 append-only；命名 `<retrieved_at>`（ISO-8601，文件名中冒号用 `-` 替换）。
+- `normalized/` 可按 source-native primary key + date upsert。
+- `events_timeline.jsonl` 与 `polymarket_questions.json` 是 curated 数据：允许人工 edit；每次 edit 更新 `retrieved_at`（curate-* 脚本自动维护）。
+- `events_candidates.jsonl` 是机器灌入的候选池；人工只决定 promote / reject，**不直接编辑**该文件字段。
+- `generated/*.json` 由 `scripts/build-generated.mjs` 重建，不手动编辑。
+- `source_hash` 仅在存在真实 raw 文件且哈希为 `sha256:<64hex>` 时填入；其余写 `null`。
+- UI 只读 `generated/` 与 `external/` 与 `galaxy/`；不直接读 `raw/` / `normalized/`。
+- TypeScript 文件只保存 schema、transforms、projections、labels，不保存事实数据。
 
-## 5.1 Current Local Data State
+## 4. Schemas
 
-As of 2026-05-12, P0 local storage is in place for market, structural baseline,
-official advisory snapshots, and traffic proxy snapshots.
-
-| Layer | Artifact | Current state | Runtime consumer |
-| --- | --- | --- | --- |
-| Source registry | `data/registry/sources.json` | P0/P1/P2/Hold source metadata and caveats | `src/data/sourceRegistry.ts` |
-| FRED raw | `data/raw/fred/<SERIES_ID>/*.csv` | 7 local CSV snapshots | audit/hash lineage |
-| FRED normalized | `data/normalized/market/fred_series.csv` | 342 local rows across 7 P0 FRED series | `scripts/build-local-evidence.mjs`, `scripts/audit-data.mjs` |
-| Market generated | `data/generated/market_series.json` | 9 UI market series: 7 FRED + Gold pending + USD/CNH pending | `src/data.ts`, builder |
-| Baseline normalized | `data/normalized/baseline/hormuz_baseline.json` | 7 structural facts, including PortWatch threshold and AIS caveat | `src/data/sourceRegistry.ts`, builder |
-| Advisory raw | `data/raw/advisories/**` | UKMTO/MARAD/IMO page snapshots with hashes | audit/hash lineage |
-| Advisory normalized | `data/normalized/maritime/advisories.jsonl` | 21 source snapshot / candidate records | builder |
-| Traffic raw | `data/raw/traffic/**` | PortWatch page/download/API snapshots plus IMO page/chart images | audit/hash lineage |
-| Traffic normalized | `data/normalized/maritime/hormuz_transits.csv` | 65 rows: 60 PortWatch daily numeric rows, 3 source snapshots, 2 IMO chart snapshots | builder |
-| Observations | `data/observations/source_observations.jsonl` | 15 generated SourceObservation records | generated canonical input |
-| Evidence | `data/evidence/evidence_claims.jsonl` | 3 generated EvidenceClaim records | generated canonical input |
-| Canonical input | `data/generated/canonical_inputs.json` | generated bundle consumed by canonicalStore | `src/state/canonicalStore.ts` |
-
-Current generated EvidenceClaim set:
-
-- `ev-local-market-risk-premium`: FRED cross-asset market bundle supports a
-  controlled-disruption risk premium, not closure pricing.
-- `ev-local-official-advisory`: official advisory snapshots preserve elevated
-  maritime/security context, but parser has not extracted verified avoidance or
-  closure wording; confidence remains capped at medium.
-- `ev-local-portwatch-metric-caveat`: PortWatch daily value is stored, but
-  `daily_transit_calls` is not mixed with the `60 7d avg transit calls`
-  threshold; it supports keeping `traffic_flow_down` out of severe/closure
-  evidence until metric definitions are verified.
-
-Update path:
-
-```bash
-npm run fetch:p0
-npm run build:evidence
-npm run audit:data
-npm run audit:evidence
-npm run audit:forecast
-npm run build
-```
-
-For a full refresh and verification:
-
-```bash
-npm run build:data
-npm run audit
-npm run build
-```
-
-`npm run build:data` refetches P0 raw/normalized data and then regenerates
-observation/evidence/canonical input artifacts. It can change local snapshots
-when upstream pages or CSVs change.
-
-## 6. P0 Data Schemas
-
-### FRED Market Series
-
-P0 series:
-
-| Target | FRED series | Local key |
-| --- | --- | --- |
-| Brent | `DCOILBRENTEU` | `brent` |
-| WTI | `DCOILWTICO` | `wti` |
-| VIX | `VIXCLS` | `vix` |
-| Broad USD | `DTWEXBGS` | `broad_usd` |
-| USD/CNY | `DEXCHUS` | `usd_cny` |
-| US10Y | `DGS10` | `us10y` |
-| S&P 500 | `SP500` | `sp500` |
+### 4.1 `data/registry/sources.json` 条目
 
 ```ts
-interface NormalizedMarketObservation {
-  source_id: "fred-market";
-  series_id: string;
-  target: "brent" | "wti" | "vix" | "broad_usd" | "usd_cny" | "us10y" | "sp500";
-  date: string;
-  value: number | null;
-  unit: string;
-  source_url: string;
-  retrieved_at: string;
-  license_status: "open";
+type SourceCategory =
+  | "official"
+  | "market"
+  | "maritime"
+  | "conflict"
+  | "news"                  // 含 GDELT 自动 ingest
+  | "external_prediction"   // NEW: Polymarket
+  | "events"                // NEW: events-curated（advisory + media merge）
+  | "pending";
+
+interface SourceRegistryItem {
+  id: string;
+  name: string;
+  category: SourceCategory;
+  reliability: "high" | "medium" | "low";
+  refreshCadence: string;
+  expectedLatency: string;
+  licenseStatus: "open" | "restricted" | "pending" | "unknown";
+  caveat: string;
+  pending: boolean;
+  url?: string;
+  parser?: string;
+  owner?: string;
 }
 ```
 
-### Baseline Facts
+### 4.2 `data/normalized/baseline/hormuz_baseline.json`
 
 ```ts
 interface HormuzBaselineFact {
@@ -298,7 +155,27 @@ interface HormuzBaselineFact {
 }
 ```
 
-### Maritime Advisory
+### 4.3 `data/normalized/market/fred_series.csv`
+
+```ts
+interface NormalizedMarketObservation {
+  source_id: "fred-market";
+  series_id: string;
+  target:
+    | "brent" | "wti" | "vix" | "broad_usd"
+    | "usd_cny" | "us10y" | "sp500" | "nasdaq" | "us_cpi";
+  date: string;
+  value: number | null;
+  unit: string;
+  source_url: string;
+  retrieved_at: string;
+  license_status: "open";
+}
+```
+
+FRED `DEXCHUS` → `usd_cny` only。任何映射到 `usd_cnh` 必须来自有效 FX vendor（candidate，目前 pending）。
+
+### 4.4 `data/normalized/maritime/advisories.jsonl`
 
 ```ts
 interface MaritimeAdvisoryRecord {
@@ -316,16 +193,19 @@ interface MaritimeAdvisoryRecord {
   retrieved_at: string;
   license_status: "open" | "unknown";
   raw_path: string;
-  source_hash?: string;
+  source_hash?: `sha256:${string}` | null;
 }
 ```
 
-### Hormuz Transit / Flow Proxy
+每条 advisory 会被 `curate-events.mjs` 自动 mirror 一条 `events_timeline.jsonl` entry（`source_type="official"`），advisory_id ↔ event_id 一一对应（详见 §4.7）。
+
+### 4.5 `data/normalized/maritime/hormuz_transits.csv`
 
 ```ts
 interface HormuzTransitObservation {
   source_id: "imf-portwatch-hormuz" | "imo-hormuz-monthly";
   metric: "daily_transit_calls" | "monthly_avg_daily_transits";
+  vessel_type?: "all" | "tanker" | "lng" | "container" | "dry_bulk" | "other";
   date: string;
   value: number | null;
   direction?: "eastbound" | "westbound" | "both";
@@ -337,55 +217,398 @@ interface HormuzTransitObservation {
 }
 ```
 
-## 7. Implementation Order
+PortWatch 日序列**直接进 UI**（见 §4.11 Market `traffic` 组、§4.9 Overview Traffic 行）。基线计算规则由 `scripts/build-generated.mjs` 派生：
 
-1. Create `data/` directories and `.gitkeep` files.
-2. Move source registry out of TypeScript:
-   - create `data/registry/sources.json`;
-   - keep `src/data/sourceRegistry.ts` as a typed loader or generated mirror until runtime migration is done.
-3. Implement `scripts/fetch-fred.mjs`:
-   - fetch seven P0 FRED series;
-   - write raw CSV snapshots;
-   - upsert `data/normalized/market/fred_series.csv`;
-   - generate `data/generated/market_series.json`.
-4. Update `scripts/audit-data.mjs`:
-   - validate local normalized data against latest raw snapshots;
-   - spot-check upstream FRED;
-   - fail if UI fixture diverges from generated data.
-5. Move baseline facts from `src/data/sourceRegistry.ts` into `data/normalized/baseline/hormuz_baseline.json`.
-6. Implement advisory snapshot scripts for UKMTO / MARAD / IMO.
-7. Implement PortWatch / IMO transit normalization.
-8. Implement `scripts/build-local-evidence.mjs`:
-   - read normalized market / advisory / traffic / baseline artifacts;
-   - write SourceObservation JSONL and EvidenceClaim JSONL;
-   - generate `data/generated/canonical_inputs.json`;
-   - enforce the PortWatch daily-vs-7d metric boundary.
-9. Make `src/state/canonicalStore.ts` consume generated canonical inputs.
-10. Only after P0 works end-to-end, add GDELT and ACLED candidate layers.
-11. Add UCDP only when historical replay/evaluation starts.
+- `7d_avg`：滚动 7 天均值。
+- `baseline_1y_same_window`：当日历窗口（±15d）在过去 1 年内的均值，作为 "vs normal" 对照。
+- 跨源拼接禁止：`imo-hormuz-monthly` 不与 `imf-portwatch-hormuz` 共曲线，仅作 News 背景 sanity check。
+- AIS caveat（spoofing、dark vessels、PortWatch revision）必须在 UI hover / coverage table 中可见。
 
-## 8. Explicit Non-Goals
+### 4.6 `data/raw/gdelt/<query_slug>/<retrieved_at>.json` 与 `data/events/events_candidates.jsonl` *(NEW, P0)*
 
-- Do not make UI call live remote APIs directly.
-- Do not crawl every source in the registry before P0 is stable.
-- Do not use Polymarket odds as ground truth or direct forecast evidence.
-- Do not promote Gold, USD/CNH, or vessel-level AIS without stable provider and license review.
-- Do not let market data act as a second forecast engine.
-- Do not write `sourceHash` without a real raw file.
+GDELT auto-ingest 走 [GDELT DOC 2.0 API](https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/)：`https://api.gdeltproject.org/api/v2/doc/doc?query=<q>&mode=ArtList&format=JSON&maxrecords=75&timespan=14d&sort=DateDesc`。
 
-## 9. Reference URLs
+Query 集合（写死在 `scripts/curate-events.mjs` 的常量中，可 PR review 调整）：
+
+```text
+"Strait of Hormuz"
+"Hormuz" AND (tanker OR vessel OR ship)
+"Hormuz" AND (advisory OR incident OR attack)
+IRGC OR "Revolutionary Guard" "Hormuz"
+"Gulf of Oman" AND (incident OR attack OR seized)
+Iran "US Navy" "Persian Gulf"
+"Bandar Abbas" AND (navy OR drill OR missile)
+Iran sanctions oil export
+```
+
+每个 query 的原始返回直接落到 `data/raw/gdelt/<slug>/<retrieved_at>.json`，append-only。Candidate 池（按 url SHA1 去重）：
+
+```ts
+interface EventCandidate {
+  candidate_id: string;                  // sha1(url) 前 16 位
+  source_query: string;                  // 触发该候选的 GDELT query
+  url: string;
+  domain: string;
+  title: string;
+  seendate: string;                      // GDELT seendate (UTC, ISO-like)
+  language?: string;
+  sourcecountry?: string;
+  tone?: number;                         // GDELT tone score
+  retrieved_at: string;
+  status: "candidate" | "promoted" | "rejected";
+  promoted_event_id?: string;
+  rejected_reason?: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+}
+```
+
+Promote 规则（`curate-events.mjs --promote <candidate_id>` 或 `--auto-promote`）：
+
+1. `--auto-promote` 仅在 `domain` 命中 allowlist 时自动入库（reuters.com / apnews.com / bloomberg.com / aljazeera.com / wsj.com / ft.com / state.gov / defense.gov / cnn.com / bbc.co.uk / nytimes.com）；其他必须 `--interactive` 人工 review。
+2. Promote 时生成 `events_timeline.jsonl` 一条 entry：`event_id = "evt-" + seendate(YYYYMMDD) + "-" + slug(title 前 6 词)`，`source_type="media"`（除非 domain 是官方机构则 `"official"`），`severity_hint` 必须手填或由 keyword 规则给 `"watch"`（GDELT 不提供该字段）。
+3. Promote 后 candidate `status="promoted"`，记 `promoted_event_id`；拒绝则 `status="rejected"` + `rejected_reason`。
+4. 一旦 promoted，timeline entry 与 candidate 解耦；后续 timeline edit 不影响 candidate 历史记录。
+
+### 4.7 `data/events/events_timeline.jsonl` *(NEW, P0)*
+
+每行一个 event。这是 News 主轴 + Overview top 3 + Market overlay 的**唯一**事实源。**仅** promoted 的事件出现在此文件；GDELT raw / candidate 不出现。
+
+```ts
+interface TimelineEvent {
+  event_id: string;
+  event_at: string;                     // ISO-8601；事件发生时间，不是 retrieved_at
+  title: string;                        // ≤ 80 char
+  description: string;                  // 1–3 句话；只述事实
+  source_type: "official" | "media" | "open-source";
+  source_id: string;                    // official-advisory / gdelt-news / events-curated
+  source_name: string;                  // "UKMTO" / "Reuters"
+  source_url: string;
+  retrieved_at: string;
+  raw_path?: string | null;
+  source_hash?: `sha256:${string}` | null;
+  severity_hint: "routine" | "watch" | "elevated" | "severe" | "deescalation";
+  geography?: string[];                 // ["Strait of Hormuz", "Gulf of Oman"]
+  cross_check_source_urls?: string[];
+  related_advisory_ids?: string[];
+  related_candidate_ids?: string[];     // 关联 GDELT candidate (audit / 回溯)
+  related_market_targets?: Array<
+    "brent" | "wti" | "vix" | "broad_usd" | "usd_cny" | "us10y" | "sp500" | "nasdaq" | "traffic"
+  >;
+  tags?: string[];                      // ["incident", "diplomatic", "naval", "iran", "us-iran", ...]
+  curated_by?: string;                  // 空表示纯 auto-promote
+  curated_at?: string;
+}
+```
+
+写入规则：
+
+1. `event_id` 全局唯一且稳定；后续 update 不变 id。
+2. 同一来源的同一事件不重复登记。Advisory 已在 advisories.jsonl 时，timeline entry 引用 `related_advisory_ids` 并复用 source_url，不另存 raw_path。
+3. `severity_hint` 必须可以从 description / 原文直接读出，不依赖任何 forecast pipeline 计算。
+4. `related_market_targets` 仅标"该事件期间值得在 Market 图上画竖线"的 target，包含 `"traffic"`（PortWatch 曲线）；**不写**涨/跌方向。
+5. `description` 不允许出现 "Agent 判断 / 概率上调 / 支持 closure scenario" 等解读语言。
+
+### 4.8 `data/external/polymarket_questions.json` *(NEW, P0)*
+
+```ts
+interface PolymarketQuestionRef {
+  question_id: string;                  // 等于 event_slug
+  event_slug: string;                   // gamma-api events.slug
+  question_url: string;                 // https://polymarket.com/event/<slug>
+  title: string;                        // events.title 或 markets[0].question
+  description: string;                  // gamma-api description 全文
+  resolution_criteria: string;          // 通常等于 description 中规则段落
+  market_type: "binary" | "categorical";
+  outcomes: Array<{
+    outcome_id: string;
+    last_price: number | null;          // 0–1
+    last_volume?: number | null;
+  }>;
+  closes_at?: string | null;            // events.endDate
+  total_volume_usd?: number | null;
+  tags: string[];                       // gamma-api tags[].label
+  topic_tags: Array<
+    "hormuz" | "us_iran" | "oil" | "iran_domestic" | "regional"
+  >;
+  source: "polymarket";
+  source_endpoint: "gamma-api/events";
+  retrieved_at: string;
+  raw_path: string;
+  source_hash?: `sha256:${string}` | null;
+  selected_for_overview: boolean;       // Overview 卡片只展示 selected_for_overview=true
+  caveat: string;                       // 必须包含 "External market, not our forecast"
+}
+```
+
+筛选规则（`scripts/curate-polymarket.mjs`）：
+
+1. 拉 `https://gamma-api.polymarket.com/events?limit=200&closed=false&order=volume24hr&ascending=false`，落 `data/raw/polymarket/events/<retrieved_at>.json`。**不**翻页/无限抓；单次 200 条按 24h 成交量降序已足够覆盖热门题目。
+2. 对每个 event，关键词匹配（不区分大小写，匹配 `title ∪ description ∪ tags[].label`）：
+   - **hormuz**：`hormuz`, `strait of hormuz`, `persian gulf`, `gulf of oman`, `bandar abbas`
+   - **us_iran**：`iran`, `irgc`, `revolutionary guard`, `khamenei`, `tehran`, `iran-us`, `us-iran`, `iran sanctions`, `jcpoa`, `nuclear deal`
+   - **oil**：`brent`, `wti`, `opec`, `crude oil`, `oil price`
+   - **regional**：`israel`, `houthi`, `red sea`, `saudi`, `yemen`
+3. 至少命中一个 topic 才入库；否则丢弃。一个 event 可命中多个 topic。
+4. 同步该 event 的所有 `markets[]`：取 binary 一题或 categorical 全部 outcomes；记 `last_price`、`closes_at`、`total_volume_usd`。
+5. 写入 `data/external/polymarket_questions.json`：按 topic 分组，每组按 `total_volume_usd desc` 排，每组最多 5 条（总 ≤ 20 条入库）。
+6. `selected_for_overview` 由人工标 true/false；默认 false。推荐：hormuz top 1 + us_iran top 1 + oil top 1 = 3 条入 Overview。
+7. odds (`last_price`) 是引用值，不进任何 forecast 计算；EvidenceClaim / canonical_inputs 不允许引用此文件（audit 检查）。
+8. `caveat` 必须显式包含 "External market, not our forecast"（audit 检查）。
+
+参考实现：[`/Users/weichy/code/benchmark_merge_v8/source/Polymarket_source.py`](file:///Users/weichy/code/benchmark_merge_v8/source/Polymarket_source.py) 给出 gamma-api `/events` 的请求参数模板（含 `closed=false&order=volume24hr` 等）；本项目**不复用**其 question-formatting 部分（不需要把题目格式化成 A/B/C 选项），只复用其 endpoint / 字段抽取思路。
+
+### 4.9 `data/generated/overview_snapshot.json` *(NEW)*
+
+```ts
+interface OverviewSnapshot {
+  built_at: string;
+  data_as_of: string;
+  baseline: HormuzBaselineFact[];
+  current_severity: "quiet" | "routine" | "watch" | "elevated" | "severe";
+  latest_events: TimelineEvent[];       // top 3，按 event_at desc
+  traffic_snapshot: {                   // PortWatch 置顶
+    latest_date: string;
+    latest_value: number | null;
+    avg_7d: number | null;
+    baseline_1y_same_window: number | null;
+    delta_vs_baseline_pct: number | null;
+    vessel_type: "all";
+    source_id: "imf-portwatch-hormuz";
+    retrieved_at: string;
+    caveat: string;                     // AIS 局限
+  } | null;
+  market_snapshot: Array<{
+    target: string;
+    label: string;
+    value: number | null;
+    unit: string;
+    delta_1d?: number | null;
+    delta_7d?: number | null;
+    source_id: string;
+    retrieved_at: string;
+    status: "active" | "pending_source";
+    caveat?: string;
+  }>;
+  polymarket_refs: PolymarketQuestionRef[];  // 仅 selected_for_overview=true，按 topic 顺序
+}
+```
+
+### 4.10 `data/generated/news_timeline.json` *(NEW)*
+
+```ts
+interface NewsTimelineBundle {
+  built_at: string;
+  data_as_of: string;
+  events: TimelineEvent[];              // 全量按 event_at desc
+  source_index: Array<{
+    source_id: string;
+    source_name: string;
+    source_type: "official" | "media" | "open-source";
+    event_count: number;
+  }>;
+  topic_index: Array<{
+    tag: string;
+    event_count: number;
+  }>;
+}
+```
+
+### 4.11 `data/generated/market_chart.json` *(NEW)*
+
+```ts
+interface MarketChartBundle {
+  built_at: string;
+  data_as_of: string;
+  series: Array<{
+    id: string;
+    target: string;
+    label: string;
+    group: "energy" | "safe_haven_fx" | "risk_rates_vol" | "traffic";
+    color: string;
+    unit: string;
+    status: "active" | "pending_source" | "candidate";
+    source_id: string;
+    provider_id?: string;
+    license_status: "open" | "restricted" | "pending" | "unknown";
+    retrieved_at?: string;
+    raw_path?: string | null;
+    source_hash?: `sha256:${string}` | null;
+    points: Array<{ date: string; value: number }>;            // active 才有
+    baseline_points?: Array<{ date: string; value: number }>;  // traffic 专用：1y 同期均值曲线
+    caveat: string;
+    evidenceEligible: false;            // 强制 false
+  }>;
+  event_overlays: Array<{
+    event_id: string;
+    event_at: string;
+    title: string;
+    severity_hint: TimelineEvent["severity_hint"];
+    related_market_targets: TimelineEvent["related_market_targets"];
+  }>;
+}
+```
+
+`traffic` 组建议至少一条 series：`{ target: "portwatch_daily_transit_calls_all", group: "traffic", points: <daily>, baseline_points: <1y same-window avg> }`。如有 vessel-type 拆分，新增 `tanker / lng / container` 同组兄弟 series。
+
+### 4.12 旧 schema 的归属
+
+`SourceObservation` / `EvidenceClaim` / `EvidenceQuality` / `AgentRunEvent` / `ForecastCheckpoint` / `MarketRead.pricingPattern` / `ScenarioDefinition` / `ForecastTarget` / `MechanismTag` 全部保留在 TypeScript 中，但：
+
+- 不被 Overview / News / Market 任何组件 import；
+- audit:legacy 增加 grep 检查（见 §6）；
+- 仅 Forecast 页可在未来需要时复用。
+
+## 5. Fetch / Build Pipeline
+
+```text
+npm run fetch:p0
+  ├── fetch-fred.mjs               → data/raw/fred/**, data/normalized/market/fred_series.csv
+  ├── snapshot-advisories.mjs      → data/raw/advisories/**, data/normalized/maritime/advisories.jsonl
+  ├── snapshot-portwatch.mjs       → data/raw/traffic/portwatch/**, data/normalized/maritime/hormuz_transits.csv
+  └── snapshot-baseline.mjs        → data/normalized/baseline/hormuz_baseline.json
+
+npm run curate:events     [NEW]
+  └── curate-events.mjs
+       1. mirror advisories.jsonl → events_timeline.jsonl (official channel)
+       2. fetch GDELT queries → data/raw/gdelt/**
+       3. dedupe by sha1(url) → events_candidates.jsonl
+       4. auto-promote allowlist domains, or interactive review
+       5. emit / update events_timeline.jsonl
+
+npm run curate:polymarket [NEW]
+  └── curate-polymarket.mjs
+       1. gamma-api GET /events?limit=200&closed=false&order=volume24hr
+       2. keyword + tag 筛 hormuz/us_iran/oil/regional
+       3. dedupe by event_slug
+       4. write data/external/polymarket_questions.json (preserve human-set selected_for_overview)
+
+npm run build:evidence              (保留)
+  └── build-local-evidence.mjs     observations + evidence claims + canonical_inputs
+                                   背景三页不读
+
+npm run build:generated   [NEW]
+  └── build-generated.mjs          baseline + fred + advisories + transits + events + polymarket
+                                   → data/generated/{overview_snapshot,news_timeline,market_chart}.json
+
+npm run build:data                  composite
+  = fetch:p0
+  → curate:events (non-interactive refresh)
+  → curate:polymarket (non-interactive refresh)
+  → build:evidence (legacy)
+  → build:generated
+```
+
+curate 脚本设计原则：
+
+- 默认 **non-interactive refresh**：只 update `retrieved_at` / odds / 新增 candidates；不改写人工填写的 title / description / severity_hint / selected_for_overview。
+- `--interactive` 打开 CLI 提示，让 reviewer 评 candidate / 调 selected_for_overview。
+- 任何 entry 一旦人工 curate 过，自动 refresh 不覆盖人工字段；记录 `curated_at`。
+- `npm run curate:events -- --gdelt-only`：只跑 GDELT 抓取与 candidate 灌入，不 promote。
+- `npm run curate:events -- --auto-promote`：仅 allowlist domain 自动入 timeline。
+
+## 6. Audit Rules
+
+### 6.1 必跑 audit
+
+```bash
+npm run audit
+  ├── audit:data            FRED 9 series lineage、PortWatch 日序列完整性
+  ├── audit:events          [NEW] events_timeline + events_candidates 完整性、promote 链路
+  ├── audit:polymarket      [NEW] polymarket_questions 完整性 + 防回流
+  ├── audit:evidence        evidence_claims.jsonl 完整性（范围限 data/evidence/）
+  ├── audit:forecast        判断 update 链一致性（范围限 data/evidence/, data/checkpoints/, data/galaxy/）
+  ├── audit:replay          deterministic replay contract
+  ├── audit:legacy          [EXPAND] 防旧字段回流 + 背景三页不引用 forecast revision 字段
+  ├── audit:galaxy          galaxy artifact 完整性
+  └── audit:ui              [P2] 渲染时 caveat / retrieved_at / source_url 可见
+```
+
+### 6.2 audit 失败条件
+
+任意以下情况必须 fail：
+
+- `events_timeline.jsonl` 任一 entry 缺 `event_id` / `event_at` / `source_url` / `retrieved_at` / `severity_hint`；
+- `severity_hint` ∉ {routine, watch, elevated, severe, deescalation}；
+- `source_type` ∉ {official, media, open-source}；
+- 同一 `event_id` 出现多次；
+- `events_timeline.jsonl` entry 的 `description` 含 forecast 解读关键词（"scenario", "judgement", "probability", "概率", "支持", "agent"）；
+- `events_candidates.jsonl` 中 `status="promoted"` 的 candidate 找不到对应 `events_timeline.jsonl` entry（双向一致性）；
+- `polymarket_questions.json` 任一 entry 缺 `question_url` / `resolution_criteria` / `retrieved_at` / `caveat`；
+- `caveat` 不含 "External market, not our forecast" 子串；
+- 任一 `EvidenceClaim` 或 `canonical_inputs.json` 引用 `polymarket-curated` 或 `events-curated` 或 `gdelt-news` 任一 source_id；
+- 背景三页源代码（`src/pages/{OverviewPage,NewsPage,MarketPage}.tsx` 与其 children）import 或字面引用 `scenarioDistribution / pricingPattern / judgement_updated / mechanismTags / checkpointId / Why not closure / next watch`；
+- `data/generated/market_chart.json` 任一 series `evidenceEligible !== false`；
+- pending series 出现 non-null value 或 non-empty points；
+- FRED `DEXCHUS` 被映射到 `usd_cnh`；
+- 任一 active generated 市场行缺 `raw_path` / `source_hash` / `retrieved_at` / `source_url` / `provider_id` / `license_status`；
+- `source_hash` 不解析为真实 raw 文件或哈希不匹配；
+- PortWatch traffic 行 `baseline_points` 使用了非 PortWatch 来源（跨源拼接）；
+- `audit:legacy` 检测到 `MarketRead.pricingPattern` / `Why not closure` 字面出现在背景三页 dom。
+
+## 7. Implementation Status (2026-05-12)
+
+| Layer | Artifact | State | Action |
+| --- | --- | --- | --- |
+| Source registry | `data/registry/sources.json` | 含 P0/P1/P2/Hold；需新增 `events-curated`, `polymarket-curated`, `gdelt-news` 三条 + category `external_prediction` / `events` | `[P0]` 扩展 |
+| Provider registry | `data/registry/market_providers.json` | OK | — |
+| FRED | `data/raw/fred/**`, `data/normalized/market/fred_series.csv` | 9 series 已落地 | — |
+| Baseline | `data/normalized/baseline/hormuz_baseline.json` | OK | — |
+| Advisories | `data/normalized/maritime/advisories.jsonl` | OK | — |
+| PortWatch / IMO | `data/normalized/maritime/hormuz_transits.csv` | 已有日序列，但未生成 baseline_1y_same_window | `[P0]` build-generated 派生 baseline 序列；UI 接 traffic 组 |
+| GDELT candidates | `data/raw/gdelt/**`, `data/events/events_candidates.jsonl` | **不存在** | `[P0]` 实现 GDELT fetch + dedupe + candidate pool |
+| Events timeline | `data/events/events_timeline.jsonl` | **不存在** | `[P0]` curate-events.mjs：advisory mirror + candidate promote |
+| Polymarket refs | `data/external/polymarket_questions.json` | **不存在** | `[P0]` curate-polymarket.mjs (gamma-api /events) |
+| Generated overview | `data/generated/overview_snapshot.json` | 不存在 | `[P0]` build-generated.mjs |
+| Generated news | `data/generated/news_timeline.json` | 不存在 | `[P0]` build-generated.mjs |
+| Generated market | `data/generated/market_chart.json` | 不存在；当前用 `market_series.json` | `[P0]` 新增；旧文件向后兼容期保留 |
+| Evidence pipeline | `data/observations/`, `data/evidence/`, `data/checkpoints/`, `data/generated/canonical_inputs.json` | 已存在；当前驱动 Overview/Market | `[P0]` 解除与背景三页绑定（不删数据，只断 UI 引用） |
+| Galaxy artifact | `data/galaxy/runs/**`, `data/galaxy/latest-run.json` | 已有真实 run | Forecast 页消费，背景三页不读 |
+| audit:data | `scripts/audit-data.mjs` | OK | 微调（加 PortWatch baseline 一致性） |
+| audit:events / audit:polymarket | 不存在 | `[P0]` 新增 |
+| audit:legacy 扩展 | 现仅防旧字段 | `[P0]` 增加 grep 规则禁止背景三页 import forecast revision 字段 |
+
+## 8. Update Path
+
+```bash
+npm run build:data        # 完整刷新
+npm run audit             # 跑全套 audit
+npm run build             # tsc + vite build
+```
+
+人工 curate：
+
+```bash
+npm run curate:events -- --interactive       # 评 GDELT candidate / advisory mirror
+npm run curate:events -- --auto-promote      # 仅 allowlist 自动入库
+npm run curate:polymarket -- --interactive   # 调 selected_for_overview / caveat
+```
+
+## 9. Explicit Non-Goals
+
+- 不让 UI 直接调用 live remote API；UI 只读 `data/generated/` 与 `data/external/` 与 `data/galaxy/`。
+- 不把 Polymarket odds 当作 ground truth 或 forecast evidence；它**永远**只是 Overview 引用。
+- 不让 events_timeline 进入 EvidenceClaim / judgement_updated / scenarioDistribution；它是叙事数据。
+- 不在背景三页渲染任何 scenario probability / pricingPattern / mechanism 链 / checkpoint。
+- 不抓 GDELT 全量；GDELT 只产候选，必须经 `curate:events` 决定 promote。
+- 不跨源拼 PortWatch 与 IMO threshold；PortWatch baseline 来自自身历史。
+- 不为 Gold / silver / USD-CNH / HSTECH / SHCOMP / 国内期货主连写入伪造走势；它们保持 pending。
+- 不写 `source_hash` 而对应 raw 文件不存在。
+- 不在 forecast pipeline 与背景三页之间建立双向引用（当前阶段）。
+
+## 10. Reference URLs
 
 - FRED API: https://fred.stlouisfed.org/docs/api/fred/series/series_observations.html
 - FRED graph CSV pattern: `https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES_ID>`
 - EIA World Oil Transit Chokepoints: https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf
-- IEA oil security and emergency response: https://www.iea.org/about/oil-security-and-emergency-response
-- IMO monthly Hormuz transit data: https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx
-- IMF PortWatch data download: https://data-download.imf.org/ClimateData/portwatch-monitor.html
+- IEA Strait of Hormuz: https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz
+- IMO Hormuz hub: https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx
+- IMF PortWatch: https://data-download.imf.org/ClimateData/portwatch-monitor.html
 - UKMTO recent incidents: https://www.ukmto.org/recent-incidents
-- MARAD Office of Maritime Security: https://www.maritime.dot.gov/ports/office-security/office-maritime-security
 - MARAD U.S. Maritime Alerts: https://www.maritime.dot.gov/msci-alerts
-- GDELT Cloud API v2: https://docs.gdeltcloud.com/api-reference
-- ACLED API documentation: https://acleddata.com/acled-api-documentation
-- UCDP API documentation: https://ucdp.uu.se/apidocs/index.html
-- Natural Earth: https://www.naturalearthdata.com/
+- GDELT DOC 2.0 API: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
+- Polymarket gamma-api events: https://gamma-api.polymarket.com/events
+- Polymarket Hormuz traffic question: https://polymarket.com/zh/event/strait-of-hormuz-traffic-returns-to-normal-by-end-of-june
+- ACLED API: https://acleddata.com/acled-api-documentation
+- UCDP API: https://ucdp.uu.se/apidocs/index.html
 - LBMA Gold Price: https://www.lbma.org.uk/prices-and-data/lbma-gold-price

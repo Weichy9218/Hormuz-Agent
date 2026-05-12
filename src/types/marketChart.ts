@@ -1,0 +1,143 @@
+// Generated bundle schemas consumed by the background Overview, News, and Market pages.
+
+import type { TimelineEvent, TimelineSeverity } from "./timeline";
+import type { PolymarketQuestionRef } from "./polymarket";
+
+export type HormuzTransitSourceId =
+  | "imf-portwatch-hormuz"
+  | "imo-hormuz-monthly";
+
+export type HormuzTransitMetric =
+  | "daily_transit_calls"
+  | "monthly_avg_daily_transits";
+
+export type HormuzVesselType =
+  | "all"
+  | "tanker"
+  | "lng"
+  | "container"
+  | "dry_bulk"
+  | "other";
+
+export interface HormuzTransitObservation {
+  source_id: HormuzTransitSourceId;
+  metric: HormuzTransitMetric;
+  vessel_type?: HormuzVesselType;
+  date: string;
+  value: number | null;
+  direction?: "eastbound" | "westbound" | "both";
+  window?: "daily" | "7d_avg" | "monthly";
+  source_url: string;
+  retrieved_at: string;
+  license_status: "open";
+  caveat: string;
+}
+
+export interface HormuzBaselineFact {
+  fact_id: string;
+  value: string;
+  unit: string;
+  as_of: string;
+  source_id: "eia-iea-hormuz";
+  source_url: string;
+  retrieved_at: string;
+  cross_check_source_url?: string;
+  caveat: string;
+}
+
+export type OverviewSeverity =
+  | "quiet"
+  | "routine"
+  | "watch"
+  | "elevated"
+  | "severe";
+
+export interface OverviewSnapshot {
+  built_at: string;
+  data_as_of: string;
+  baseline: HormuzBaselineFact[];
+  current_severity: OverviewSeverity;
+  latest_events: TimelineEvent[];
+  traffic_snapshot: {
+    latest_date: string;
+    latest_value: number | null;
+    avg_7d: number | null;
+    baseline_1y_same_window: number | null;
+    delta_vs_baseline_pct: number | null;
+    vessel_type: "all";
+    source_id: "imf-portwatch-hormuz";
+    retrieved_at: string;
+    caveat: string;
+  } | null;
+  market_snapshot: Array<{
+    target: string;
+    label: string;
+    value: number | null;
+    unit: string;
+    delta_1d?: number | null;
+    delta_7d?: number | null;
+    source_id: string;
+    retrieved_at: string;
+    status: "active" | "pending_source";
+    caveat?: string;
+  }>;
+  polymarket_refs: PolymarketQuestionRef[];
+}
+
+export interface NewsTimelineBundle {
+  built_at: string;
+  data_as_of: string;
+  events: TimelineEvent[];
+  source_index: Array<{
+    source_id: string;
+    source_name: string;
+    source_type: TimelineEvent["source_type"];
+    event_count: number;
+  }>;
+  topic_index: Array<{
+    tag: string;
+    event_count: number;
+  }>;
+}
+
+export type MarketChartGroup =
+  | "energy"
+  | "safe_haven_fx"
+  | "risk_rates_vol"
+  | "traffic";
+
+export interface MarketChartPoint {
+  date: string;
+  value: number;
+}
+
+export interface MarketChartBundle {
+  built_at: string;
+  data_as_of: string;
+  series: Array<{
+    id: string;
+    target: string;
+    label: string;
+    group: MarketChartGroup;
+    color: string;
+    unit: string;
+    status: "active" | "pending_source" | "candidate";
+    source_id: string;
+    provider_id?: string;
+    license_status: "open" | "restricted" | "pending" | "unknown";
+    retrieved_at?: string;
+    raw_path?: string | null;
+    source_hash?: `sha256:${string}` | null;
+    points: MarketChartPoint[];
+    baseline_points?: MarketChartPoint[];
+    caveat: string;
+    evidenceEligible: false;
+  }>;
+  event_overlays: Array<{
+    event_id: string;
+    event_at: string;
+    title: string;
+    severity_hint: TimelineSeverity;
+    related_market_targets: TimelineEvent["related_market_targets"];
+  }>;
+}

@@ -16,6 +16,8 @@ const PORTWATCH_DAILY_LAYER_URL =
 const PORTWATCH_METADATA_LAYER_URL =
   "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/PortWatch_chokepoints_database/FeatureServer/0";
 const PORTWATCH_PORT_ID = "chokepoint6";
+const PORTWATCH_MIN_DAILY_ROWS = 365;
+const PORTWATCH_QUERY_ROWS = 430;
 const IMO_SOURCE_URL =
   "https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx";
 
@@ -161,7 +163,7 @@ function portWatchQueryUrl(resultRecordCount) {
 
 async function snapshotPortWatch(rawDir) {
   const metaResult = await fetchJson(`${PORTWATCH_METADATA_LAYER_URL}/query?f=json&where=portid%3D%27${PORTWATCH_PORT_ID}%27&outFields=*&returnGeometry=false&resultRecordCount=5`);
-  const dailyResult = await fetchJson(portWatchQueryUrl(60));
+  const dailyResult = await fetchJson(portWatchQueryUrl(PORTWATCH_QUERY_ROWS));
   const metaPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-chokepoint-metadata.json`);
   const dailyPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-daily-chokepoint6.json`);
   await writeFile(metaPath, metaResult.text);
@@ -174,6 +176,7 @@ async function snapshotPortWatch(rawDir) {
       rows: [{
         source_id: "imf-portwatch-hormuz",
         metric: "daily_transit_calls",
+        vessel_type: "all",
         date: RETRIEVED_AT.slice(0, 10),
         value: "",
         direction: "both",
@@ -206,6 +209,7 @@ async function snapshotPortWatch(rawDir) {
     .map((row) => ({
       source_id: "imf-portwatch-hormuz",
       metric: "daily_transit_calls",
+      vessel_type: "all",
       date: row.date,
       value: row.n_total,
       direction: "both",
@@ -222,6 +226,12 @@ async function snapshotPortWatch(rawDir) {
         `n_tanker=${row.n_tanker}; n_cargo=${row.n_cargo}; capacity=${row.capacity}.`,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (rows.length < PORTWATCH_MIN_DAILY_ROWS) {
+    throw new Error(
+      `PortWatch daily chokepoint query returned ${rows.length} rows; need at least ${PORTWATCH_MIN_DAILY_ROWS} for 1y baseline derivation.`,
+    );
+  }
 
   return {
     rows,
@@ -254,6 +264,7 @@ async function snapshotImoCharts(html, rawDir) {
     rows.push({
       source_id: "imo-hormuz-monthly",
       metric: "monthly_avg_daily_transits",
+      vessel_type: "all",
       date: RETRIEVED_AT.slice(0, 10),
       value: "",
       direction: "both",
@@ -277,6 +288,7 @@ async function main() {
   const fields = [
     "source_id",
     "metric",
+    "vessel_type",
     "date",
     "value",
     "direction",
@@ -304,6 +316,7 @@ async function main() {
     rows.push({
       source_id: source.sourceId,
       metric: source.metric,
+      vessel_type: "all",
       date: RETRIEVED_AT.slice(0, 10),
       value: "",
       direction: "both",

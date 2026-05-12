@@ -21,8 +21,27 @@ export type SourceGroup =
   | "maritime"
   | "conflict"
   | "news"
+  | "external_prediction"
+  | "events"
   | "pending";
 export type SourceReliability = "high" | "medium" | "low";
+export type MarketProviderStatus =
+  | "active"
+  | "candidate_smoke_test"
+  | "dev_crosscheck_only"
+  | "licensed_pending"
+  | "rejected";
+export type MarketProviderLicenseStatus =
+  | "open"
+  | "token_required"
+  | "public_terms_unclear"
+  | "personal_research_only"
+  | "licensed_required"
+  | "licensed"
+  | "restricted"
+  | "pending"
+  | "unknown";
+export type MarketSeriesStatus = "active" | "pending_source" | "candidate";
 
 export interface SourceRegistryEntry {
   id: string;
@@ -38,6 +57,18 @@ export interface SourceRegistryEntry {
   pending: boolean;
   url?: string;
   crossChecks?: string[];
+}
+
+export interface MarketProviderCandidate {
+  provider_id: string;
+  display_name: string;
+  provider_status: MarketProviderStatus;
+  license_status: MarketProviderLicenseStatus;
+  target_ids: string[];
+  allowed_use: "production_active" | "candidate_smoke_test" | "dev_crosscheck_only";
+  promotion_gate: string[];
+  caveat: string;
+  url?: string;
 }
 
 export type EventSeverity = "stable" | "watch" | "elevated";
@@ -77,6 +108,7 @@ export interface MarketPoint {
 
 export interface MarketSeries {
   id: string;
+  target?: string;
   label: string;
   unit: string;
   color: string;
@@ -84,8 +116,27 @@ export interface MarketSeries {
   sourceId: string;
   sourceUrl?: string;
   verifiedAt?: string;
+  retrieved_at?: string;
+  raw_path?: string | null;
+  source_hash?: string | null;
+  provider_id?: string | null;
+  provider_status?: MarketProviderStatus;
+  license_status?: MarketProviderLicenseStatus;
+  status?: MarketSeriesStatus;
+  value?: number | null;
+  evidenceEligible?: boolean;
   caveat?: string;
   pending?: boolean;
+  candidate_provider_ids?: string[];
+  contract_meta?: {
+    target: string;
+    vendor_symbol: string;
+    contract_type: "spot" | "single_contract" | "continuous" | "main_continuous";
+    roll_method: string;
+    adjustment_method: "none" | "back_adjusted" | "ratio_adjusted" | "vendor";
+    underlying_contract: string;
+    mapping_source: string;
+  };
   points: MarketPoint[];
 }
 

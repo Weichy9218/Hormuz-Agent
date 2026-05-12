@@ -1,0 +1,39 @@
+[
+  {
+    "question_id": "strait-of-hormuz-traffic-returns-to-normal-by-end-of-june",
+    "event_slug": "strait-of-hormuz-traffic-returns-to-normal-by-end-of-june",
+    "question_url": "https://polymarket.com/event/strait-of-hormuz-traffic-returns-to-normal-by-end-of-june",
+    "title": "Strait of Hormuz traffic returns to normal by end of June?",
+    "description": "Seed reference for the Polymarket question about whether Strait of Hormuz traffic returns to normal by the end of June. Live odds are filled by curate-polymarket.mjs.",
+    "resolution_criteria": "Resolution criteria must be read from the Polymarket event page and preserved by the curation script before reviewer-facing use.",
+    "market_type": "binary",
+    "outcomes": [
+      {
+        "outcome_id": "yes",
+        "last_price": null,
+        "last_volume": null
+      },
+      {
+        "outcome_id": "no",
+        "last_price": null,
+        "last_volume": null
+      }
+    ],
+    "closes_at": null,
+    "total_volume_usd": null,
+    "tags": [
+      "Hormuz",
+      "Traffic"
+    ],
+    "topic_tags": [
+      "hormuz"
+    ],
+    "source": "polymarket",
+    "source_endpoint": "gamma-api/events",
+    "retrieved_at": "2026-05-12T00:00:00.000Z",
+    "raw_path": "data/raw/polymarket/events/pending.json",
+    "source_hash": null,
+    "selected_for_overview": true,
+    "caveat": "External market, not our forecast; seeded reference only until curate-polymarket.mjs refreshes live metadata."
+  }
+]
