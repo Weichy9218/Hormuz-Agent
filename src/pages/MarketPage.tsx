@@ -1,600 +1,1054 @@
-// Market page: pricing-pattern evidence surface without direct forecast updates.
+// Market page renders generated traffic and cross-asset background data.
 import { useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import {
-  Activity,
-  ArrowDown,
-  ArrowUp,
   BarChart3,
-  CheckCircle2,
-  CircleHelp,
-  Clock3,
   Database,
-  Gauge,
-  Maximize2,
-  Minimize2,
-  ShieldCheck,
-  Waves,
+  LineChart as LineChartIcon,
+  Ship,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { InfoTitle } from "../components/shared/InfoTitle";
-import {
-  sourceRegistry,
-} from "../data";
-import {
-  formatMarketDate,
-  formatMarketValue,
-  getEventWindowChange,
-  getMarketChange,
-  getMarketWindowSeries,
-  getRecentWindowChange,
-  stressWindowStart,
-} from "../lib/format";
-import {
-  projectMarketState,
-} from "../state/projections";
-import type { MarketSeries } from "../types";
+import data from "../../data/generated/market_chart.json";
+import type {
+  MarketChartBundle,
+  MarketChartGroup,
+  MarketChartPoint,
+} from "../types/marketChart";
 
-const primaryChartIds = [
-  "brent-spot",
-  "wti-spot",
-  "broad-usd",
-  "usd-cny",
-  "vix",
-  "sp500",
-  "nasdaq-composite",
-  "us-cpi",
-];
+const bundle = data as MarketChartBundle;
+const dayMs = 24 * 60 * 60 * 1000;
 
-const marketRangeOptions = [
-  { label: "1Y", days: 365 },
-  { label: "6M", days: 183 },
-  { label: "3M", days: 92 },
-  { label: "1M", days: 31 },
+const rangeOptions = [
+  { key: "7d", label: "7d", days: 7 },
+  { key: "30d", label: "30d", days: 30 },
+  { key: "90d", label: "90d", days: 90 },
+  { key: "1y", label: "1Y", days: 365 },
 ] as const;
 
-type MarketRangeDays = (typeof marketRangeOptions)[number]["days"];
+type RangeKey = (typeof rangeOptions)[number]["key"];
+type MarketSeriesItem = MarketChartBundle["series"][number];
+type MarketOverlay = MarketChartBundle["event_overlays"][number];
 
-const chartWidth = 420;
-const chartPadding = {
-  top: 14,
-  right: 12,
-  bottom: 28,
-  left: 48,
+type ChartPoint = MarketChartPoint & {
+  rawValue?: number;
 };
 
-function unique(values: string[]) {
-  return values.filter((value, index, array) => array.indexOf(value) === index);
-}
-
-function marketTrendClass(
-  series: MarketSeries,
-  change: ReturnType<typeof getEventWindowChange>,
-) {
-  if (series.pending || !change.start) return "pending";
-  return change.percent >= 0 ? "positive" : "negative";
-}
-
-function seriesChineseLabel(series: MarketSeries) {
-  const copy: Record<string, string> = {
-    "brent-spot": "布伦特现货代理",
-    "wti-spot": "WTI 现货代理",
-    "broad-usd": "美元广义指数",
-    "usd-cny": "美元/人民币",
-    vix: "VIX 波动率",
-    sp500: "标普 500",
-    "nasdaq-composite": "纳斯达克综合",
-    "us-cpi": "美国 CPI",
-  };
-  return copy[series.id] ?? series.label.replace("（pending）", "");
-}
-
-function seriesInterpretation(series: MarketSeries, eventChange: ReturnType<typeof getEventWindowChange>) {
-  const windowCopy = eventChange.start ? `封锁日起 ${eventChange.display}` : "封锁日起暂无窗口数据";
-  const copy: Record<string, string> = {
-    "brent-spot": `布伦特反映国际原油风险溢价。${windowCopy}，用来看油价是否持续定价通行风险。`,
-    "wti-spot": `WTI 更偏美国油价背景。${windowCopy}，和 Brent 一起判断能源压力是否同步。`,
-    "broad-usd": `美元广义指数用于观察避险资金是否推高美元。${windowCopy}。`,
-    "usd-cny": `USD/CNY 用于观察人民币在岸汇率压力；不替代 USD/CNH。${windowCopy}。`,
-    vix: `VIX 衡量美股隐含波动率。${windowCopy}，若未同步上行，说明冲击尚未扩散为广谱恐慌。`,
-    sp500: `标普 500 是风险偏好背景。${windowCopy}，用于检查权益市场是否定价系统性冲击。`,
-    "nasdaq-composite": `纳斯达克综合反映成长股风险偏好。${windowCopy}。`,
-    "us-cpi": "CPI 是月度滞后指标，只作通胀背景，不作为封锁事件窗口的实时价格信号。",
-  };
-  return copy[series.id] ?? "该指标用于市场背景展示；具体判断以 source-bound 数据为准。";
-}
-
-function pendingReason(sourceId: string) {
-  const copy: Record<string, string> = {
-    "crude-futures-pending": "原油主连需要可审计的连续期货源；未接入前只展示 FRED 现货代理。",
-    "gold-pending": "黄金日频源尚未接入授权或稳定源；不生成虚假金价走势。",
-    "silver-pending": "白银日频源尚未接入授权或稳定源；不生成虚假白银走势。",
-    "usdcnh-pending": "离岸人民币 USD/CNH 尚未接入稳定源；不生成实时 USD/CNH 走势或高置信判断。",
-    "hstech-pending": "恒生科技指数尚未接入稳定源；不生成静态指数走势。",
-    "shanghai-composite-pending": "上证指数尚未接入稳定源；不生成静态指数走势。",
-  };
-  return copy[sourceId] ?? "未接入稳定、授权、可复现的日频源前保持 pending。";
-}
-
-function sourceCoverageNote(source: { sourceId: string; caveat: string }) {
-  const copy: Record<string, string> = {
-    "fred-market": "FRED 本地快照提供 Brent/WTI 现货代理、美元指数、USD/CNY、VIX、美股、10Y 与 CPI 背景；期货主连、贵金属、CNH 和中港指数仍保持待接入。",
-  };
-  return copy[source.sourceId] ?? source.caveat;
-}
-
-function sourceLabel(series: MarketSeries) {
-  return `${series.source.split(" ")[0]} · source id: ${series.sourceId}`;
-}
-
-const marketGroups: Array<{
+type ChartSeries = {
+  id: string;
   label: string;
-  ids: string[];
-  icon: LucideIcon;
-  note: string;
+  color: string;
+  unit: string;
+  status: MarketSeriesItem["status"];
+  points: ChartPoint[];
+  dashed?: boolean;
+  caveat: string;
+};
+
+type WindowRange = {
+  key: RangeKey;
+  label: string;
+  days: number;
+  startMs: number;
+  endMs: number;
+};
+
+const sparkGroupMeta: Array<{
+  group: Exclude<MarketChartGroup, "traffic">;
+  title: string;
+  subtitle: string;
+  preferredIds: string[];
 }> = [
   {
-    label: "能源",
-    ids: ["brent-spot", "wti-spot", "brent-futures-pending", "wti-futures-pending"],
-    icon: Waves,
-    note: "现货代理可审计；期货主连等可复现源接入后再启用。",
+    group: "energy",
+    title: "Energy",
+    subtitle: "Oil proxies",
+    preferredIds: ["brent-spot", "wti-spot"],
   },
   {
-    label: "避险与汇率",
-    ids: ["gold-pending", "silver-pending", "broad-usd", "usd-cny", "usd-cnh-pending"],
-    icon: ShieldCheck,
-    note: "美元和在岸人民币已接入；贵金属与 CNH 暂不画假走势。",
+    group: "safe_haven_fx",
+    title: "Safe haven & FX",
+    subtitle: "Gold pending, USD rows active",
+    preferredIds: ["gold-pending", "broad-usd", "usd-cny", "usd-cnh-pending"],
   },
   {
-    label: "权益与宏观",
-    ids: ["sp500", "nasdaq-composite", "hstech-pending", "shanghai-composite-pending", "us-cpi"],
-    icon: Activity,
-    note: "美股和 CPI 作为背景；港股/上证待稳定源。",
-  },
-  {
-    label: "波动率与利率",
-    ids: ["vix", "us10y"],
-    icon: BarChart3,
-    note: "检查油价压力是否扩散到波动率和利率渠道。",
+    group: "risk_rates_vol",
+    title: "Risk / rates / vol",
+    subtitle: "Equity, volatility, rates",
+    preferredIds: ["vix", "us10y", "sp500", "nasdaq", "us-cpi"],
   },
 ];
 
-function MarketSeriesRow({ series }: { series: MarketSeries }) {
-  const oneYear = getMarketChange(series);
-  const eventWindow = getEventWindowChange(series);
-  const trendClass = marketTrendClass(series, eventWindow);
-
-  return (
-    <article className="market-series-row">
-      <div>
-        <span>{seriesChineseLabel(series)}</span>
-        <small>source id: {series.sourceId}</small>
-      </div>
-      <b>{formatMarketValue(series, oneYear.last.value)}</b>
-      <em className={trendClass}>
-        {series.pending ? "待接入" : eventWindow.display}
-        {eventWindow.start ? eventWindow.percent >= 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} /> : null}
-      </em>
-    </article>
-  );
+const marketPageCss = `
+.market-m7-page {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
 }
 
-function MarketGroupCard({
-  label,
-  ids,
-  icon: Icon,
-  note,
-  series,
-}: {
-  label: string;
-  ids: string[];
-  icon: LucideIcon;
-  note: string;
-  series: MarketSeries[];
-}) {
-  const groupSeries = series.filter((item) => ids.includes(item.id));
-  return (
-    <section className="console-card market-group-card">
-      <div className="group-card-head">
-        <Icon size={23} />
-        <div>
-          <h3>{label}</h3>
-          <p>{note}</p>
-        </div>
-      </div>
-      <div className="market-series-list">
-        {groupSeries.map((item) => (
-          <MarketSeriesRow key={item.id} series={item} />
-        ))}
-      </div>
-    </section>
-  );
+.market-m7-page .console-card {
+  min-width: 0;
 }
 
-function sampledRows(series: MarketSeries) {
-  if (series.pending || series.points.length === 0) return [];
-  const rows = series.points.slice(-10).reverse();
-  return rows.map((point, index) => {
-    const previous = rows[index + 1];
-    const step =
-      previous && previous.value !== 0
-        ? ((point.value / previous.value - 1) * 100)
-        : 0;
-    return { point, step, hasPrevious: Boolean(previous) };
-  });
+.market-m7-controls,
+.market-m7-chart-card,
+.market-m7-spark-section,
+.market-m7-coverage-card,
+.market-m7-traffic-detail {
+  display: grid;
+  gap: 14px;
+  grid-column: 1 / -1;
+  padding: 18px;
 }
 
-function chartScale(series: MarketSeries, chartHeight: number) {
-  const plotWidth = chartWidth - chartPadding.left - chartPadding.right;
-  const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom;
-  const values = series.points.map((point) => point.value);
-  const min = values.length > 0 ? Math.min(...values) : 0;
-  const max = values.length > 0 ? Math.max(...values) : 1;
-  const span = max - min || 1;
+.market-m7-controls {
+  grid-template-columns: minmax(280px, 1fr) auto;
+  align-items: center;
+  border-color: #c9dcf4;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
 
+.market-m7-control-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.market-m7-control-copy p,
+.market-m7-chart-note,
+.market-m7-card-note {
+  margin: 0;
+  color: #475569;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.market-m7-control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.market-m7-range-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(4, minmax(46px, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #d5deea;
+  border-radius: 8px;
+  background: #f4f7fb;
+}
+
+.market-m7-range-tabs button,
+.market-m7-overlay-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  color: #526276;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.market-m7-range-tabs button {
+  padding: 0 9px;
+}
+
+.market-m7-range-tabs button:hover,
+.market-m7-range-tabs button:focus-visible,
+.market-m7-overlay-toggle:hover,
+.market-m7-overlay-toggle:focus-visible {
+  color: #0f376b;
+  background: #ffffff;
+}
+
+.market-m7-range-tabs button.selected {
+  color: #0f376b;
+  background: #ffffff;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.06);
+}
+
+.market-m7-overlay-toggle {
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #d5deea;
+  background: #fbfdff;
+}
+
+.market-m7-overlay-toggle.active {
+  color: #0f376b;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.market-m7-chart-head,
+.market-m7-spark-head,
+.market-m7-coverage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.market-m7-chart-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.market-m7-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid #d8e4f2;
+  border-radius: 7px;
+  color: #475569;
+  background: #fbfdff;
+  font-size: 0.73rem;
+  font-weight: 850;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.market-m7-chart-wrap {
+  min-height: 320px;
+  overflow: hidden;
+  border: 1px solid #dfeaf6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.market-m7-chart-svg {
+  display: block;
+  width: 100%;
+  height: 320px;
+}
+
+.market-m7-grid-line {
+  stroke: #e8eef6;
+  stroke-width: 1;
+}
+
+.market-m7-axis-text {
+  fill: #64748b;
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: 0;
+}
+
+.market-m7-line {
+  fill: none;
+  stroke-width: 2.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.market-m7-line.dashed {
+  stroke-dasharray: 7 6;
+}
+
+.market-m7-last-dot {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.market-m7-event-line {
+  stroke: #f59e0b;
+  stroke-width: 1.7;
+  stroke-dasharray: 4 5;
+}
+
+.market-m7-event-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.market-m7-zero-line {
+  stroke: #94a3b8;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.market-m7-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-m7-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid #d8e4f2;
+  border-radius: 7px;
+  color: #334155;
+  background: #fbfdff;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+.market-m7-legend-item.pending,
+.market-m7-legend-item.no-data {
+  color: #7a8798;
+  border-style: dashed;
+  background: #f8fafc;
+}
+
+.market-m7-legend-swatch {
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.market-m7-legend-swatch.dashed {
+  height: 0;
+  border-top: 3px dashed currentColor;
+  background: transparent;
+}
+
+.market-m7-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  color: #7a8798;
+  background: #edf2f7;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.market-m7-spark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.market-m7-spark-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.market-m7-spark-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.market-m7-spark-title h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.market-m7-spark-title p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 0.73rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.market-m7-spark-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.9fr) minmax(110px, 1fr) minmax(88px, auto);
+  gap: 10px;
+  align-items: center;
+  min-height: 56px;
+  padding: 9px;
+  border: 1px solid #e2ebf6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.market-m7-spark-row.pending {
+  color: #7a8798;
+  border-style: dashed;
+  background: #f8fafc;
+}
+
+.market-m7-spark-label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.market-m7-spark-label strong {
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.market-m7-spark-label span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.market-m7-spark-row.pending strong,
+.market-m7-spark-row.pending span,
+.market-m7-spark-row.pending .market-m7-spark-value {
+  color: #7a8798;
+}
+
+.market-m7-spark-svg {
+  width: 100%;
+  height: 38px;
+  overflow: visible;
+}
+
+.market-m7-spark-line {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.market-m7-spark-value {
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.market-m7-spark-change {
+  display: block;
+  margin-top: 2px;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.market-m7-spark-change.up {
+  color: #15803d;
+}
+
+.market-m7-spark-change.down {
+  color: #dc2626;
+}
+
+.market-m7-coverage-wrap {
+  overflow-x: auto;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.market-m7-coverage-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.market-m7-coverage-table th,
+.market-m7-coverage-table td {
+  padding: 10px 11px;
+  border-bottom: 1px solid #e8eef6;
+  color: #334155;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  text-align: left;
+  vertical-align: top;
+}
+
+.market-m7-coverage-table th {
+  color: #64748b;
+  background: #f5f8fc;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.market-m7-coverage-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.market-m7-coverage-table tr.pending td {
+  color: #7a8798;
+  background: #f8fafc;
+}
+
+.market-m7-series-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.market-m7-series-cell strong {
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.market-m7-series-cell span,
+.market-m7-muted {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.market-m7-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  color: #0f5c35;
+  background: #dcfce7;
+  font-size: 0.67rem;
+  font-weight: 900;
+}
+
+.market-m7-status.pending {
+  color: #64748b;
+  background: #e2e8f0;
+}
+
+.market-m7-caveat-cell {
+  max-width: 34rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .market-m7-controls,
+  .market-m7-chart-head,
+  .market-m7-spark-head,
+  .market-m7-coverage-head {
+    grid-template-columns: 1fr;
+  }
+
+  .market-m7-controls,
+  .market-m7-chart-head,
+  .market-m7-spark-head,
+  .market-m7-coverage-head {
+    display: grid;
+  }
+
+  .market-m7-control-actions,
+  .market-m7-chart-meta {
+    justify-content: flex-start;
+  }
+
+  .market-m7-spark-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .market-m7-controls,
+  .market-m7-chart-card,
+  .market-m7-spark-section,
+  .market-m7-coverage-card,
+  .market-m7-traffic-detail {
+    padding: 14px;
+  }
+
+  .market-m7-control-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .market-m7-range-tabs {
+    width: 100%;
+  }
+
+  .market-m7-overlay-toggle {
+    width: 100%;
+  }
+
+  .market-m7-spark-row {
+    grid-template-columns: 1fr;
+  }
+
+  .market-m7-spark-value {
+    text-align: left;
+  }
+}
+`;
+
+function toDayMs(value: string) {
+  const datePart = value.includes("T") ? value.slice(0, 10) : value;
+  const parsed = Date.parse(`${datePart}T00:00:00Z`);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "pending";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+  }).format(new Date(`${value.slice(0, 10)}T00:00:00Z`));
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "pending";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatNumber(value: number, digits = 2) {
+  return new Intl.NumberFormat("en", {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatSeriesValue(series: Pick<MarketSeriesItem, "unit">, value?: number | null) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "no data";
+  if (series.unit.includes("daily transit")) return `${formatNumber(value, 0)}`;
+  if (series.unit === "%") return `${formatNumber(value, 2)}%`;
+  return `${formatNumber(value, 2)} ${series.unit}`;
+}
+
+function formatPercent(value: number) {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value, 1)}%`;
+}
+
+function makeRange(key: RangeKey): WindowRange {
+  const option = rangeOptions.find((item) => item.key === key) ?? rangeOptions[3];
+  const endMs = toDayMs(bundle.data_as_of);
   return {
-    min,
-    max,
-    mid: min + span / 2,
-    plotWidth,
-    plotHeight,
-    xAt(index: number) {
-      if (series.points.length < 2) return chartPadding.left + plotWidth / 2;
-      return chartPadding.left + (index / (series.points.length - 1)) * plotWidth;
-    },
-    yAt(value: number) {
-      return chartPadding.top + plotHeight - ((value - min) / span) * plotHeight;
-    },
+    ...option,
+    startMs: endMs - (option.days - 1) * dayMs,
+    endMs,
   };
 }
 
-function makeChartLinePath(series: MarketSeries, chartHeight: number) {
-  if (series.points.length < 2) return "";
-  const scale = chartScale(series, chartHeight);
-  return series.points
+function inRange(value: string, range: WindowRange) {
+  const ms = toDayMs(value);
+  return ms >= range.startMs && ms <= range.endMs;
+}
+
+function pointsInRange(points: MarketChartPoint[], range: WindowRange): MarketChartPoint[] {
+  return points.filter((point) => inRange(point.date, range));
+}
+
+function lastPoint(points: MarketChartPoint[]) {
+  return points.length > 0 ? points[points.length - 1] : undefined;
+}
+
+function linePath(
+  points: ChartPoint[],
+  xForDate: (date: string) => number,
+  yForValue: (value: number) => number,
+) {
+  if (points.length < 2) return "";
+  return points
     .map((point, index) => {
-      const x = scale.xAt(index);
-      const y = scale.yAt(point.value);
+      const x = xForDate(point.date);
+      const y = yForValue(point.value);
       return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
     })
     .join(" ");
 }
 
-function dateTickLabel(date?: string) {
-  if (!date) return "";
-  return date.slice(5, 10);
+function chartDomain(values: number[], includeZero = false, clampMinZero = false) {
+  const domainValues = includeZero ? [...values, 0] : values;
+  if (domainValues.length === 0) return { min: 0, max: 1 };
+  const rawMin = Math.min(...domainValues);
+  const rawMax = Math.max(...domainValues);
+  const span = rawMax - rawMin || Math.max(Math.abs(rawMax), 1);
+  const padding = span * 0.12;
+  return {
+    min: clampMinZero ? Math.max(0, rawMin - padding) : rawMin - padding,
+    max: rawMax + padding,
+  };
 }
 
-function MarketSparkCard({
+function ticks(min: number, max: number, count = 4) {
+  if (count <= 1) return [min];
+  return Array.from({ length: count }, (_, index) => min + ((max - min) * index) / (count - 1));
+}
+
+function overlayOffsets(events: MarketOverlay[]) {
+  const grouped = new Map<string, MarketOverlay[]>();
+  for (const event of events) {
+    const key = event.event_at;
+    grouped.set(key, [...(grouped.get(key) ?? []), event]);
+  }
+  return events.map((event) => {
+    const group = grouped.get(event.event_at) ?? [event];
+    const index = group.findIndex((item) => item.event_id === event.event_id);
+    return {
+      event,
+      offset: (index - (group.length - 1) / 2) * 3,
+      count: group.length,
+    };
+  });
+}
+
+function normalizeSeries(series: MarketSeriesItem, range: WindowRange): ChartSeries {
+  if (series.status !== "active") {
+    return { ...series, points: [], caveat: series.caveat };
+  }
+
+  const visible = pointsInRange(series.points, range);
+  const base = visible[0]?.value;
+  if (!base || !Number.isFinite(base)) {
+    return { ...series, points: [], caveat: series.caveat };
+  }
+
+  return {
+    ...series,
+    unit: "%",
+    points: visible.map((point) => ({
+      date: point.date,
+      value: ((point.value / base) - 1) * 100,
+      rawValue: point.value,
+    })),
+    caveat: series.caveat,
+  };
+}
+
+function seriesSort(preferredIds: string[]) {
+  return (a: MarketSeriesItem, b: MarketSeriesItem) => {
+    const aIndex = preferredIds.indexOf(a.id);
+    const bIndex = preferredIds.indexOf(b.id);
+    const safeA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+    const safeB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+    return safeA - safeB || a.label.localeCompare(b.label);
+  };
+}
+
+function changeFor(points: MarketChartPoint[]) {
+  if (points.length < 2) return { label: "no range", className: "" };
+  const first = points[0].value;
+  const last = points[points.length - 1].value;
+  if (!first || !Number.isFinite(first) || !Number.isFinite(last)) {
+    return { label: "no range", className: "" };
+  }
+  const change = ((last / first) - 1) * 100;
+  return {
+    label: formatPercent(change),
+    className: change >= 0 ? "up" : "down",
+  };
+}
+
+function ChartLegend({ series }: { series: ChartSeries[] }) {
+  return (
+    <ul className="market-m7-legend" aria-label="Chart legend">
+      {series.map((item) => {
+        const pending = item.status !== "active";
+        const noData = item.status === "active" && item.points.length === 0;
+        return (
+          <li
+            className={`market-m7-legend-item${pending ? " pending" : ""}${noData ? " no-data" : ""}`}
+            key={item.id}
+            title={item.caveat}
+          >
+            <span
+              className={`market-m7-legend-swatch${item.dashed ? " dashed" : ""}`}
+              style={{ color: pending || noData ? "#94a3b8" : item.color }}
+            />
+            {item.label}
+            {pending ? <em className="market-m7-tag">pending</em> : null}
+            {noData ? <em className="market-m7-tag">no data</em> : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function LineChartSvg({
   series,
-  fullSeries,
-  rangeLabel,
-  expanded,
-  onToggleExpanded,
+  events,
+  range,
+  valueLabel,
+  includeZero,
+  clampMinZero,
 }: {
-  series: MarketSeries;
-  fullSeries: MarketSeries;
-  rangeLabel: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
+  series: ChartSeries[];
+  events: MarketOverlay[];
+  range: WindowRange;
+  valueLabel: (value: number) => string;
+  includeZero?: boolean;
+  clampMinZero?: boolean;
 }) {
-  const change = getMarketChange(series);
-  const eventChange = getEventWindowChange(series);
-  const recentChange = getRecentWindowChange(series, 30);
-  const trendClass = marketTrendClass(series, eventChange);
-  const fullYearChange = getMarketChange(fullSeries);
-  const eventWindowTitle =
-    eventChange.start && eventChange.last
-      ? `${eventChange.start.date} -> ${eventChange.last.date}`
-      : "pending";
-  const chartHeight = expanded ? 220 : 156;
-  const scale = chartScale(series, chartHeight);
-  const path = makeChartLinePath(series, chartHeight);
-  const dataRows = sampledRows(series);
-  const eventWindowIndex = series.points.findIndex((point) => point.date >= stressWindowStart);
-  const eventWindowX =
-    eventWindowIndex === -1
-      ? chartPadding.left + scale.plotWidth
-      : scale.xAt(eventWindowIndex);
-  const eventWindowWidth = Math.max(0, chartPadding.left + scale.plotWidth - eventWindowX);
-  const yTicks = [scale.max, scale.mid, scale.min];
-  const xTickIndexes = unique([
-    0,
-    Math.floor((series.points.length - 1) / 2),
-    series.points.length - 1,
-  ].map(String)).map(Number);
+  const width = 920;
+  const height = 320;
+  const padding = { top: 22, right: 24, bottom: 42, left: 66 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const values = series.flatMap((item) => item.points.map((point) => point.value));
+  const domain = chartDomain(values, includeZero, clampMinZero);
+  const yTicks = ticks(domain.min, domain.max, 4);
+  const xTicks = [range.startMs, range.startMs + (range.endMs - range.startMs) / 2, range.endMs];
+  const xForMs = (ms: number) => padding.left + ((ms - range.startMs) / (range.endMs - range.startMs || 1)) * plotWidth;
+  const xForDate = (date: string) => xForMs(toDayMs(date));
+  const yForValue = (value: number) =>
+    padding.top + plotHeight - ((value - domain.min) / (domain.max - domain.min || 1)) * plotHeight;
+  const zeroY = yForValue(0);
 
   return (
-    <article className={`market-spark-card ${expanded ? "expanded" : ""}`}>
-      <div className="spark-card-head">
-        <div>
-          <span>{sourceLabel(series)}</span>
-          <strong>{seriesChineseLabel(series)}</strong>
-        </div>
-        <div className="spark-head-actions">
-          <b>{formatMarketValue(series, change.last.value)}</b>
-          <button
-            aria-label={expanded ? `收起 ${series.label}` : `展开 ${series.label}`}
-            className="spark-expand-button"
-            onClick={onToggleExpanded}
-            title={expanded ? "收起 panel" : "展开 panel"}
-            type="button"
-          >
-            {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
-        </div>
-      </div>
-      <svg
-        className="spark-chart"
-        viewBox={`0 0 420 ${chartHeight}`}
-        role="img"
-        aria-label={`${series.label} ${rangeLabel} sampled trend`}
-      >
-        {yTicks.map((tick) => {
-          const y = scale.yAt(tick);
-          return (
-            <g className="spark-y-tick" key={`${series.id}-y-${tick.toFixed(3)}`}>
-              <line x1={chartPadding.left} x2={chartPadding.left + scale.plotWidth} y1={y} y2={y} />
-              <text x={chartPadding.left - 8} y={y + 4}>{formatMarketValue(series, tick)}</text>
-            </g>
-          );
-        })}
-        {xTickIndexes.map((index) => {
-          const x = scale.xAt(index);
-          return (
-            <g className="spark-x-tick" key={`${series.id}-x-${index}`}>
-              <line x1={x} x2={x} y1={chartPadding.top} y2={chartPadding.top + scale.plotHeight} />
-              <text x={x} y={chartPadding.top + scale.plotHeight + 18}>{dateTickLabel(series.points[index]?.date)}</text>
-            </g>
-          );
-        })}
-        <rect
-          className="spark-window"
-          x={eventWindowX}
-          y={chartPadding.top}
-          width={eventWindowWidth}
-          height={scale.plotHeight}
-        />
-        <line
-          className="spark-event-line"
-          x1={eventWindowX}
-          x2={eventWindowX}
-          y1={chartPadding.top}
-          y2={chartPadding.top + scale.plotHeight}
-        />
-        <text className="spark-axis-unit" x={chartPadding.left} y="10">
-          {series.unit}
-        </text>
-        <path className="spark-line" d={path} style={{ stroke: series.color }} />
-        {series.points.map((point, index) => {
-          const x = scale.xAt(index);
-          const y = scale.yAt(point.value);
-          return (
-            <circle
-              className="spark-dot"
-              cx={x}
-              cy={y}
-              key={`${series.id}-${point.date}`}
-              r={index === series.points.length - 1 ? 4.5 : 2.5}
-              style={{ fill: series.color }}
-            />
-          );
-        })}
-      </svg>
-      <div className="spark-card-foot">
-        <span>
-          {rangeLabel} <b>{change.display}</b>
-        </span>
-        <em className={trendClass} title={eventWindowTitle}>
-          封锁日起 {eventChange.display}
-        </em>
-      </div>
-      <div className="market-mini-metrics" aria-label={`${series.label} market changes`}>
-        <span>
-          <b>近 1 年</b>
-          {fullYearChange.display}
-        </span>
-        <span>
-          <b>近 30 天</b>
-          {recentChange.display}
-        </span>
-        <span>
-          <b>截至</b>
-          {formatMarketDate(series.verifiedAt)}
-        </span>
-      </div>
-      {expanded ? (
-        <div className="market-data-table" aria-label={`${series.label} sampled observations`}>
-          <div>
-            <span>日期</span>
-            <span>数值</span>
-            <span>环比</span>
-          </div>
-          {dataRows.map(({ point, step, hasPrevious }) => (
-            <div key={`${series.id}-${point.date}`}>
-              <span>{formatMarketDate(point.date)}</span>
-              <strong>{formatMarketValue(series, point.value)}</strong>
-              <em className={hasPrevious ? step >= 0 ? "positive" : "negative" : "pending"}>
-                {hasPrevious ? `${step >= 0 ? "+" : ""}${step.toFixed(1)}%` : "n/a"}
-              </em>
-            </div>
-          ))}
-        </div>
+    <svg className="market-m7-chart-svg" viewBox={`0 0 ${width} ${height}`} role="img">
+      {yTicks.map((tick) => {
+        const y = yForValue(tick);
+        return (
+          <g key={`y-${tick.toFixed(4)}`}>
+            <line className="market-m7-grid-line" x1={padding.left} x2={width - padding.right} y1={y} y2={y} />
+            <text className="market-m7-axis-text" x={padding.left - 10} y={y + 4} textAnchor="end">
+              {valueLabel(tick)}
+            </text>
+          </g>
+        );
+      })}
+
+      {includeZero && zeroY >= padding.top && zeroY <= padding.top + plotHeight ? (
+        <line className="market-m7-zero-line" x1={padding.left} x2={width - padding.right} y1={zeroY} y2={zeroY} />
       ) : null}
-      <p>{seriesInterpretation(series, eventChange)}</p>
-      <small>
-        {series.verifiedAt ? `数据截至 ${series.verifiedAt}` : "数据源待接入；暂无 live as-of"}
-      </small>
+
+      {xTicks.map((tick) => {
+        const x = xForMs(tick);
+        return (
+          <g key={`x-${tick}`}>
+            <line className="market-m7-grid-line" x1={x} x2={x} y1={padding.top} y2={padding.top + plotHeight} />
+            <text className="market-m7-axis-text" x={x} y={height - 15} textAnchor="middle">
+              {formatDate(new Date(tick).toISOString())}
+            </text>
+          </g>
+        );
+      })}
+
+      {overlayOffsets(events).map(({ event, offset, count }) => {
+        const x = xForDate(event.event_at) + offset;
+        return (
+          <a href={`/news#${event.event_id}`} key={event.event_id} aria-label={`Open News event ${event.title}`}>
+            <title>{count > 1 ? `${event.title} (${count} events at this time)` : event.title}</title>
+            <line
+              className="market-m7-event-line"
+              x1={x}
+              x2={x}
+              y1={padding.top}
+              y2={padding.top + plotHeight}
+            />
+            <rect
+              className="market-m7-event-hit"
+              x={x - 5}
+              y={padding.top}
+              width="10"
+              height={plotHeight}
+            />
+          </a>
+        );
+      })}
+
+      {series.map((item) => {
+        const path = linePath(item.points, xForDate, yForValue);
+        const latest = lastPoint(item.points);
+        return (
+          <g key={item.id}>
+            {path ? (
+              <path
+                className={`market-m7-line${item.dashed ? " dashed" : ""}`}
+                d={path}
+                style={{ stroke: item.color }}
+              />
+            ) : null}
+            {latest ? (
+              <circle
+                className="market-m7-last-dot"
+                cx={xForDate(latest.date)}
+                cy={yForValue(latest.value)}
+                r="4"
+                style={{ fill: item.color }}
+              >
+                <title>
+                  {item.label}: {valueLabel(latest.value)} on {latest.date}
+                </title>
+              </circle>
+            ) : null}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function ChartCard({
+  icon,
+  title,
+  subtitle,
+  series,
+  events,
+  range,
+  valueLabel,
+  includeZero,
+  clampMinZero,
+  note,
+}: {
+  icon: "traffic" | "asset";
+  title: string;
+  subtitle: string;
+  series: ChartSeries[];
+  events: MarketOverlay[];
+  range: WindowRange;
+  valueLabel: (value: number) => string;
+  includeZero?: boolean;
+  clampMinZero?: boolean;
+  note?: string;
+}) {
+  const Icon = icon === "traffic" ? Ship : LineChartIcon;
+  const hasData = series.some((item) => item.points.length > 0);
+
+  return (
+    <section className="console-card market-m7-chart-card">
+      <div className="market-m7-chart-head">
+        <InfoTitle title={title} subtitle={subtitle} />
+        <div className="market-m7-chart-meta">
+          <span className="market-m7-pill">
+            <Icon size={14} />&nbsp;{range.label}
+          </span>
+          <span className="market-m7-pill">{events.length} events in range</span>
+        </div>
+      </div>
+
+      <div className="market-m7-chart-wrap">
+        {hasData ? (
+          <LineChartSvg
+            clampMinZero={clampMinZero}
+            events={events}
+            includeZero={includeZero}
+            range={range}
+            series={series}
+            valueLabel={valueLabel}
+          />
+        ) : (
+          <div className="market-m7-chart-svg" aria-label="No chart data in selected range" />
+        )}
+      </div>
+
+      <ChartLegend series={series} />
+      {note ? <p className="market-m7-chart-note">{note}</p> : null}
+    </section>
+  );
+}
+
+function Sparkline({
+  points,
+  color,
+}: {
+  points: MarketChartPoint[];
+  color: string;
+}) {
+  const width = 150;
+  const height = 38;
+  const padding = 3;
+  if (points.length < 2) {
+    return (
+      <svg className="market-m7-spark-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="No sparkline data">
+        <line x1={padding} x2={width - padding} y1={height / 2} y2={height / 2} stroke="#cbd5e1" strokeDasharray="4 4" />
+      </svg>
+    );
+  }
+
+  const values = points.map((point) => point.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const xForIndex = (index: number) => padding + (index / (points.length - 1)) * (width - padding * 2);
+  const yForValue = (value: number) => height - padding - ((value - min) / span) * (height - padding * 2);
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${xForIndex(index).toFixed(1)} ${yForValue(point.value).toFixed(1)}`)
+    .join(" ");
+
+  return (
+    <svg className="market-m7-spark-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Sparkline">
+      <path className="market-m7-spark-line" d={path} style={{ stroke: color }} />
+    </svg>
+  );
+}
+
+function SparklineRow({
+  series,
+  range,
+}: {
+  series: MarketSeriesItem;
+  range: WindowRange;
+}) {
+  const visible = pointsInRange(series.points, range);
+  const latest = lastPoint(visible);
+  const change = changeFor(visible);
+  const pending = series.status !== "active";
+
+  return (
+    <article className={`market-m7-spark-row${pending ? " pending" : ""}`} title={series.caveat}>
+      <div className="market-m7-spark-label">
+        <strong>{series.label}</strong>
+        <span>{series.source_id}</span>
+      </div>
+      <Sparkline color={pending ? "#94a3b8" : series.color} points={pending ? [] : visible} />
+      <div className="market-m7-spark-value">
+        {pending ? "pending" : formatSeriesValue(series, latest?.value)}
+        <span className={`market-m7-spark-change ${change.className}`}>{pending ? "no line" : change.label}</span>
+      </div>
     </article>
   );
 }
 
-function MarketInsightRail({
-  brentWindow,
-  vixWindow,
-  spxWindow,
-}: {
-  brentWindow: string;
-  vixWindow: string;
-  spxWindow: string;
-}) {
-  const insights = [
-    {
-      label: "原油溢价",
-      value: brentWindow,
-      body: "先看能源曲线是否持续上行；Brent 是跨资产判断的起点，不是结论。",
-    },
-    {
-      label: "扩散确认",
-      value: vixWindow,
-      body: "再看 VIX 是否同步升高。若波动率没有放大，封锁冲击的广谱定价不足。",
-    },
-    {
-      label: "风险偏好",
-      value: spxWindow,
-      body: "权益资产若没有同步承压，说明市场更像在定价局部风险溢价。",
-    },
-  ];
-
-  return (
-    <div className="market-insight-rail" aria-label="Market analysis order">
-      {insights.map((item) => (
-        <article key={item.label}>
-          <span>{item.label}</span>
-          <strong>{item.value}</strong>
-          <p>{item.body}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function MarketHeroPanel({
+function SparklineGroups({
   series,
-  latestVerifiedAt,
-  pendingCount,
-  pricingPattern,
+  range,
 }: {
-  series: MarketSeries[];
-  latestVerifiedAt: string;
-  pendingCount: number;
-  pricingPattern: string;
+  series: MarketSeriesItem[];
+  range: WindowRange;
 }) {
-  const brent = series.find((item) => item.id === "brent-spot");
-  const vix = series.find((item) => item.id === "vix");
-  const sp500 = series.find((item) => item.id === "sp500");
-  const brentWindow = brent ? getEventWindowChange(brent).display : "n/a";
-  const vixWindow = vix ? getEventWindowChange(vix).display : "n/a";
-  const spxWindow = sp500 ? getEventWindowChange(sp500).display : "n/a";
-  const sourceIds = unique(series.map((item) => item.sourceId));
-  const stableSourceIds = unique(series.filter((item) => !item.pending).map((item) => item.sourceId));
-
   return (
-    <section className="console-card market-hero-panel">
-      <div className="market-hero-copy">
-        <span className="market-page-kicker">Market background · evidence input only</span>
-        <h1>油价仍有风险溢价，但没有形成封锁式跨资产冲击</h1>
-        <p>
-          从 {stressWindowStart} 封锁日起，Brent {brentWindow}，VIX {vixWindow}，
-          S&P 500 {spxWindow}。这一页只展示 source-bound 历史背景，不直接改 forecast state。
-        </p>
-        <div className="market-hero-tags" aria-label="Market source and status tags">
-          <span>pricingPattern: {pricingPattern}</span>
-          <span>封锁日 {stressWindowStart}</span>
-          <span>数据截至 {latestVerifiedAt}</span>
-        </div>
-      </div>
-      <div className="market-hero-metrics" aria-label="Market headline metrics">
-        <article>
-          <Gauge size={17} />
-          <span>原油事件窗口</span>
-          <strong>{brentWindow}</strong>
-          <p>风险溢价存在，但还需要跨资产确认。</p>
-        </article>
-        <article>
-          <BarChart3 size={17} />
-          <span>波动率确认</span>
-          <strong>{vixWindow}</strong>
-          <p>VIX 未同步上行，封锁式冲击不足。</p>
-        </article>
-        <article>
-          <Clock3 size={17} />
-          <span>数据边界</span>
-          <strong>{pendingCount} 待接入</strong>
-          <p>期货、贵金属、CNH、中港指数保持 pending。</p>
-        </article>
-      </div>
-      <div className="market-hero-source">
-        <Database size={15} />
-        <span>
-          active source id: {stableSourceIds.join(", ")} · pending source ids:{" "}
-          {sourceIds.filter((sourceId) => !stableSourceIds.includes(sourceId)).join(", ")}
+    <section className="console-card market-m7-spark-section">
+      <div className="market-m7-spark-head">
+        <InfoTitle title="Grouped sparklines" subtitle="Range-controlled rows, capped at four series per group" />
+        <span className="market-m7-pill">
+          <BarChart3 size={14} />&nbsp;{range.label}
         </span>
       </div>
-    </section>
-  );
-}
 
-function MarketSignalBoard({ series }: { series: MarketSeries[] }) {
-  const [rangeDays, setRangeDays] = useState<MarketRangeDays>(365);
-  const [expandedSeriesId, setExpandedSeriesId] = useState<string | null>(null);
-  const rangeLabel = marketRangeOptions.find((option) => option.days === rangeDays)?.label ?? "1Y";
-  const visible = series.filter((item) => primaryChartIds.includes(item.id));
-  const brent = series.find((item) => item.id === "brent-spot");
-  const vix = series.find((item) => item.id === "vix");
-  const sp500 = series.find((item) => item.id === "sp500");
-  const brentFull = brent ? getMarketChange(brent).display : "n/a";
-  const brentWindow = brent ? getEventWindowChange(brent).display : "n/a";
-  const vixWindow = vix ? getEventWindowChange(vix).display : "n/a";
-  const spxWindow = sp500 ? getEventWindowChange(sp500).display : "n/a";
-
-  return (
-    <section className="console-card market-signal-board">
-      <div className="chart-card-head">
-        <InfoTitle
-          title="市场数据背景"
-          subtitle="最多展示近 1 年；阴影区从 2026-02-28 封锁日起计算事件窗口表现"
-        />
-        <div className="market-chart-controls" aria-label="Market chart controls">
-          <div className="market-range-tabs" role="tablist" aria-label="Market chart range">
-            {marketRangeOptions.map((option) => (
-              <button
-                aria-selected={rangeDays === option.days}
-                className={rangeDays === option.days ? "selected" : ""}
-                key={option.label}
-                onClick={() => setRangeDays(option.days)}
-                role="tab"
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <span className="event-window-badge">封锁日 {stressWindowStart}</span>
-        </div>
-      </div>
-      <p className="market-window-note">
-        阅读顺序：先看油价是否持续上行，再看 VIX / 美元 / 权益是否同步确认。
-        当前 Brent 近 1 年 {brentFull}，封锁日起 {brentWindow}；VIX 封锁日起 {vixWindow}，
-        S&P 500 封锁日起 {spxWindow}，因此 MarketRead.pricingPattern 保持 mixed。
-      </p>
-      <MarketInsightRail
-        brentWindow={brentWindow}
-        spxWindow={spxWindow}
-        vixWindow={vixWindow}
-      />
-      <div className="market-spark-grid">
-        {visible.map((item) => {
-          const windowSeries = getMarketWindowSeries(item, rangeDays);
-          const expanded = expandedSeriesId === item.id;
+      <div className="market-m7-spark-grid">
+        {sparkGroupMeta.map((group) => {
+          const groupSeries = series
+            .filter((item) => item.group === group.group)
+            .sort(seriesSort(group.preferredIds))
+            .slice(0, 4);
           return (
-            <MarketSparkCard
-              expanded={expanded}
-              fullSeries={item}
-              key={item.id}
-              onToggleExpanded={() => setExpandedSeriesId(expanded ? null : item.id)}
-              rangeLabel={rangeLabel}
-              series={windowSeries}
-            />
+            <article className="market-m7-spark-card" key={group.group}>
+              <div className="market-m7-spark-title">
+                <div>
+                  <h3>{group.title}</h3>
+                  <p>{group.subtitle}</p>
+                </div>
+                <span className="market-m7-tag">{groupSeries.length} rows</span>
+              </div>
+              {groupSeries.map((item) => (
+                <SparklineRow key={item.id} range={range} series={item} />
+              ))}
+            </article>
           );
         })}
       </div>
@@ -602,127 +1056,234 @@ function MarketSignalBoard({ series }: { series: MarketSeries[] }) {
   );
 }
 
-function MarketCoveragePanel({
-  evidence,
-  observations,
-  pendingSeries,
-  providerCoverage,
-  sourceCoverage,
+function TrafficDetail({
+  series,
+  range,
 }: {
-  evidence: ReturnType<typeof projectMarketState>["evidence"];
-  observations: ReturnType<typeof projectMarketState>["observations"];
-  pendingSeries: MarketSeries[];
-  providerCoverage: ReturnType<typeof projectMarketState>["providerCoverage"];
-  sourceCoverage: ReturnType<typeof projectMarketState>["sourceCoverage"];
+  series: MarketSeriesItem[];
+  range: WindowRange;
 }) {
-  const observationSourceIds = observations
-    .map((item) => item.sourceId)
-    .filter((id, index, ids) => ids.indexOf(id) === index);
+  const detailSeries = series.filter(
+    (item) =>
+      item.group === "traffic" &&
+      !item.target.endsWith("_all") &&
+      !item.id.includes("7d-avg"),
+  );
+
+  if (detailSeries.length === 0) return null;
 
   return (
-    <section className="console-card market-coverage-panel">
-      <div>
-        <InfoTitle
-          title="数据覆盖与待接入"
-          subtitle="pending 表示还没有稳定、授权、可复现的 daily source，不画静态假走势"
-        />
-        <div className="coverage-facts">
-          <article>
-            <Database size={18} />
-            <span>运行证据</span>
-            <strong>{evidence.length} 条 claim</strong>
-            <p>{evidence.map((claim) => claim.evidenceId).join(", ")}</p>
-          </article>
-          <article>
-            <CheckCircle2 size={18} />
-            <span>来源观测</span>
-            <strong>{observations.length} 条关联</strong>
-            <p>{observationSourceIds.join(", ")}</p>
-          </article>
-          <article>
-            <CircleHelp size={18} />
-            <span>pending 保护</span>
-            <strong>{pendingSeries.length} 条待接入</strong>
-            <p>这些行只暴露 source boundary；未接入稳定源前不生成虚假走势或高置信判断。</p>
-          </article>
-        </div>
+    <section className="console-card market-m7-traffic-detail">
+      <InfoTitle title="Traffic detail" subtitle="PortWatch vessel-type series when available" />
+      <div className="market-m7-spark-grid">
+        {detailSeries.slice(0, 5).map((item) => (
+          <SparklineRow key={item.id} range={range} series={item} />
+        ))}
       </div>
-      <div className="coverage-source-list">
-        {sourceCoverage.map((source) => (
-          <article key={source.sourceId} className={source.pending ? "pending" : ""}>
-            <span>source id: {source.sourceId}</span>
-            <strong>{source.name}</strong>
-            <p>{source.pending ? pendingReason(source.sourceId) : sourceCoverageNote(source)}</p>
-          </article>
-        ))}
-        {providerCoverage.map((provider) => (
-          <article
-            key={provider.providerId}
-            className={provider.providerStatus === "active" ? "" : "pending"}
-          >
-            <span>
-              provider id: {provider.providerId} · {provider.providerStatus}
-            </span>
-            <strong>{provider.name}</strong>
-            <p>{provider.caveat}</p>
-          </article>
-        ))}
+    </section>
+  );
+}
+
+function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
+  const pendingCount = series.filter((item) => item.status !== "active").length;
+
+  return (
+    <section className="console-card market-m7-coverage-card">
+      <div className="market-m7-coverage-head">
+        <InfoTitle title="Coverage table" subtitle="Source lineage, freshness, status, and caveats for every series" />
+        <span className="market-m7-pill">
+          <Database size={14} />&nbsp;{pendingCount} pending
+        </span>
+      </div>
+
+      <div className="market-m7-coverage-wrap">
+        <table className="market-m7-coverage-table">
+          <thead>
+            <tr>
+              <th>series</th>
+              <th>source</th>
+              <th>status</th>
+              <th>license</th>
+              <th>retrieved_at</th>
+              <th>raw_path</th>
+              <th>caveat</th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.map((item) => {
+              const pending = item.status !== "active";
+              return (
+                <tr className={pending ? "pending" : ""} key={item.id}>
+                  <td>
+                    <div className="market-m7-series-cell">
+                      <strong>{item.label}</strong>
+                      <span>{item.target}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{item.source_id}</strong>
+                    <div className="market-m7-muted">provider: {item.provider_id ?? "unknown"}</div>
+                  </td>
+                  <td>
+                    <span className={`market-m7-status${pending ? " pending" : ""}`}>
+                      {pending ? "pending" : item.status}
+                    </span>
+                  </td>
+                  <td>{item.license_status}</td>
+                  <td>{formatDateTime(item.retrieved_at)}</td>
+                  <td>{item.raw_path ?? "pending"}</td>
+                  <td className="market-m7-caveat-cell">{item.caveat}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function MarketControls({
+  rangeKey,
+  showEvents,
+  onRangeChange,
+  onToggleEvents,
+}: {
+  rangeKey: RangeKey;
+  showEvents: boolean;
+  onRangeChange: (range: RangeKey) => void;
+  onToggleEvents: () => void;
+}) {
+  return (
+    <section className="console-card market-m7-controls">
+      <div className="market-m7-control-copy">
+        <InfoTitle title="Market background" subtitle="Raw traffic and market series from generated local snapshots" />
+        <p>
+          Built {formatDateTime(bundle.built_at)} · data as of {formatDateTime(bundle.data_as_of)} · {bundle.series.length} series ·{" "}
+          {bundle.event_overlays.length} event overlays
+        </p>
+      </div>
+      <div className="market-m7-control-actions">
+        <div className="market-m7-range-tabs" role="tablist" aria-label="Market range">
+          {rangeOptions.map((option) => (
+            <button
+              aria-selected={rangeKey === option.key}
+              className={rangeKey === option.key ? "selected" : ""}
+              key={option.key}
+              onClick={() => onRangeChange(option.key)}
+              role="tab"
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <button
+          aria-pressed={showEvents}
+          className={`market-m7-overlay-toggle${showEvents ? " active" : ""}`}
+          onClick={onToggleEvents}
+          type="button"
+        >
+          {showEvents ? <ToggleRight size={17} /> : <ToggleLeft size={17} />}
+          Event overlay
+        </button>
       </div>
     </section>
   );
 }
 
 export function MarketPage() {
-  const projection = useMemo(() => projectMarketState(sourceRegistry), []);
-  const latestVerifiedAt =
-    projection.stableSeries
-      .map((series) => series.verifiedAt)
-      .filter(Boolean)
-      .sort()
-      .at(-1) ?? projection.marketRead.asOf;
+  const [rangeKey, setRangeKey] = useState<RangeKey>("30d");
+  const [showEvents, setShowEvents] = useState(true);
+  const range = useMemo(() => makeRange(rangeKey), [rangeKey]);
+
+  const {
+    trafficChartSeries,
+    crossAssetSeries,
+    visibleEvents,
+    nonTrafficSeries,
+    trafficCaveat,
+  } = useMemo(() => {
+    const trafficSeries = bundle.series.filter((item) => item.group === "traffic");
+    const dailyTraffic =
+      trafficSeries.find((item) => item.target === "portwatch_daily_transit_calls_all") ??
+      trafficSeries.find((item) => item.baseline_points && item.baseline_points.length > 0);
+    const baselineSeries: ChartSeries[] =
+      dailyTraffic?.baseline_points && dailyTraffic.baseline_points.length > 0
+        ? [
+            {
+              id: `${dailyTraffic.id}-baseline`,
+              label: "1y baseline",
+              color: "#64748b",
+              unit: dailyTraffic.unit,
+              status: "active",
+              points: pointsInRange(dailyTraffic.baseline_points, range),
+              dashed: true,
+              caveat: "PortWatch same-window historical baseline derived from PortWatch history.",
+            },
+          ]
+        : [];
+
+    const activeTraffic = trafficSeries.map((item) => ({
+      ...item,
+      points: pointsInRange(item.points, range),
+      caveat: item.caveat,
+    }));
+    const nonTraffic = bundle.series.filter((item) => item.group !== "traffic");
+    const normalized = nonTraffic.map((item) => normalizeSeries(item, range));
+    const overlays = showEvents
+      ? bundle.event_overlays.filter((event) => inRange(event.event_at, range))
+      : [];
+
+    return {
+      trafficChartSeries: [...activeTraffic, ...baselineSeries],
+      crossAssetSeries: normalized,
+      visibleEvents: overlays,
+      nonTrafficSeries: nonTraffic,
+      trafficCaveat: dailyTraffic?.caveat ?? "PortWatch traffic caveat pending.",
+    };
+  }, [range, showEvents]);
 
   return (
-    <section className="page-grid market-page">
-      <MarketHeroPanel
-        latestVerifiedAt={latestVerifiedAt}
-        pendingCount={projection.pendingSeries.length}
-        pricingPattern={projection.marketRead.pricingPattern}
-        series={projection.series}
+    <section className="page-grid market-page market-m7-page">
+      <style>{marketPageCss}</style>
+
+      <MarketControls
+        onRangeChange={setRangeKey}
+        onToggleEvents={() => setShowEvents((value) => !value)}
+        rangeKey={rangeKey}
+        showEvents={showEvents}
       />
 
-      <MarketSignalBoard series={projection.series} />
-
-      <MarketCoveragePanel
-        evidence={projection.evidence}
-        observations={projection.observations}
-        pendingSeries={projection.pendingSeries}
-        providerCoverage={projection.providerCoverage}
-        sourceCoverage={projection.sourceCoverage}
+      <ChartCard
+        events={visibleEvents}
+        icon="traffic"
+        range={range}
+        series={trafficChartSeries}
+        subtitle="PortWatch daily transit calls, 7d average, and same-window historical baseline"
+        title="Traffic chart"
+        valueLabel={(value) => formatNumber(value, 0)}
+        clampMinZero
+        note={`AIS/GNSS caveat: ${trafficCaveat}`}
       />
 
-      <div className="market-groups">
-        {marketGroups.map((group) => (
-          <MarketGroupCard
-            icon={group.icon}
-            ids={group.ids}
-            key={group.label}
-            label={group.label}
-            note={group.note}
-            series={projection.series}
-          />
-        ))}
-      </div>
+      <ChartCard
+        events={visibleEvents}
+        icon="asset"
+        includeZero
+        range={range}
+        series={crossAssetSeries}
+        subtitle="Active non-traffic rows rebased to 0% at the first observation inside the selected range"
+        title="Cross-asset normalized chart"
+        valueLabel={formatPercent}
+        note="Pending rows stay in the legend and table only; no line is drawn until raw lineage is available."
+      />
 
-      <section className="console-card how-read-card">
-        <span className="icon-well">
-          <CircleHelp size={25} />
-        </span>
-        <strong>如何阅读</strong>
-        <p>
-          市场信号只是 <b>evidence input</b>，不会直接改 scenario 或 target forecast state。
-          只有 Forecast 页里的 <b>judgement_updated</b> 事件可以写入预测状态。
-        </p>
-      </section>
+      <SparklineGroups range={range} series={nonTrafficSeries} />
+
+      <TrafficDetail range={range} series={bundle.series} />
+
+      <CoverageTable series={bundle.series} />
     </section>
   );
 }
