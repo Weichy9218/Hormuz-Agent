@@ -149,7 +149,9 @@
           "isTruncated": false,
           "fullLength": 799,
           "rawFilePath": "data/galaxy/hormuz-daily-question.jsonl"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "forecast question"
       },
       {
         "actionId": "ga-turn-01",
@@ -956,7 +958,9 @@
           "fullLength": 140,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 17
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of evidence #3"
       },
       {
         "actionId": "ga-call-call_klk64VSc51aaIIYPfQaXQXGE",
@@ -1070,7 +1074,9 @@
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 19,
           "toolName": "read_webpage"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "ref'd by record_forecast evidence #3"
       },
       {
         "actionId": "ga-result-call_klk64VSc51aaIIYPfQaXQXGE",
@@ -1661,7 +1667,9 @@
           "fullLength": 191,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 30
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of evidence #2"
       },
       {
         "actionId": "ga-call-call_N2a3G3UyrKiJAf3Jhq1WFwok",
@@ -1689,7 +1697,9 @@
           "fullLength": 191,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 30
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of evidence #2"
       },
       {
         "actionId": "ga-call-call_HmME4OOHepTIKRUrS5icKBdW",
@@ -1775,7 +1785,9 @@
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 32,
           "toolName": "read_webpage"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "ref'd by record_forecast evidence #2"
       },
       {
         "actionId": "ga-result-call_N2a3G3UyrKiJAf3Jhq1WFwok",
@@ -1804,7 +1816,9 @@
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 33,
           "toolName": "read_webpage"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "ref'd by record_forecast evidence #2"
       },
       {
         "actionId": "ga-result-call_HmME4OOHepTIKRUrS5icKBdW",
@@ -2372,7 +2386,9 @@
               "arguments": "{\"artifact_dir\":null,\"clean_content\":true,\"query\":\"Summarize this Safety4Sea/Windward article focusing on current Strait of Hormuz traffic, risk profile, incidents, and whether the article implies controlled, severe, or closure-like conditions as of 7 May 2026.\",\"store_raw\":false,\"url\":\"https://safety4sea.com/windward-operational-uncertainty-persists-in-strait-of-hormuz/\"}"
             }
           ]
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of evidence #7"
       },
       {
         "actionId": "ga-call-call_YOruIqhMdCA67urxuZdVv0Wx",
@@ -2401,7 +2417,9 @@
           "fullLength": 426,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 44
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of evidence #7"
       },
       {
         "actionId": "ga-call-call_nFAclfbgfbgTUUFpWnHFYIsy",
@@ -2458,7 +2476,9 @@
           "fullLength": 375,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 44
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of evidence #3"
       },
       {
         "actionId": "ga-result-call_YOruIqhMdCA67urxuZdVv0Wx",
@@ -2488,7 +2508,9 @@
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 45,
           "toolName": "read_webpage_with_query"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "ref'd by record_forecast evidence #7"
       },
       {
         "actionId": "ga-result-call_nFAclfbgfbgTUUFpWnHFYIsy",
@@ -2547,7 +2569,9 @@
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 47,
           "toolName": "read_webpage_with_query"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "ref'd by record_forecast evidence #3"
       },
       {
         "actionId": "ga-turn-11",
@@ -2978,7 +3002,9 @@
               "arguments": "{\"confidence\":\"med\",\"counterevidence\":[\"路透5月12日评论提到已有少数VLCC和卡塔尔LNG货船在伊朗默许下进行有限、选择性通行，说明并非绝对零流量。\",\"美伊仍在谈判，AP与其他报道都提到停火/和谈并未完全破裂；若未来一周突然达成护航或放行安排，状态可能从D回落到C。\"],\"key_evidence\":[\"路透5月4日报道称尽管美国承诺恢复航行自由，但海峡航运“仍处于停滞”，没有商业油轮排队通行。\",\"UKMTO/JMIC 5月5日与5月7日通报将霍尔木兹及周边威胁评为CRITICAL，记录到通行量从历史约138艘/日暴跌至4艘甚至0艘，并伴随袭击、投射物命中、GNSS/AIS干扰等。\",\"Safety4Sea/Windward与AP均描述海峡为‘supervised pause’/‘remains closed’，只有高风险承受者或受伊朗条件约束的船舶极少量通过，数千船员和大量船舶仍被困。\",\"路透5月12日评论与彭博5月11日报道都显示重开谈判仍然僵持，未来一周内恢复到可自由商业通行的概率不高。\"],\"prediction\":\"D\",\"rationale\":\"截至5月12日，多家独立来源一致显示霍尔木兹已处于持续多日的closure-class级别停摆：交通量接近归零、商业油轮基本停止、且重开谈判仍陷僵局。距离5月19日仅一周，现有轨迹更像延续封闭态势而非快速回到仅‘严重扰动’。\",\"temporal_notes\":[\"核心证据覆盖到2026-05-12，距离目标日2026-05-19约一周，属于短期外推。\",\"UKMTO/JMIC、路透、AP均可直接读取；部分彭博页面存在403/验证码，但已被其他来源交叉印证。\"],\"unresolved_concerns\":[\"若美伊在5月12日至19日之间突然达成临时护航、停火执行或放行协议，状态可能转为C而非D。\",\"题目未指定唯一裁决源；若最终判定更强调‘存在少量受控通行’而不是‘商业自由通行是否停摆’，C与D的边界可能产生解释争议。\"]}"
             }
           ]
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "parent of record_forecast"
       },
       {
         "actionId": "ga-call-call_XNaOJRoSMNa6AF96DzhbZhl0",
@@ -3029,7 +3055,9 @@
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "rawLine": 56,
           "boxedAnswer": "\\boxed{D}"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "record_forecast / boxed answer"
       },
       {
         "actionId": "ga-result-call_XNaOJRoSMNa6AF96DzhbZhl0",
@@ -3104,7 +3132,9 @@
           "fullLength": 970,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/main_agent.jsonl",
           "boxedAnswer": "\\boxed{D}"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "record_forecast / boxed answer"
       },
       {
         "actionId": "ga-checkpoint",
@@ -3127,7 +3157,9 @@
           "isTruncated": true,
           "fullLength": 6264,
           "rawFilePath": "data/galaxy/runs/2026-05-12/2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12/hormuz-traffic-risk-2026-05-12/checkpoint_note.json"
-        }
+        },
+        "criticalPath": true,
+        "criticalReason": "checkpoint after final forecast"
       }
     ],
     "graph": {
@@ -3143,7 +3175,9 @@
             "summary": "On 2026-05-19 (UTC+8), which Hormuz transit-risk scenario will best describe the Strait of Hormuz case state? A. normal: transit and cross-asset pricing remain close to normal. B. controlled: maritime/security risk is elevated, but there is no sustained closure-class traffic stop. C. severe: repeated incidents or official restrictions materially disrupt tran",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "forecast question"
           }
         },
         {
@@ -3157,7 +3191,8 @@
             "summary": "Question audit completed; the agent is launching a parallel evidence batch.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3172,7 +3207,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3187,7 +3223,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3202,7 +3239,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3217,7 +3255,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3232,7 +3271,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3247,7 +3287,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3262,7 +3303,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3277,7 +3319,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3291,7 +3334,8 @@
             "summary": "这一步要先确认两类关键证据：一是EIA给出的长期基线与“正常/受控/严重”边界，二是路透这条2026-03-04报道到底是在描述短期冲击还是持续性停摆。",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3306,7 +3350,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3321,7 +3366,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3336,7 +3382,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3351,7 +3398,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3365,7 +3413,8 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3380,7 +3429,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3395,7 +3445,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3410,7 +3461,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3425,7 +3477,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3440,7 +3493,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3455,7 +3509,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3470,7 +3525,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3485,7 +3541,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3499,7 +3556,8 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3514,7 +3572,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3529,7 +3588,9 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of evidence #3"
           }
         },
         {
@@ -3544,7 +3605,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3559,7 +3621,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3574,7 +3637,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3589,7 +3653,9 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "ref'd by record_forecast evidence #3"
           }
         },
         {
@@ -3604,7 +3670,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3619,7 +3686,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3633,7 +3701,8 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3648,7 +3717,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3663,7 +3733,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3678,7 +3749,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3693,7 +3765,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3708,7 +3781,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3723,7 +3797,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3737,7 +3812,8 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3752,7 +3828,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3767,7 +3844,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3782,7 +3860,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3797,7 +3876,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3812,7 +3892,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3827,7 +3908,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3841,7 +3923,8 @@
             "summary": "这一步要把“5月上旬到底是在持续严重受扰、还是已开始稳定恢复”从摘要变成可核对的原文证据，所以我并行读取路透、官方海事通告和航运数据解读。",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3856,7 +3939,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3871,7 +3955,9 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of evidence #2"
           }
         },
         {
@@ -3886,7 +3972,9 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of evidence #2"
           }
         },
         {
@@ -3901,7 +3989,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3916,7 +4005,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3931,7 +4021,9 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "ref'd by record_forecast evidence #2"
           }
         },
         {
@@ -3946,7 +4038,9 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "ref'd by record_forecast evidence #2"
           }
         },
         {
@@ -3961,7 +4055,8 @@
             "status": "success",
             "toolName": "read_webpage",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3975,7 +4070,8 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -3990,7 +4086,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4005,7 +4102,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4020,7 +4118,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4035,7 +4134,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4050,7 +4150,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4065,7 +4166,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4079,7 +4181,8 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4094,7 +4197,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4109,7 +4213,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4124,7 +4229,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4139,7 +4245,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4154,7 +4261,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4169,7 +4277,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4184,7 +4293,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4199,7 +4309,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4213,7 +4324,9 @@
             "summary": "Question audit completed; the agent is launching a parallel evidence batch.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of evidence #7"
           }
         },
         {
@@ -4228,7 +4341,9 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of evidence #7"
           }
         },
         {
@@ -4243,7 +4358,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4258,7 +4374,9 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of evidence #3"
           }
         },
         {
@@ -4273,7 +4391,9 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "ref'd by record_forecast evidence #7"
           }
         },
         {
@@ -4288,7 +4408,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4303,7 +4424,9 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "ref'd by record_forecast evidence #3"
           }
         },
         {
@@ -4317,7 +4440,8 @@
             "summary": "这一步要补上“未来一周是缓和还是继续僵持”的轨迹证据，因为现有材料只把状态确认到 5 月 11–12 日，尚不足以判断 5 月 19 日更接近 C 还是 D。",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4332,7 +4456,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4347,7 +4472,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4362,7 +4488,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4377,7 +4504,8 @@
             "status": "failed",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4391,7 +4519,8 @@
             "summary": "这一步要确认截至 5 月 12 日前后是否出现了“即将恢复通航”的新信号，因为若没有，持续一周后的 5 月 19 日更可能延续当前的 closure-class 状态。",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4406,7 +4535,8 @@
             "status": "success",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4421,7 +4551,8 @@
             "status": "failed",
             "toolName": "search_web",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4435,7 +4566,8 @@
             "summary": "这一步要补一个“反方向证据”检查：如果主流媒体已经在 5 月 12 日报道谈判接近成功或船只开始排队恢复，那么我对 5 月 19 日选 D 的把握就应下调。",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4450,7 +4582,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4465,7 +4598,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4480,7 +4614,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4495,7 +4630,8 @@
             "status": "success",
             "toolName": "read_webpage_with_query",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4509,7 +4645,9 @@
             "summary": "Agent turn prepared tool calls; raw reasoning is hidden.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "parent of record_forecast"
           }
         },
         {
@@ -4524,7 +4662,9 @@
             "status": "success",
             "toolName": "record_forecast",
             "current": false,
-            "terminal": true
+            "terminal": true,
+            "criticalPath": true,
+            "criticalReason": "record_forecast / boxed answer"
           }
         },
         {
@@ -4539,7 +4679,8 @@
             "status": "success",
             "toolName": "record_forecast",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": false
           }
         },
         {
@@ -4554,7 +4695,9 @@
             "status": "success",
             "toolName": "record_forecast",
             "current": false,
-            "terminal": true
+            "terminal": true,
+            "criticalPath": true,
+            "criticalReason": "record_forecast / boxed answer"
           }
         },
         {
@@ -4568,7 +4711,9 @@
             "summary": "Checkpoint and run stats persisted for reviewer replay.",
             "status": "success",
             "current": false,
-            "terminal": false
+            "terminal": false,
+            "criticalPath": true,
+            "criticalReason": "checkpoint after final forecast"
           }
         }
       ],
@@ -4577,733 +4722,855 @@
           "id": "ga-question->ga-turn-01",
           "source": "ga-question",
           "target": "ga-turn-01",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-01->ga-call-call_RGxthmPH1DYcglB5MRmTIxVM",
           "source": "ga-turn-01",
           "target": "ga-call-call_RGxthmPH1DYcglB5MRmTIxVM",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-01->ga-call-call_nkWNZAU3oPUJBJTSCoo1Pbhz",
           "source": "ga-turn-01",
           "target": "ga-call-call_nkWNZAU3oPUJBJTSCoo1Pbhz",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-01->ga-call-call_MyzSGA4uvQOirg7T345NDmpw",
           "source": "ga-turn-01",
           "target": "ga-call-call_MyzSGA4uvQOirg7T345NDmpw",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-01->ga-call-call_pcgXa5BKl7FQ7dNq4qzJpgrn",
           "source": "ga-turn-01",
           "target": "ga-call-call_pcgXa5BKl7FQ7dNq4qzJpgrn",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_RGxthmPH1DYcglB5MRmTIxVM->ga-result-call_RGxthmPH1DYcglB5MRmTIxVM",
           "source": "ga-call-call_RGxthmPH1DYcglB5MRmTIxVM",
           "target": "ga-result-call_RGxthmPH1DYcglB5MRmTIxVM",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_nkWNZAU3oPUJBJTSCoo1Pbhz->ga-result-call_nkWNZAU3oPUJBJTSCoo1Pbhz",
           "source": "ga-call-call_nkWNZAU3oPUJBJTSCoo1Pbhz",
           "target": "ga-result-call_nkWNZAU3oPUJBJTSCoo1Pbhz",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_MyzSGA4uvQOirg7T345NDmpw->ga-result-call_MyzSGA4uvQOirg7T345NDmpw",
           "source": "ga-call-call_MyzSGA4uvQOirg7T345NDmpw",
           "target": "ga-result-call_MyzSGA4uvQOirg7T345NDmpw",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_pcgXa5BKl7FQ7dNq4qzJpgrn->ga-result-call_pcgXa5BKl7FQ7dNq4qzJpgrn",
           "source": "ga-call-call_pcgXa5BKl7FQ7dNq4qzJpgrn",
           "target": "ga-result-call_pcgXa5BKl7FQ7dNq4qzJpgrn",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_RGxthmPH1DYcglB5MRmTIxVM->ga-turn-02",
           "source": "ga-result-call_RGxthmPH1DYcglB5MRmTIxVM",
           "target": "ga-turn-02",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_nkWNZAU3oPUJBJTSCoo1Pbhz->ga-turn-02",
           "source": "ga-result-call_nkWNZAU3oPUJBJTSCoo1Pbhz",
           "target": "ga-turn-02",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_MyzSGA4uvQOirg7T345NDmpw->ga-turn-02",
           "source": "ga-result-call_MyzSGA4uvQOirg7T345NDmpw",
           "target": "ga-turn-02",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_pcgXa5BKl7FQ7dNq4qzJpgrn->ga-turn-02",
           "source": "ga-result-call_pcgXa5BKl7FQ7dNq4qzJpgrn",
           "target": "ga-turn-02",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-02->ga-call-call_vXNzK7VNFpBII1fG2dX3k4dp",
           "source": "ga-turn-02",
           "target": "ga-call-call_vXNzK7VNFpBII1fG2dX3k4dp",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-02->ga-call-call_v4rWk147sXEpq0RzalfWF307",
           "source": "ga-turn-02",
           "target": "ga-call-call_v4rWk147sXEpq0RzalfWF307",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_vXNzK7VNFpBII1fG2dX3k4dp->ga-result-call_vXNzK7VNFpBII1fG2dX3k4dp",
           "source": "ga-call-call_vXNzK7VNFpBII1fG2dX3k4dp",
           "target": "ga-result-call_vXNzK7VNFpBII1fG2dX3k4dp",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_v4rWk147sXEpq0RzalfWF307->ga-result-call_v4rWk147sXEpq0RzalfWF307",
           "source": "ga-call-call_v4rWk147sXEpq0RzalfWF307",
           "target": "ga-result-call_v4rWk147sXEpq0RzalfWF307",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_vXNzK7VNFpBII1fG2dX3k4dp->ga-turn-03",
           "source": "ga-result-call_vXNzK7VNFpBII1fG2dX3k4dp",
           "target": "ga-turn-03",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_v4rWk147sXEpq0RzalfWF307->ga-turn-03",
           "source": "ga-result-call_v4rWk147sXEpq0RzalfWF307",
           "target": "ga-turn-03",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-03->ga-call-call_dy0MF2CBVKf1CTzUnSvXO9Hw",
           "source": "ga-turn-03",
           "target": "ga-call-call_dy0MF2CBVKf1CTzUnSvXO9Hw",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-03->ga-call-call_vvJgdLTb752IYUI9qsFS6jTF",
           "source": "ga-turn-03",
           "target": "ga-call-call_vvJgdLTb752IYUI9qsFS6jTF",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-03->ga-call-call_ytBrmFJidFtOiGNSU2QZKt7M",
           "source": "ga-turn-03",
           "target": "ga-call-call_ytBrmFJidFtOiGNSU2QZKt7M",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-03->ga-call-call_hGcyPdVpqxCmPKuFSYjfH2GD",
           "source": "ga-turn-03",
           "target": "ga-call-call_hGcyPdVpqxCmPKuFSYjfH2GD",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_dy0MF2CBVKf1CTzUnSvXO9Hw->ga-result-call_dy0MF2CBVKf1CTzUnSvXO9Hw",
           "source": "ga-call-call_dy0MF2CBVKf1CTzUnSvXO9Hw",
           "target": "ga-result-call_dy0MF2CBVKf1CTzUnSvXO9Hw",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_vvJgdLTb752IYUI9qsFS6jTF->ga-result-call_vvJgdLTb752IYUI9qsFS6jTF",
           "source": "ga-call-call_vvJgdLTb752IYUI9qsFS6jTF",
           "target": "ga-result-call_vvJgdLTb752IYUI9qsFS6jTF",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_ytBrmFJidFtOiGNSU2QZKt7M->ga-result-call_ytBrmFJidFtOiGNSU2QZKt7M",
           "source": "ga-call-call_ytBrmFJidFtOiGNSU2QZKt7M",
           "target": "ga-result-call_ytBrmFJidFtOiGNSU2QZKt7M",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_hGcyPdVpqxCmPKuFSYjfH2GD->ga-result-call_hGcyPdVpqxCmPKuFSYjfH2GD",
           "source": "ga-call-call_hGcyPdVpqxCmPKuFSYjfH2GD",
           "target": "ga-result-call_hGcyPdVpqxCmPKuFSYjfH2GD",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_dy0MF2CBVKf1CTzUnSvXO9Hw->ga-turn-04",
           "source": "ga-result-call_dy0MF2CBVKf1CTzUnSvXO9Hw",
           "target": "ga-turn-04",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_vvJgdLTb752IYUI9qsFS6jTF->ga-turn-04",
           "source": "ga-result-call_vvJgdLTb752IYUI9qsFS6jTF",
           "target": "ga-turn-04",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_ytBrmFJidFtOiGNSU2QZKt7M->ga-turn-04",
           "source": "ga-result-call_ytBrmFJidFtOiGNSU2QZKt7M",
           "target": "ga-turn-04",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_hGcyPdVpqxCmPKuFSYjfH2GD->ga-turn-04",
           "source": "ga-result-call_hGcyPdVpqxCmPKuFSYjfH2GD",
           "target": "ga-turn-04",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-04->ga-call-call_yv5G74GVHJRP30C2Hnp7hKnI",
           "source": "ga-turn-04",
           "target": "ga-call-call_yv5G74GVHJRP30C2Hnp7hKnI",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-04->ga-call-call_PSuUKGOMnlmjS2gGCS0M9HLW",
           "source": "ga-turn-04",
           "target": "ga-call-call_PSuUKGOMnlmjS2gGCS0M9HLW",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-04->ga-call-call_klk64VSc51aaIIYPfQaXQXGE",
           "source": "ga-turn-04",
           "target": "ga-call-call_klk64VSc51aaIIYPfQaXQXGE",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-04->ga-call-call_JRGARn0Vs03P0NbPSpqJ9jPE",
           "source": "ga-turn-04",
           "target": "ga-call-call_JRGARn0Vs03P0NbPSpqJ9jPE",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_yv5G74GVHJRP30C2Hnp7hKnI->ga-result-call_yv5G74GVHJRP30C2Hnp7hKnI",
           "source": "ga-call-call_yv5G74GVHJRP30C2Hnp7hKnI",
           "target": "ga-result-call_yv5G74GVHJRP30C2Hnp7hKnI",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_PSuUKGOMnlmjS2gGCS0M9HLW->ga-result-call_PSuUKGOMnlmjS2gGCS0M9HLW",
           "source": "ga-call-call_PSuUKGOMnlmjS2gGCS0M9HLW",
           "target": "ga-result-call_PSuUKGOMnlmjS2gGCS0M9HLW",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": true
         },
         {
           "id": "ga-call-call_klk64VSc51aaIIYPfQaXQXGE->ga-result-call_klk64VSc51aaIIYPfQaXQXGE",
           "source": "ga-call-call_klk64VSc51aaIIYPfQaXQXGE",
           "target": "ga-result-call_klk64VSc51aaIIYPfQaXQXGE",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_JRGARn0Vs03P0NbPSpqJ9jPE->ga-result-call_JRGARn0Vs03P0NbPSpqJ9jPE",
           "source": "ga-call-call_JRGARn0Vs03P0NbPSpqJ9jPE",
           "target": "ga-result-call_JRGARn0Vs03P0NbPSpqJ9jPE",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_yv5G74GVHJRP30C2Hnp7hKnI->ga-turn-05",
           "source": "ga-result-call_yv5G74GVHJRP30C2Hnp7hKnI",
           "target": "ga-turn-05",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_PSuUKGOMnlmjS2gGCS0M9HLW->ga-turn-05",
           "source": "ga-result-call_PSuUKGOMnlmjS2gGCS0M9HLW",
           "target": "ga-turn-05",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_klk64VSc51aaIIYPfQaXQXGE->ga-turn-05",
           "source": "ga-result-call_klk64VSc51aaIIYPfQaXQXGE",
           "target": "ga-turn-05",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_JRGARn0Vs03P0NbPSpqJ9jPE->ga-turn-05",
           "source": "ga-result-call_JRGARn0Vs03P0NbPSpqJ9jPE",
           "target": "ga-turn-05",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-05->ga-call-call_6msY7tayFeqhghZBuHmRPL7B",
           "source": "ga-turn-05",
           "target": "ga-call-call_6msY7tayFeqhghZBuHmRPL7B",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-05->ga-call-call_xbGYpbKIC7oMAW3SaE8EynMK",
           "source": "ga-turn-05",
           "target": "ga-call-call_xbGYpbKIC7oMAW3SaE8EynMK",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-05->ga-call-call_eqOFEOPDkqfdR5jVXub0GaKY",
           "source": "ga-turn-05",
           "target": "ga-call-call_eqOFEOPDkqfdR5jVXub0GaKY",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_6msY7tayFeqhghZBuHmRPL7B->ga-result-call_6msY7tayFeqhghZBuHmRPL7B",
           "source": "ga-call-call_6msY7tayFeqhghZBuHmRPL7B",
           "target": "ga-result-call_6msY7tayFeqhghZBuHmRPL7B",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_xbGYpbKIC7oMAW3SaE8EynMK->ga-result-call_xbGYpbKIC7oMAW3SaE8EynMK",
           "source": "ga-call-call_xbGYpbKIC7oMAW3SaE8EynMK",
           "target": "ga-result-call_xbGYpbKIC7oMAW3SaE8EynMK",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_eqOFEOPDkqfdR5jVXub0GaKY->ga-result-call_eqOFEOPDkqfdR5jVXub0GaKY",
           "source": "ga-call-call_eqOFEOPDkqfdR5jVXub0GaKY",
           "target": "ga-result-call_eqOFEOPDkqfdR5jVXub0GaKY",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_6msY7tayFeqhghZBuHmRPL7B->ga-turn-06",
           "source": "ga-result-call_6msY7tayFeqhghZBuHmRPL7B",
           "target": "ga-turn-06",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_xbGYpbKIC7oMAW3SaE8EynMK->ga-turn-06",
           "source": "ga-result-call_xbGYpbKIC7oMAW3SaE8EynMK",
           "target": "ga-turn-06",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_eqOFEOPDkqfdR5jVXub0GaKY->ga-turn-06",
           "source": "ga-result-call_eqOFEOPDkqfdR5jVXub0GaKY",
           "target": "ga-turn-06",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-06->ga-call-call_6oLs5i5tYqSR2GwEQQauKRok",
           "source": "ga-turn-06",
           "target": "ga-call-call_6oLs5i5tYqSR2GwEQQauKRok",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-06->ga-call-call_QeSd81pUXtgUoxVUztzjaDYY",
           "source": "ga-turn-06",
           "target": "ga-call-call_QeSd81pUXtgUoxVUztzjaDYY",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-06->ga-call-call_UAPYDotnxoOir69EMtm4xtkb",
           "source": "ga-turn-06",
           "target": "ga-call-call_UAPYDotnxoOir69EMtm4xtkb",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_6oLs5i5tYqSR2GwEQQauKRok->ga-result-call_6oLs5i5tYqSR2GwEQQauKRok",
           "source": "ga-call-call_6oLs5i5tYqSR2GwEQQauKRok",
           "target": "ga-result-call_6oLs5i5tYqSR2GwEQQauKRok",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_QeSd81pUXtgUoxVUztzjaDYY->ga-result-call_QeSd81pUXtgUoxVUztzjaDYY",
           "source": "ga-call-call_QeSd81pUXtgUoxVUztzjaDYY",
           "target": "ga-result-call_QeSd81pUXtgUoxVUztzjaDYY",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_UAPYDotnxoOir69EMtm4xtkb->ga-result-call_UAPYDotnxoOir69EMtm4xtkb",
           "source": "ga-call-call_UAPYDotnxoOir69EMtm4xtkb",
           "target": "ga-result-call_UAPYDotnxoOir69EMtm4xtkb",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_6oLs5i5tYqSR2GwEQQauKRok->ga-turn-07",
           "source": "ga-result-call_6oLs5i5tYqSR2GwEQQauKRok",
           "target": "ga-turn-07",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_QeSd81pUXtgUoxVUztzjaDYY->ga-turn-07",
           "source": "ga-result-call_QeSd81pUXtgUoxVUztzjaDYY",
           "target": "ga-turn-07",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_UAPYDotnxoOir69EMtm4xtkb->ga-turn-07",
           "source": "ga-result-call_UAPYDotnxoOir69EMtm4xtkb",
           "target": "ga-turn-07",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-07->ga-call-call_WvqKseuOWENKpfINObTEk0SN",
           "source": "ga-turn-07",
           "target": "ga-call-call_WvqKseuOWENKpfINObTEk0SN",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-07->ga-call-call_OdnpfAOiydDdHihfnt3JiD9G",
           "source": "ga-turn-07",
           "target": "ga-call-call_OdnpfAOiydDdHihfnt3JiD9G",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-07->ga-call-call_N2a3G3UyrKiJAf3Jhq1WFwok",
           "source": "ga-turn-07",
           "target": "ga-call-call_N2a3G3UyrKiJAf3Jhq1WFwok",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-07->ga-call-call_HmME4OOHepTIKRUrS5icKBdW",
           "source": "ga-turn-07",
           "target": "ga-call-call_HmME4OOHepTIKRUrS5icKBdW",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_WvqKseuOWENKpfINObTEk0SN->ga-result-call_WvqKseuOWENKpfINObTEk0SN",
           "source": "ga-call-call_WvqKseuOWENKpfINObTEk0SN",
           "target": "ga-result-call_WvqKseuOWENKpfINObTEk0SN",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_OdnpfAOiydDdHihfnt3JiD9G->ga-result-call_OdnpfAOiydDdHihfnt3JiD9G",
           "source": "ga-call-call_OdnpfAOiydDdHihfnt3JiD9G",
           "target": "ga-result-call_OdnpfAOiydDdHihfnt3JiD9G",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": true
         },
         {
           "id": "ga-call-call_N2a3G3UyrKiJAf3Jhq1WFwok->ga-result-call_N2a3G3UyrKiJAf3Jhq1WFwok",
           "source": "ga-call-call_N2a3G3UyrKiJAf3Jhq1WFwok",
           "target": "ga-result-call_N2a3G3UyrKiJAf3Jhq1WFwok",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": true
         },
         {
           "id": "ga-call-call_HmME4OOHepTIKRUrS5icKBdW->ga-result-call_HmME4OOHepTIKRUrS5icKBdW",
           "source": "ga-call-call_HmME4OOHepTIKRUrS5icKBdW",
           "target": "ga-result-call_HmME4OOHepTIKRUrS5icKBdW",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_WvqKseuOWENKpfINObTEk0SN->ga-turn-08",
           "source": "ga-result-call_WvqKseuOWENKpfINObTEk0SN",
           "target": "ga-turn-08",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_OdnpfAOiydDdHihfnt3JiD9G->ga-turn-08",
           "source": "ga-result-call_OdnpfAOiydDdHihfnt3JiD9G",
           "target": "ga-turn-08",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_N2a3G3UyrKiJAf3Jhq1WFwok->ga-turn-08",
           "source": "ga-result-call_N2a3G3UyrKiJAf3Jhq1WFwok",
           "target": "ga-turn-08",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_HmME4OOHepTIKRUrS5icKBdW->ga-turn-08",
           "source": "ga-result-call_HmME4OOHepTIKRUrS5icKBdW",
           "target": "ga-turn-08",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-08->ga-call-call_w9rVevCeepGEJr8vi6dgX33l",
           "source": "ga-turn-08",
           "target": "ga-call-call_w9rVevCeepGEJr8vi6dgX33l",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-08->ga-call-call_2mloaBYabCyvHy0K7T8tRFnu",
           "source": "ga-turn-08",
           "target": "ga-call-call_2mloaBYabCyvHy0K7T8tRFnu",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-08->ga-call-call_w7CczWpmrdeLiaRjxk5cOLOf",
           "source": "ga-turn-08",
           "target": "ga-call-call_w7CczWpmrdeLiaRjxk5cOLOf",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_w9rVevCeepGEJr8vi6dgX33l->ga-result-call_w9rVevCeepGEJr8vi6dgX33l",
           "source": "ga-call-call_w9rVevCeepGEJr8vi6dgX33l",
           "target": "ga-result-call_w9rVevCeepGEJr8vi6dgX33l",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_2mloaBYabCyvHy0K7T8tRFnu->ga-result-call_2mloaBYabCyvHy0K7T8tRFnu",
           "source": "ga-call-call_2mloaBYabCyvHy0K7T8tRFnu",
           "target": "ga-result-call_2mloaBYabCyvHy0K7T8tRFnu",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_w7CczWpmrdeLiaRjxk5cOLOf->ga-result-call_w7CczWpmrdeLiaRjxk5cOLOf",
           "source": "ga-call-call_w7CczWpmrdeLiaRjxk5cOLOf",
           "target": "ga-result-call_w7CczWpmrdeLiaRjxk5cOLOf",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_w9rVevCeepGEJr8vi6dgX33l->ga-turn-09",
           "source": "ga-result-call_w9rVevCeepGEJr8vi6dgX33l",
           "target": "ga-turn-09",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_2mloaBYabCyvHy0K7T8tRFnu->ga-turn-09",
           "source": "ga-result-call_2mloaBYabCyvHy0K7T8tRFnu",
           "target": "ga-turn-09",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_w7CczWpmrdeLiaRjxk5cOLOf->ga-turn-09",
           "source": "ga-result-call_w7CczWpmrdeLiaRjxk5cOLOf",
           "target": "ga-turn-09",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-09->ga-call-call_jzSMn46ggFtQAdKLiU8nIWFa",
           "source": "ga-turn-09",
           "target": "ga-call-call_jzSMn46ggFtQAdKLiU8nIWFa",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-09->ga-call-call_36sDp3ngDNVcdhO8nAk7Nthb",
           "source": "ga-turn-09",
           "target": "ga-call-call_36sDp3ngDNVcdhO8nAk7Nthb",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-09->ga-call-call_bKjxOpZpK2yvxHHEDwQYO5jZ",
           "source": "ga-turn-09",
           "target": "ga-call-call_bKjxOpZpK2yvxHHEDwQYO5jZ",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-09->ga-call-call_DVIGbHPdBvB89DgEpmp1EncW",
           "source": "ga-turn-09",
           "target": "ga-call-call_DVIGbHPdBvB89DgEpmp1EncW",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_jzSMn46ggFtQAdKLiU8nIWFa->ga-result-call_jzSMn46ggFtQAdKLiU8nIWFa",
           "source": "ga-call-call_jzSMn46ggFtQAdKLiU8nIWFa",
           "target": "ga-result-call_jzSMn46ggFtQAdKLiU8nIWFa",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_36sDp3ngDNVcdhO8nAk7Nthb->ga-result-call_36sDp3ngDNVcdhO8nAk7Nthb",
           "source": "ga-call-call_36sDp3ngDNVcdhO8nAk7Nthb",
           "target": "ga-result-call_36sDp3ngDNVcdhO8nAk7Nthb",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_bKjxOpZpK2yvxHHEDwQYO5jZ->ga-result-call_bKjxOpZpK2yvxHHEDwQYO5jZ",
           "source": "ga-call-call_bKjxOpZpK2yvxHHEDwQYO5jZ",
           "target": "ga-result-call_bKjxOpZpK2yvxHHEDwQYO5jZ",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_DVIGbHPdBvB89DgEpmp1EncW->ga-result-call_DVIGbHPdBvB89DgEpmp1EncW",
           "source": "ga-call-call_DVIGbHPdBvB89DgEpmp1EncW",
           "target": "ga-result-call_DVIGbHPdBvB89DgEpmp1EncW",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_jzSMn46ggFtQAdKLiU8nIWFa->ga-turn-10",
           "source": "ga-result-call_jzSMn46ggFtQAdKLiU8nIWFa",
           "target": "ga-turn-10",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_36sDp3ngDNVcdhO8nAk7Nthb->ga-turn-10",
           "source": "ga-result-call_36sDp3ngDNVcdhO8nAk7Nthb",
           "target": "ga-turn-10",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_bKjxOpZpK2yvxHHEDwQYO5jZ->ga-turn-10",
           "source": "ga-result-call_bKjxOpZpK2yvxHHEDwQYO5jZ",
           "target": "ga-turn-10",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_DVIGbHPdBvB89DgEpmp1EncW->ga-turn-10",
           "source": "ga-result-call_DVIGbHPdBvB89DgEpmp1EncW",
           "target": "ga-turn-10",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-10->ga-call-call_YOruIqhMdCA67urxuZdVv0Wx",
           "source": "ga-turn-10",
           "target": "ga-call-call_YOruIqhMdCA67urxuZdVv0Wx",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": true
         },
         {
           "id": "ga-turn-10->ga-call-call_nFAclfbgfbgTUUFpWnHFYIsy",
           "source": "ga-turn-10",
           "target": "ga-call-call_nFAclfbgfbgTUUFpWnHFYIsy",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-10->ga-call-call_5NnWppUtdj9Cz9j5SQILLqqS",
           "source": "ga-turn-10",
           "target": "ga-call-call_5NnWppUtdj9Cz9j5SQILLqqS",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": true
         },
         {
           "id": "ga-call-call_YOruIqhMdCA67urxuZdVv0Wx->ga-result-call_YOruIqhMdCA67urxuZdVv0Wx",
           "source": "ga-call-call_YOruIqhMdCA67urxuZdVv0Wx",
           "target": "ga-result-call_YOruIqhMdCA67urxuZdVv0Wx",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": true
         },
         {
           "id": "ga-call-call_nFAclfbgfbgTUUFpWnHFYIsy->ga-result-call_nFAclfbgfbgTUUFpWnHFYIsy",
           "source": "ga-call-call_nFAclfbgfbgTUUFpWnHFYIsy",
           "target": "ga-result-call_nFAclfbgfbgTUUFpWnHFYIsy",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_5NnWppUtdj9Cz9j5SQILLqqS->ga-result-call_5NnWppUtdj9Cz9j5SQILLqqS",
           "source": "ga-call-call_5NnWppUtdj9Cz9j5SQILLqqS",
           "target": "ga-result-call_5NnWppUtdj9Cz9j5SQILLqqS",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": true
         },
         {
           "id": "ga-result-call_YOruIqhMdCA67urxuZdVv0Wx->ga-turn-11",
           "source": "ga-result-call_YOruIqhMdCA67urxuZdVv0Wx",
           "target": "ga-turn-11",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_nFAclfbgfbgTUUFpWnHFYIsy->ga-turn-11",
           "source": "ga-result-call_nFAclfbgfbgTUUFpWnHFYIsy",
           "target": "ga-turn-11",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_5NnWppUtdj9Cz9j5SQILLqqS->ga-turn-11",
           "source": "ga-result-call_5NnWppUtdj9Cz9j5SQILLqqS",
           "target": "ga-turn-11",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-11->ga-call-call_6fZOBEFIqcGmPJ4vvPsWfv62",
           "source": "ga-turn-11",
           "target": "ga-call-call_6fZOBEFIqcGmPJ4vvPsWfv62",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-11->ga-call-call_LbYHhogPNggpyjTVuinF6JXK",
           "source": "ga-turn-11",
           "target": "ga-call-call_LbYHhogPNggpyjTVuinF6JXK",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_6fZOBEFIqcGmPJ4vvPsWfv62->ga-result-call_6fZOBEFIqcGmPJ4vvPsWfv62",
           "source": "ga-call-call_6fZOBEFIqcGmPJ4vvPsWfv62",
           "target": "ga-result-call_6fZOBEFIqcGmPJ4vvPsWfv62",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_LbYHhogPNggpyjTVuinF6JXK->ga-result-call_LbYHhogPNggpyjTVuinF6JXK",
           "source": "ga-call-call_LbYHhogPNggpyjTVuinF6JXK",
           "target": "ga-result-call_LbYHhogPNggpyjTVuinF6JXK",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_6fZOBEFIqcGmPJ4vvPsWfv62->ga-turn-12",
           "source": "ga-result-call_6fZOBEFIqcGmPJ4vvPsWfv62",
           "target": "ga-turn-12",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_LbYHhogPNggpyjTVuinF6JXK->ga-turn-12",
           "source": "ga-result-call_LbYHhogPNggpyjTVuinF6JXK",
           "target": "ga-turn-12",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-12->ga-call-call_QqtYx00i4xGagggc100b7TWV",
           "source": "ga-turn-12",
           "target": "ga-call-call_QqtYx00i4xGagggc100b7TWV",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_QqtYx00i4xGagggc100b7TWV->ga-result-call_QqtYx00i4xGagggc100b7TWV",
           "source": "ga-call-call_QqtYx00i4xGagggc100b7TWV",
           "target": "ga-result-call_QqtYx00i4xGagggc100b7TWV",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_QqtYx00i4xGagggc100b7TWV->ga-turn-13",
           "source": "ga-result-call_QqtYx00i4xGagggc100b7TWV",
           "target": "ga-turn-13",
-          "label": "continues"
+          "label": "continues",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-13->ga-call-call_eMjuAcSXULlZMhnHzY29C36L",
           "source": "ga-turn-13",
           "target": "ga-call-call_eMjuAcSXULlZMhnHzY29C36L",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-13->ga-call-call_BYXm7DvNJjiMT21DvA3CZst7",
           "source": "ga-turn-13",
           "target": "ga-call-call_BYXm7DvNJjiMT21DvA3CZst7",
-          "label": "calls"
+          "label": "calls",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_eMjuAcSXULlZMhnHzY29C36L->ga-result-call_eMjuAcSXULlZMhnHzY29C36L",
           "source": "ga-call-call_eMjuAcSXULlZMhnHzY29C36L",
           "target": "ga-result-call_eMjuAcSXULlZMhnHzY29C36L",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-call-call_BYXm7DvNJjiMT21DvA3CZst7->ga-result-call_BYXm7DvNJjiMT21DvA3CZst7",
           "source": "ga-call-call_BYXm7DvNJjiMT21DvA3CZst7",
           "target": "ga-result-call_BYXm7DvNJjiMT21DvA3CZst7",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_eMjuAcSXULlZMhnHzY29C36L->ga-turn-14",
           "source": "ga-result-call_eMjuAcSXULlZMhnHzY29C36L",
           "target": "ga-turn-14",
-          "label": "synthesizes"
+          "label": "synthesizes",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_BYXm7DvNJjiMT21DvA3CZst7->ga-turn-14",
           "source": "ga-result-call_BYXm7DvNJjiMT21DvA3CZst7",
           "target": "ga-turn-14",
-          "label": "synthesizes"
+          "label": "synthesizes",
+          "criticalPath": false
         },
         {
           "id": "ga-turn-14->ga-call-call_XNaOJRoSMNa6AF96DzhbZhl0",
           "source": "ga-turn-14",
           "target": "ga-call-call_XNaOJRoSMNa6AF96DzhbZhl0",
-          "label": "records"
+          "label": "records",
+          "criticalPath": true
         },
         {
           "id": "ga-call-call_XNaOJRoSMNa6AF96DzhbZhl0->ga-result-call_XNaOJRoSMNa6AF96DzhbZhl0",
           "source": "ga-call-call_XNaOJRoSMNa6AF96DzhbZhl0",
           "target": "ga-result-call_XNaOJRoSMNa6AF96DzhbZhl0",
-          "label": "returns"
+          "label": "returns",
+          "criticalPath": false
         },
         {
           "id": "ga-result-call_XNaOJRoSMNa6AF96DzhbZhl0->ga-finalize-payload",
           "source": "ga-result-call_XNaOJRoSMNa6AF96DzhbZhl0",
           "target": "ga-finalize-payload",
-          "label": "records"
+          "label": "records",
+          "criticalPath": false
         },
         {
           "id": "ga-finalize-payload->ga-checkpoint",
           "source": "ga-finalize-payload",
           "target": "ga-checkpoint",
-          "label": "persists"
+          "label": "persists",
+          "criticalPath": true
         }
       ]
     },
