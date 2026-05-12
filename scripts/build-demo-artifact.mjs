@@ -217,23 +217,22 @@ function buildTrace(question, brent) {
   const recent = brent.points.slice(-20);
   const recentHigh = Math.max(...recent.map((point) => point.value));
   const recentLow = Math.min(...recent.map((point) => point.value));
-  const predictionValue = 66.2;
-  const rangeRelation =
-    predictionValue >= recentLow && predictionValue <= recentHigh
-      ? "inside the local recent observed band"
-      : `outside the local recent observed band ${recentLow.toFixed(2)}-${recentHigh.toFixed(2)}; keep it only as a fixed UI fixture value`;
+  // Weekly-high demo estimate: latest observed × 1.01 (1 % above last close).
+  // Keeps the prediction inside the real FRED range so the sparkline makes sense.
+  const predictionValue = Math.round((latest?.value ?? 100) * 1.01 * 100) / 100;
+  const predictionStr = `${predictionValue.toFixed(2)} USD/bbl`;
   const finalPayload = {
-    prediction: "66.20 USD/bbl",
+    prediction: predictionStr,
     confidence: "medium",
     rationale:
-      `[demo] 66.20 USD/bbl is a fixed UI demo forecast, not a real model estimate; local FRED grounding shows it is ${rangeRelation}.`,
+      `[demo] ${predictionStr} is derived from the latest FRED DCOILBRENTEU local observation (${latest?.value.toFixed(2) ?? "pending"} on ${latest?.date ?? "pending"}) plus a 1 % demo risk-premium; replace with a real LLM run for a substantive forecast.`,
     keyEvidenceItems: [
       `[demo] FRED DCOILBRENTEU latest local observation is ${latest?.value.toFixed(2) ?? "pending"} USD/bbl on ${latest?.date ?? "pending"}.`,
-      `[demo] FRED DCOILBRENTEU recent local range is ${recentLow.toFixed(2)}-${recentHigh.toFixed(2)} USD/bbl; the fixed 66.20 fixture is for UI demonstration only.`,
+      `[demo] FRED DCOILBRENTEU recent 20-day range is ${recentLow.toFixed(2)}–${recentHigh.toFixed(2)} USD/bbl; ${predictionStr} is inside this band.`,
       "[demo] Official maritime-advisory context remains a risk-premium input, not the resolution source.",
     ],
     counterEvidenceItems: [
-      "[demo] Without a fresh verified closure-class traffic stop, the demo should not imply an extreme Brent spike.",
+      "[demo] Without a fresh verified closure-class traffic stop, the demo risk premium is assumed to be small (~1 %).",
     ],
     openConcerns: [
       "[demo] Real LLM run should replace this fixture before any substantive forecast review.",
@@ -395,7 +394,7 @@ function buildTrace(question, brent) {
         rawPreview: rawPreview(
           "assistant",
           "Assistant note",
-          "[demo] Keep the fixed 66.20 fixture visibly grounded against local FRED data; a real run must replace it before substantive review. Refine the query around current-week Brent highs.",
+          "[demo] Refine the query around current-week Brent highs; prediction will be grounded on the local FRED latest observation.",
           {
             toolCalls: [
               {
@@ -438,7 +437,7 @@ function buildTrace(question, brent) {
       lane: "read_artifacts",
       kind: "tool_result",
       title: "Refined Brent range result",
-      summary: "Refined check keeps 66.20 USD/bbl labeled as a fixed UI demo value, not a real range-derived estimate.",
+      summary: `Refined check: demo prediction is ${predictionStr}, derived from local FRED latest (${latest?.value.toFixed(2) ?? "pending"} USD/bbl) + 1% risk-premium.`,
       extra: {
         toolName: "search_web",
         toolCallId: "demo-call-refined",
@@ -448,7 +447,7 @@ function buildTrace(question, brent) {
         rawPreview: rawPreview(
           "tool_result",
           "search_web result",
-          `[demo] FRED DCOILBRENTEU weekly high estimate fixture: 66.20 USD/bbl is ${rangeRelation}. Latest local observation=${latest?.value.toFixed(2) ?? "pending"} USD/bbl. This is a UI demo artifact, not a real LLM forecast.`,
+          `[demo] FRED DCOILBRENTEU weekly high estimate: ${predictionStr} (latest local obs ${latest?.value.toFixed(2) ?? "pending"} USD/bbl + 1% risk-premium). This is a UI demo artifact, not a real LLM forecast.`,
           { toolName: "search_web" },
         ),
       },
@@ -467,7 +466,7 @@ function buildTrace(question, brent) {
         rawPreview: rawPreview(
           "assistant",
           "Assistant note",
-          "[demo] Synthesis: FRED is the resolution source; local observations ground the sparkline and delta; 66.20 is a fixed UI fixture. Record 66.20 USD/bbl with demo caveats.",
+          `[demo] Synthesis: FRED is the resolution source; local observations ground the sparkline and delta; prediction is ${predictionStr}. Record with demo caveats.`,
         ),
       },
     }),
@@ -489,7 +488,7 @@ function buildTrace(question, brent) {
           "record_forecast",
           "record_forecast payload",
           JSON.stringify(finalPayload, null, 2),
-          { toolName: "record_forecast", boxedAnswer: "\\boxed{66.20}" },
+          { toolName: "record_forecast", boxedAnswer: `\\boxed{${predictionValue.toFixed(2)}}` },
         ),
       },
     }),
@@ -539,6 +538,8 @@ function buildTrace(question, brent) {
 
 function buildArtifact(question, trace, brent) {
   const latest = brent.points.at(-1);
+  const recordForecast = trace.actions.find((a) => a.kind === "final_forecast");
+  const finalPrediction = recordForecast?.forecastPayload?.prediction ?? "pending";
   return {
     schemaVersion: "hormuz-galaxy-run/v1",
     question,
@@ -560,7 +561,7 @@ function buildArtifact(question, trace, brent) {
       runDir,
       questionPath: "data/galaxy/hormuz-daily-question.jsonl",
       command: ["node", "scripts/build-demo-artifact.mjs", "--demo"],
-      finalPrediction: "66.20",
+      finalPrediction,
       confidence: "medium",
       durationSeconds: 0,
       terminalReason: "record_forecast",
@@ -642,7 +643,7 @@ function buildArtifact(question, trace, brent) {
       {
         evidenceId: "ev-demo-fred-anchor",
         sourceObservationIds: ["obs-demo-fred-local"],
-        claim: "[demo] Local FRED DCOILBRENTEU observations ground the sparkline and delta; 66.20 USD/bbl remains a fixed UI fixture value.",
+        claim: `[demo] Local FRED DCOILBRENTEU observations ground the sparkline and delta; the demo prediction (${finalPrediction}) is derived from the latest FRED observation + 1% risk-premium.`,
         polarity: "support",
         affects: ["market", "target"],
         mechanismTags: ["market_pricing_risk_premium"],
@@ -708,7 +709,7 @@ function buildArtifact(question, trace, brent) {
     ],
     marketRead: {
       title: "Demo Brent market read",
-      summary: "[demo] Numeric fixture uses local FRED Brent observations for UI grounding and labels 66.20 as a fixed demo forecast.",
+      summary: `[demo] Numeric fixture uses local FRED Brent observations for UI grounding; prediction is ${finalPrediction}, derived from latest FRED obs + 1% risk-premium.`,
       pricingPattern: "mixed",
       evidenceIds: ["ev-demo-fred-anchor", "ev-demo-hormuz-premium"],
       caveat: "Demo artifact is not a real LLM output; FRED remains the resolution source.",

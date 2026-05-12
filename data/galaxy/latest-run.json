@@ -50,7 +50,7 @@
       "scripts/build-demo-artifact.mjs",
       "--demo"
     ],
-    "finalPrediction": "66.20",
+    "finalPrediction": "119.44 USD/bbl",
     "confidence": "medium",
     "durationSeconds": 0,
     "terminalReason": "record_forecast",
@@ -260,9 +260,9 @@
         "rawPreview": {
           "kind": "assistant",
           "title": "Assistant note",
-          "text": "[demo] Keep the fixed 66.20 fixture visibly grounded against local FRED data; a real run must replace it before substantive review. Refine the query around current-week Brent highs.",
+          "text": "[demo] Refine the query around current-week Brent highs; prediction will be grounded on the local FRED latest observation.",
           "isTruncated": false,
-          "fullLength": 181,
+          "fullLength": 122,
           "rawFilePath": "data/galaxy/latest-run.json",
           "toolCalls": [
             {
@@ -313,7 +313,7 @@
         "lane": "read_artifacts",
         "kind": "tool_result",
         "title": "Refined Brent range result",
-        "summary": "Refined check keeps 66.20 USD/bbl labeled as a fixed UI demo value, not a real range-derived estimate.",
+        "summary": "Refined check: demo prediction is 119.44 USD/bbl, derived from local FRED latest (118.26 USD/bbl) + 1% risk-premium.",
         "status": "success",
         "toolName": "search_web",
         "toolCallId": "demo-call-refined",
@@ -323,9 +323,9 @@
         "rawPreview": {
           "kind": "tool_result",
           "title": "search_web result",
-          "text": "[demo] FRED DCOILBRENTEU weekly high estimate fixture: 66.20 USD/bbl is outside the local recent observed band 98.63-138.21; keep it only as a fixed UI fixture value. Latest local observation=118.26 USD/bbl. This is a UI demo artifact, not a real LLM forecast.",
+          "text": "[demo] FRED DCOILBRENTEU weekly high estimate: 119.44 USD/bbl (latest local obs 118.26 USD/bbl + 1% risk-premium). This is a UI demo artifact, not a real LLM forecast.",
           "isTruncated": false,
-          "fullLength": 260,
+          "fullLength": 167,
           "rawFilePath": "data/galaxy/latest-run.json",
           "toolName": "search_web"
         },
@@ -349,9 +349,9 @@
         "rawPreview": {
           "kind": "assistant",
           "title": "Assistant note",
-          "text": "[demo] Synthesis: FRED is the resolution source; local observations ground the sparkline and delta; 66.20 is a fixed UI fixture. Record 66.20 USD/bbl with demo caveats.",
+          "text": "[demo] Synthesis: FRED is the resolution source; local observations ground the sparkline and delta; prediction is 119.44 USD/bbl. Record with demo caveats.",
           "isTruncated": false,
-          "fullLength": 168,
+          "fullLength": 155,
           "rawFilePath": "data/galaxy/latest-run.json"
         }
       },
@@ -374,16 +374,16 @@
         "evidenceRole": "forecast_record",
         "rawRole": "assistant",
         "forecastPayload": {
-          "prediction": "66.20 USD/bbl",
+          "prediction": "119.44 USD/bbl",
           "confidence": "medium",
-          "rationale": "[demo] 66.20 USD/bbl is a fixed UI demo forecast, not a real model estimate; local FRED grounding shows it is outside the local recent observed band 98.63-138.21; keep it only as a fixed UI fixture value.",
+          "rationale": "[demo] 119.44 USD/bbl is derived from the latest FRED DCOILBRENTEU local observation (118.26 on 2026-05-01) plus a 1 % demo risk-premium; replace with a real LLM run for a substantive forecast.",
           "keyEvidenceItems": [
             "[demo] FRED DCOILBRENTEU latest local observation is 118.26 USD/bbl on 2026-05-01.",
-            "[demo] FRED DCOILBRENTEU recent local range is 98.63-138.21 USD/bbl; the fixed 66.20 fixture is for UI demonstration only.",
+            "[demo] FRED DCOILBRENTEU recent 20-day range is 98.63–138.21 USD/bbl; 119.44 USD/bbl is inside this band.",
             "[demo] Official maritime-advisory context remains a risk-premium input, not the resolution source."
           ],
           "counterEvidenceItems": [
-            "[demo] Without a fresh verified closure-class traffic stop, the demo should not imply an extreme Brent spike."
+            "[demo] Without a fresh verified closure-class traffic stop, the demo risk premium is assumed to be small (~1 %)."
           ],
           "openConcerns": [
             "[demo] Real LLM run should replace this fixture before any substantive forecast review."
@@ -395,12 +395,12 @@
         "rawPreview": {
           "kind": "record_forecast",
           "title": "record_forecast payload",
-          "text": "{\n  \"prediction\": \"66.20 USD/bbl\",\n  \"confidence\": \"medium\",\n  \"rationale\": \"[demo] 66.20 USD/bbl is a fixed UI demo forecast, not a real model estimate; local FRED grounding shows it is outside the local recent observed band 98.63-138.21; keep it only as a fixed UI fixture value.\",\n  \"keyEvidenceItems\": [\n    \"[demo] FRED DCOILBRENTEU latest local observation is 118.26 USD/bbl on 2026-05-01.\",\n    \"[demo] FRED DCOILBRENTEU recent local range is 98.63-138.21 USD/bbl; the fixed 66.20 fixture is for UI demonstration only.\",\n    \"[demo] Official maritime-advisory context remains a risk-premium input, not the resolution source.\"\n  ],\n  \"counterEvidenceItems\": [\n    \"[demo] Without a fresh verified closure-class traffic stop, the demo should not imply an extreme Brent spike.\"\n  ],\n  \"openConcerns\": [\n    \"[demo] Real LLM run should replace this fixture before any substantive forecast review.\"\n  ],\n  \"temporalNotes\": [\n    \"[demo] Weekly high resolves after all FRED DCOILBRENTEU observations in the target week are released.\"\n  ]\n}",
+          "text": "{\n  \"prediction\": \"119.44 USD/bbl\",\n  \"confidence\": \"medium\",\n  \"rationale\": \"[demo] 119.44 USD/bbl is derived from the latest FRED DCOILBRENTEU local observation (118.26 on 2026-05-01) plus a 1 % demo risk-premium; replace with a real LLM run for a substantive forecast.\",\n  \"keyEvidenceItems\": [\n    \"[demo] FRED DCOILBRENTEU latest local observation is 118.26 USD/bbl on 2026-05-01.\",\n    \"[demo] FRED DCOILBRENTEU recent 20-day range is 98.63–138.21 USD/bbl; 119.44 USD/bbl is inside this band.\",\n    \"[demo] Official maritime-advisory context remains a risk-premium input, not the resolution source.\"\n  ],\n  \"counterEvidenceItems\": [\n    \"[demo] Without a fresh verified closure-class traffic stop, the demo risk premium is assumed to be small (~1 %).\"\n  ],\n  \"openConcerns\": [\n    \"[demo] Real LLM run should replace this fixture before any substantive forecast review.\"\n  ],\n  \"temporalNotes\": [\n    \"[demo] Weekly high resolves after all FRED DCOILBRENTEU observations in the target week are released.\"\n  ]\n}",
           "isTruncated": false,
-          "fullLength": 1040,
+          "fullLength": 1016,
           "rawFilePath": "data/galaxy/latest-run.json",
           "toolName": "record_forecast",
-          "boxedAnswer": "\\boxed{66.20}"
+          "boxedAnswer": "\\boxed{119.44}"
         },
         "criticalPath": true,
         "criticalReason": "record_forecast / boxed answer"
@@ -570,7 +570,7 @@
             "eventType": "tool_result",
             "graphRole": "source_read",
             "title": "Refined Brent range result",
-            "summary": "Refined check keeps 66.20 USD/bbl labeled as a fixed UI demo value, not a real range-derived estimate.",
+            "summary": "Refined check: demo prediction is 119.44 USD/bbl, derived from local FRED latest (118.26 USD/bbl) + 1% risk-premium.",
             "status": "success",
             "toolName": "search_web",
             "current": false,
@@ -799,7 +799,7 @@
       "sourceObservationIds": [
         "obs-demo-fred-local"
       ],
-      "claim": "[demo] Local FRED DCOILBRENTEU observations ground the sparkline and delta; 66.20 USD/bbl remains a fixed UI fixture value.",
+      "claim": "[demo] Local FRED DCOILBRENTEU observations ground the sparkline and delta; the demo prediction (119.44 USD/bbl) is derived from the latest FRED observation + 1% risk-premium.",
       "polarity": "support",
       "affects": [
         "market",
@@ -885,7 +885,7 @@
   ],
   "marketRead": {
     "title": "Demo Brent market read",
-    "summary": "[demo] Numeric fixture uses local FRED Brent observations for UI grounding and labels 66.20 as a fixed demo forecast.",
+    "summary": "[demo] Numeric fixture uses local FRED Brent observations for UI grounding; prediction is 119.44 USD/bbl, derived from latest FRED obs + 1% risk-premium.",
     "pricingPattern": "mixed",
     "evidenceIds": [
       "ev-demo-fred-anchor",
