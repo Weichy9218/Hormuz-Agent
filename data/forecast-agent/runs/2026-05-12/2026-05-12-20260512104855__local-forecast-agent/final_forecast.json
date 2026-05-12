@@ -1,0 +1,20 @@
+{
+  "prediction": "B",
+  "scenario": "controlled",
+  "confidence": "medium",
+  "rationale": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+  "keyEvidenceItems": [
+    "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+    "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confid…"
+  ],
+  "counterEvidenceItems": [],
+  "openConcerns": [
+    "授权 AIS / PortWatch 指标仍需确认是否出现连续 traffic stop。",
+    "官方 advisory wording 是否升级为 avoidance / closure-class restriction。"
+  ],
+  "temporalNotes": [
+    "Question horizon: 7d.",
+    "Market pattern: mixed.",
+    "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "runId": "2026-05-12-20260512104855__local-forecast-agent",
+  "taskId": "hormuz-traffic-risk-2026-05-12",
+  "status": "completed",
+  "runner": "hormuz-local-forecast-agent",
+  "schemaVersion": "hormuz-forecast-agent-run/v1",
+  "startedAt": "2026-05-12T10:48:55.000Z",
+  "lastUpdatedAt": "2026-05-12T10:53:12.119Z",
+  "runDir": "data/forecast-agent/runs/2026-05-12/2026-05-12-20260512104855__local-forecast-agent",
+  "questionPath": "data/galaxy/hormuz-daily-question.jsonl",
+  "sourceArtifacts": [
+    "data/generated/canonical_inputs.json",
+    "data/registry/sources.json",
+    "data/galaxy/latest-run.json"
+  ],
+  "completedAt": "2026-05-12T10:53:12.119Z",
+  "finalPrediction": "B",
+  "confidence": "medium"
+}

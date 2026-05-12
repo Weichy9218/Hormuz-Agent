@@ -1,323 +1,468 @@
-// Forecast page: reviewer-facing explanation graph and auditable judgement update.
-import { useMemo, useState } from "react";
+// Forecast page focused on live forecast-agent run visualization.
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
+  CheckCircle2,
+  Clock3,
+  Database,
+  FileText,
+  Flag,
   Play,
   RefreshCw,
+  Search,
+  ShieldAlert,
+  Wrench,
 } from "lucide-react";
-import { CheckpointCard } from "../components/forecast/CheckpointCard";
-import { EvidenceGraph } from "../components/forecast/EvidenceGraph";
-import {
-  ForecastInspector,
-  type ForecastSelectionAnchor,
-} from "../components/forecast/ForecastInspector";
-import { JudgementDeltaCard } from "../components/forecast/JudgementDeltaCard";
-import { ResearchStream } from "../components/forecast/ResearchStream";
-import { ReplayControls } from "../components/forecast/ReplayControls";
+import { GalaxyActionGraph } from "../components/forecast/GalaxyActionGraph";
 import { InfoTitle } from "../components/shared/InfoTitle";
-import {
-  sourceRegistry,
-} from "../data";
-import {
-  directionCopy,
-  polarityCopy,
-} from "../lib/forecastCopy";
-import {
-  forecastTargetOptions,
-  scenarioColor,
-  scenarioLabel,
-  scenarioOrder,
-  targetLabel,
-} from "../state/forecastStore";
-import {
-  projectForecastState,
-} from "../state/projections";
-import type { AgentRunEvent } from "../types/agentEvents";
+import { projectForecastState } from "../state/projections";
+import type { ForecastTarget } from "../types/forecast";
 import type {
-  ForecastTarget,
-  ScenarioId,
-  TargetForecast,
-} from "../types/forecast";
+  GalaxyActionKind,
+  GalaxyActionTrace,
+  GalaxyActionTraceItem,
+  GalaxyHormuzRunArtifact,
+} from "../types/galaxy";
+import type { ForecastAgentRunArtifact } from "../types/forecastAgent";
 
 type ForecastProjection = ReturnType<typeof projectForecastState>;
+type RunStatus = "idle" | "running" | "completed" | "failed";
 
-function directionIcon(direction: TargetForecast["direction"]) {
-  if (direction === "up") return <ArrowUp size={15} />;
-  if (direction === "down") return <ArrowDown size={15} />;
-  return <ArrowRight size={15} />;
+interface LiveRunStatus {
+  runId: string;
+  taskId: string;
+  status: RunStatus;
+  pid: number | null;
+  elapsed: number;
+  startedAt: string;
+  lastUpdatedAt: string;
+  runDir: string;
+  outputDir: string;
+  runConfig: string;
+  exitCode: number | null;
+  command?: string[];
+  outputTail?: string;
+  error?: string;
 }
 
-function CrossAssetSideCard({ forecasts }: { forecasts: TargetForecast[] }) {
-  const assets = forecasts.filter((forecast) =>
-    ["brent", "gold", "broad_usd", "usd_cny", "vix", "us10y", "sp500"].includes(forecast.target),
-  );
+interface TraceResponse {
+  runId: string;
+  status: RunStatus;
+  pid: number | null;
+  elapsed: number;
+  lastUpdatedAt: string;
+  runDir: string;
+  outputDir: string;
+  trace: GalaxyActionTrace;
+  artifact: GalaxyHormuzRunArtifact | ForecastAgentRunArtifact | null;
+}
+
+const kindLabel: Record<GalaxyActionKind, string> = {
+  question: "question",
+  assistant_note: "agent note",
+  tool_call: "tool call",
+  tool_result: "tool result",
+  artifact_read: "artifact",
+  evidence_synthesis: "synthesis",
+  final_forecast: "forecast",
+  checkpoint: "checkpoint",
+  supervisor: "runtime",
+};
+
+function questionText(projection: ForecastProjection) {
   return (
-    <section className="console-card side-card asset-side-card">
-      <InfoTitle title="跨资产视图" />
-      <div className="asset-direction-grid">
-        {assets.slice(0, 7).map((forecast) => (
-          <article className={forecast.direction} key={forecast.target}>
-            <div>
-              <span>{targetLabel[forecast.target]}</span>
-              <em>{directionCopy[forecast.direction]}</em>
-            </div>
-            {directionIcon(forecast.direction)}
-          </article>
-        ))}
-      </div>
-    </section>
+    projection.galaxyRun?.question.task_question
+      .split('"""')[1]
+      ?.trim()
+      .replace(/\s+/g, " ") ?? "No forecast question artifact loaded."
   );
 }
 
-function eventAnchor(event: AgentRunEvent | null): ForecastSelectionAnchor | null {
-  if (!event) return null;
+function finalPayload(
+  projection: ForecastProjection,
+  actions: GalaxyActionTraceItem[],
+  source: "current run" | "last completed",
+  liveRunId?: string,
+  agentArtifact?: ForecastAgentRunArtifact | null,
+) {
+  const finalAction = [...actions].reverse().find((action) => action.forecastPayload);
+  const agentFinal = agentArtifact?.finalForecast;
+  const metaPrediction = projection.galaxyRun?.runMeta.finalPrediction;
+  const allowMetaFallback =
+    source === "last completed" || projection.galaxyRun?.runMeta.runId === liveRunId;
   return {
-    eventId: event.eventId,
-    evidenceId: event.type === "evidence_added" ? event.evidenceId : event.evidenceIds?.[0],
-    sourceObservationId: event.sourceObservationIds?.[0],
-    checkpointId: event.type === "checkpoint_written" ? event.checkpointId : undefined,
+    prediction:
+      finalAction?.forecastPayload?.prediction ??
+      agentFinal?.prediction ??
+      (allowMetaFallback ? metaPrediction : undefined) ??
+      "pending",
+    confidence:
+      finalAction?.forecastPayload?.confidence ??
+      agentFinal?.confidence ??
+      projection.galaxyRun?.runMeta.confidence ??
+      "unknown",
+    terminal:
+      agentArtifact?.runMeta.runner ??
+      projection.galaxyRun?.runMeta.terminalReason ??
+      "record_forecast",
+    payload: finalAction?.forecastPayload ?? agentFinal,
+    action: finalAction,
   };
 }
 
-function hasJudgementUpdate(events: AgentRunEvent[]) {
-  return events.some((event) => event.type === "judgement_updated");
+function actionIcon(kind: GalaxyActionKind, toolName?: string) {
+  if (kind === "question") return <FileText size={15} />;
+  if (kind === "tool_call" && toolName === "search_web") return <Search size={15} />;
+  if (kind === "tool_call") return <Wrench size={15} />;
+  if (kind === "tool_result" || kind === "artifact_read") return <Database size={15} />;
+  if (kind === "final_forecast") return <Flag size={15} />;
+  if (kind === "checkpoint") return <CheckCircle2 size={15} />;
+  return <Clock3 size={15} />;
 }
 
-function hasCheckpoint(events: AgentRunEvent[]) {
-  return events.some((event) => event.type === "checkpoint_written");
+function roleCounts(actions: GalaxyActionTraceItem[]) {
+  return actions.reduce(
+    (acc, action) => {
+      acc[action.evidenceRole ?? "source_read"] += 1;
+      return acc;
+    },
+    {
+      question_audit: 0,
+      source_search: 0,
+      source_read: 0,
+      evidence_extract: 0,
+      forecast_record: 0,
+    } as Record<NonNullable<GalaxyActionTraceItem["evidenceRole"]>, number>,
+  );
 }
 
-function graphModeCopy(mode: "story" | "audit" | "replay") {
-  if (mode === "story") return "Story graph highlights the primary revision path.";
-  if (mode === "audit") return "Audit graph expands provenance, evidence, mechanism, and checkpoint nodes.";
-  return "Replay reveals events in order and holds current state until judgement_updated.";
-}
-
-function GalaxyRunCard({
+function GalaxyRunHeader({
   projection,
-  isRunning,
+  actions,
+  liveStatus,
+  finalSource,
+  agentArtifact,
   runMessage,
   onRun,
   onRefresh,
 }: {
   projection: ForecastProjection;
-  isRunning: boolean;
+  actions: GalaxyActionTraceItem[];
+  liveStatus: LiveRunStatus | null;
+  finalSource: "current run" | "last completed";
+  agentArtifact?: ForecastAgentRunArtifact | null;
   runMessage: string;
   onRun: () => void;
   onRefresh: () => void;
 }) {
   const galaxy = projection.galaxyRun;
   const meta = galaxy?.runMeta;
+  const final = finalPayload(projection, actions, finalSource, liveStatus?.runId, agentArtifact);
+  const isRunning = liveStatus?.status === "running";
+  const status = liveStatus?.status ?? agentArtifact?.runMeta.status ?? meta?.status ?? "last completed";
+  const pid = liveStatus?.pid ?? null;
+  const elapsed =
+    liveStatus?.elapsed ?? (meta?.durationSeconds ? Math.round(meta.durationSeconds) : null);
+  const runDir =
+    liveStatus?.runDir ?? agentArtifact?.runMeta.runDir ?? meta?.runDir ?? meta?.outputDir ?? "not loaded";
+  const taskId = liveStatus?.taskId ?? agentArtifact?.runMeta.taskId ?? meta?.taskId ?? projection.runId;
+  const command = liveStatus?.command ?? meta?.command;
 
   return (
-    <section className="console-card galaxy-run-card">
-      <div className="galaxy-run-main">
-        <InfoTitle
-          title="Galaxy daily run"
-          subtitle="daily question -> galaxy-selfevolve -> normalized AgentRunEvent[]"
-        />
-        <div className="galaxy-run-meta">
-          <span>{meta?.status ?? "canonical fallback"}</span>
-          <strong>{meta?.taskId ?? projection.runId}</strong>
-          <p>
-            {meta
-              ? `${meta.questionDate} · ${meta.outputDir}`
-              : "No Galaxy artifact loaded; using canonical fallback fixture."}
-          </p>
+    <section className="console-card galaxy-agent-hero">
+      <div className="galaxy-agent-copy">
+        <span className="galaxy-kicker">Forecast agent primary surface</span>
+        <h1>Forecast Agent Behavior Viewer</h1>
+        <p>{questionText(projection)}</p>
+        <div className="galaxy-run-chips">
+          <span>status {status}</span>
+          <span>pid {pid ?? "none"}</span>
+          <span>elapsed {elapsed != null ? `${elapsed}s` : "pending"}</span>
+          <span>{taskId}</span>
+          <span>final {final.prediction} · {finalSource}</span>
         </div>
       </div>
-      <div className="galaxy-question-preview">
-        <span>Question</span>
-        <p>
-          {galaxy?.question.task_question
-            .split('"""')[1]
-            ?.trim()
-            .replace(/\s+/g, " ") ??
-            "Run artifact will expose the daily Hormuz question here."}
-        </p>
+      <div className="galaxy-agent-command">
+        <InfoTitle
+          title="Run control"
+          subtitle="local start/status/trace live execution"
+        />
+        <dl className="galaxy-run-kv">
+          <div><dt>runtime</dt><dd>{liveStatus?.runConfig ?? agentArtifact?.runMeta.runner ?? "local-forecast-agent"}</dd></div>
+          <div><dt>runDir</dt><dd>{runDir}</dd></div>
+          <div><dt>last updated</dt><dd>{liveStatus?.lastUpdatedAt ?? agentArtifact?.runMeta.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "unknown"}</dd></div>
+        </dl>
+        <code>{command?.join(" ") ?? "node scripts/forecast-agent/runner.mjs"}</code>
+        <div className="galaxy-run-actions">
+          <button type="button" onClick={onRun} disabled={isRunning}>
+            {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
+            {isRunning ? "Running live" : "Run local agent"}
+          </button>
+          <button type="button" onClick={onRefresh}>
+            <RefreshCw size={15} />
+            Refresh last completed
+          </button>
+        </div>
+        {runMessage ? <p className="galaxy-run-message">{runMessage}</p> : null}
       </div>
-      <div className="galaxy-run-actions">
-        <button type="button" onClick={onRun} disabled={isRunning}>
-          {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
-          {isRunning ? "Running" : "Run galaxy"}
-        </button>
-        <button type="button" onClick={onRefresh} disabled={isRunning}>
-          <RefreshCw size={15} />
-          Refresh artifact
-        </button>
-      </div>
-      {runMessage ? <p className="galaxy-run-message">{runMessage}</p> : null}
     </section>
   );
 }
 
-function ForecastSystemStageCard({
+function FinalForecastCard({
   projection,
+  actions,
+  finalSource,
+  agentArtifact,
 }: {
   projection: ForecastProjection;
+  actions: GalaxyActionTraceItem[];
+  finalSource: "current run" | "last completed";
+  agentArtifact?: ForecastAgentRunArtifact | null;
 }) {
-  const stages = [
-    {
-      label: "Sense",
-      title: "source bundle",
-      body: `读取 ${projection.observations.length} 条 observations；pending sources 在任何 update 前保持 caveat。`,
-    },
-    {
-      label: "Interpret",
-      title: "evidence + mechanism",
-      body: `${projection.evidenceClaims.length} 条 EvidenceClaim 映射到 ${new Set(projection.evidenceClaims.flatMap((claim) => claim.mechanismTags)).size} 个 mechanism tags。`,
-    },
-    {
-      label: "Revise",
-      title: "judgement_updated",
-      body: "只有 judgement_updated 可以写入 scenario distribution 与 target forecasts。",
-    },
-    {
-      label: "Persist",
-      title: "checkpoint + records",
-      body: `${projection.checkpoint.checkpointId.toUpperCase()} 持久化 state，用于 replay、eval 与 galaxy handoff。`,
-    },
-  ];
+  const final = finalPayload(projection, actions, finalSource, undefined, agentArtifact);
+  const stats = roleCounts(actions);
+  const payload = final.payload;
 
   return (
-    <section className="console-card forecast-stage-card">
-      <InfoTitle title="Forecast agent 运行阶段" subtitle="galaxy-style contract，面向 reviewer 的可视化" />
-      <div className="forecast-stage-grid">
-        {stages.map((stage, index) => (
-          <article key={stage.label}>
-            <span>{String(index + 1).padStart(2, "0")} · {stage.label}</span>
-            <strong>{stage.title}</strong>
-            <p>{stage.body}</p>
-          </article>
+    <section className="console-card galaxy-final-card">
+      <InfoTitle title="Final forecast" subtitle={`record_forecast payload · ${finalSource}`} />
+      <div className="galaxy-final-answer">
+        <span>prediction</span>
+        <strong>{final.prediction}</strong>
+        <p>confidence {final.confidence} · terminal {final.terminal}</p>
+      </div>
+      <p>{payload?.rationale ?? final.action?.summary ?? "Current run has not recorded a final forecast yet."}</p>
+      <div className="galaxy-final-lists">
+        <strong>key evidence</strong>
+        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["pending record_forecast payload"]).map((item) => (
+          <p key={item}>{item}</p>
+        ))}
+        {payload?.counterEvidenceItems?.length ? <strong>counter evidence</strong> : null}
+        {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
+        {payload?.openConcerns?.length ? <strong>open concerns</strong> : null}
+        {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
+      </div>
+      <div className="galaxy-stats-grid">
+        <span><b>{stats.question_audit}</b> audit</span>
+        <span><b>{stats.source_search}</b> search</span>
+        <span><b>{stats.source_read}</b> read</span>
+        <span><b>{stats.evidence_extract}</b> extract</span>
+      </div>
+    </section>
+  );
+}
+
+function ActionTimeline({
+  actions,
+  selectedActionId,
+  onSelectAction,
+}: {
+  actions: GalaxyActionTraceItem[];
+  selectedActionId: string | null;
+  onSelectAction: (actionId: string) => void;
+}) {
+  return (
+    <section className="console-card galaxy-action-timeline">
+      <InfoTitle title="Action timeline" subtitle="events.jsonl -> reviewer-safe action trace" />
+      <div className="galaxy-action-list">
+        {actions.map((action) => (
+          <button
+            className={selectedActionId === action.actionId ? "selected" : ""}
+            key={action.actionId}
+            onClick={() => onSelectAction(action.actionId)}
+            type="button"
+          >
+            <i>{actionIcon(action.kind, action.toolName)}</i>
+            <span>
+              <em>{String(action.index + 1).padStart(2, "0")} · {action.at} · {kindLabel[action.kind]}</em>
+              <strong>{action.title}</strong>
+              <small>{action.summary}</small>
+            </span>
+          </button>
         ))}
       </div>
     </section>
   );
 }
 
+function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
+  return (
+    <section className={`console-card galaxy-action-inspector ${action ? "has-action" : ""}`}>
+      <InfoTitle title="Inspector" subtitle="selected action provenance" />
+      {action ? (
+        <div className="galaxy-inspector-body">
+          <span>{kindLabel[action.kind]} · {action.status}</span>
+          <strong>{action.title}</strong>
+          <p>{action.summary}</p>
+          <dl>
+            <div>
+              <dt>actionId</dt>
+              <dd>{action.actionId}</dd>
+            </div>
+            {action.toolName ? (
+              <div>
+                <dt>tool</dt>
+                <dd>{action.toolName}</dd>
+              </div>
+            ) : null}
+            {action.query ? (
+              <div>
+                <dt>query</dt>
+                <dd>{action.query}</dd>
+              </div>
+            ) : null}
+            {action.sourceUrl ? (
+              <div>
+                <dt>sourceUrl</dt>
+                <dd>{action.sourceUrl}</dd>
+              </div>
+            ) : null}
+            {action.artifactPath ? (
+              <div>
+                <dt>artifact</dt>
+                <dd>{action.artifactPath}</dd>
+              </div>
+            ) : null}
+            {action.argsSummary ? (
+              <div>
+                <dt>args</dt>
+                <dd>{action.argsSummary}</dd>
+              </div>
+            ) : null}
+            {action.forecastPayload?.prediction ? (
+              <div>
+                <dt>forecast</dt>
+                <dd>{action.forecastPayload.prediction} · {action.forecastPayload.confidence ?? "unknown"}</dd>
+              </div>
+            ) : null}
+            {action.lane ? (
+              <div>
+                <dt>lane</dt>
+                <dd>{action.lane}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>trace role</dt>
+              <dd>{action.evidenceRole ?? "source_read"}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : (
+        <div className="galaxy-inspector-empty">
+          <ShieldAlert size={22} />
+          <strong>Select a graph node or timeline step</strong>
+          <p>Inspector shows safe provenance: tool name, source URL, query, artifact path, and trace role.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function ForecastPage({
-  selectedTarget,
-  onSelectTarget,
+  selectedTarget: _selectedTarget,
+  onSelectTarget: _onSelectTarget,
 }: {
   selectedTarget: ForecastTarget;
   onSelectTarget: (target: ForecastTarget) => void;
 }) {
-  const [runtimeGalaxyArtifact, setRuntimeGalaxyArtifact] = useState<unknown | null>(null);
-  const [isGalaxyRunning, setIsGalaxyRunning] = useState(false);
+  const [latestCompletedArtifact, setLatestCompletedArtifact] = useState<unknown | null>(null);
+  const [latestAgentArtifact, setLatestAgentArtifact] = useState<ForecastAgentRunArtifact | null>(null);
+  const [liveArtifact, setLiveArtifact] = useState<GalaxyHormuzRunArtifact | null>(null);
+  const [liveAgentArtifact, setLiveAgentArtifact] = useState<ForecastAgentRunArtifact | null>(null);
+  const [liveTrace, setLiveTrace] = useState<GalaxyActionTrace | null>(null);
+  const [liveStatus, setLiveStatus] = useState<LiveRunStatus | null>(null);
   const [galaxyRunMessage, setGalaxyRunMessage] = useState("");
+  const [graphMode, setGraphMode] = useState<"summary" | "full">("summary");
+  const runtimeGalaxyArtifact = liveArtifact ?? latestCompletedArtifact ?? undefined;
   const projection = useMemo(
     () => projectForecastState(runtimeGalaxyArtifact ?? undefined),
     [runtimeGalaxyArtifact],
   );
-  const [mode, setMode] = useState<"story" | "audit" | "replay">("story");
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [replayStep, setReplayStep] = useState(0);
-  const replayEnabled = mode === "replay";
-  const visibleEvents = replayEnabled
-    ? projection.events.slice(0, replayStep)
-    : projection.events;
-  const visibleEventIds = useMemo(
-    () => new Set(visibleEvents.map((event) => event.eventId)),
-    [visibleEvents],
-  );
-  const visibleEvidenceIds = useMemo(
-    () =>
-      new Set(
-        visibleEvents
-          .filter(
-            (event): event is Extract<AgentRunEvent, { type: "evidence_added" }> =>
-              event.type === "evidence_added",
-          )
-          .map((event) => event.evidenceId),
-      ),
-    [visibleEvents],
-  );
-  const replayStoryGraph = useMemo(() => {
-    if (!replayEnabled) return projection.storyGraph;
-    const nodes = projection.storyGraph.nodes.filter(
-      (node) => !node.eventId || visibleEventIds.has(node.eventId),
-    );
-    const nodeIds = new Set(nodes.map((node) => node.id));
-    return {
-      nodes,
-      edges: projection.storyGraph.edges.filter(
-        (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target),
-      ),
-    };
-  }, [projection.storyGraph, replayEnabled, visibleEventIds]);
-  const replayStateRevealed = !replayEnabled || hasJudgementUpdate(visibleEvents);
-  const replayCheckpointRevealed = !replayEnabled || hasCheckpoint(visibleEvents);
-  const scenarioForState = replayStateRevealed
-    ? projection.currentScenario
-    : projection.previousScenario;
-  const targetForecastsForState = replayStateRevealed
-    ? projection.currentTargetForecasts
-    : projection.previousTargetForecasts;
-  const displayedStoryGraph = replayEnabled ? replayStoryGraph : projection.storyGraph;
-  const displayedAuditGraph = replayEnabled ? replayStoryGraph : projection.auditGraph;
-  const activeGraph = mode === "audit" ? displayedAuditGraph : displayedStoryGraph;
-  const selectedGraphNode =
-    activeGraph.nodes.find((node) => node.id === selectedNodeId) ?? null;
-  const selectedEvent =
-    projection.events.find((event) => event.eventId === selectedEventId) ?? null;
-  const selectedAnchor: ForecastSelectionAnchor | null = selectedGraphNode
-    ? {
-        eventId: selectedGraphNode.eventId,
-        evidenceId: selectedGraphNode.evidenceId,
-        sourceObservationId: selectedGraphNode.sourceObservationId,
-        checkpointId: selectedGraphNode.checkpointId,
-      }
-    : eventAnchor(selectedEvent);
+  const agentArtifact = liveAgentArtifact ?? latestAgentArtifact;
+  const agentTrace = liveTrace ?? agentArtifact?.trace ?? null;
+  const actions = agentTrace?.actions ?? projection.galaxyRun?.actionTrace?.actions ?? [];
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const selectedAction =
+    actions.find((action) => action.actionId === selectedActionId) ?? actions.at(-2) ?? null;
+  const finalSource = liveArtifact || liveStatus?.status === "running" ? "current run" : "last completed";
 
-  function handleSelectGraphNode(nodeId: string | null) {
-    setSelectedNodeId(nodeId);
-    const node = activeGraph.nodes.find((item) => item.id === nodeId);
-    setSelectedEventId(node?.eventId ?? null);
-  }
-
-  function handleSelectEvent(eventId: string) {
-    setSelectedEventId(eventId);
-    const event = projection.events.find((item) => item.eventId === eventId) ?? null;
-    const anchor = eventAnchor(event);
-    const matchingNode =
-      activeGraph.nodes.find((node) => node.eventId === eventId) ??
-      activeGraph.nodes.find((node) => anchor?.evidenceId && node.evidenceId === anchor.evidenceId) ??
-      activeGraph.nodes.find((node) =>
-        anchor?.sourceObservationId &&
-        node.sourceObservationId === anchor.sourceObservationId,
-      ) ??
-      activeGraph.nodes.find((node) =>
-        anchor?.checkpointId && node.checkpointId === anchor.checkpointId,
-      ) ??
-      null;
-    setSelectedNodeId(matchingNode?.id ?? null);
-  }
-
-  function handleReplayStep(nextStep: number) {
-    const boundedStep = Math.max(0, Math.min(projection.events.length, nextStep));
-    setReplayStep(boundedStep);
-    const event = projection.events[boundedStep - 1] ?? null;
-    if (event) handleSelectEvent(event.eventId);
-  }
-
-  function handleModeChange(nextMode: "story" | "audit" | "replay") {
-    setMode(nextMode);
-    setSelectedNodeId(null);
-    setSelectedEventId(null);
-    if (nextMode === "replay") setReplayStep(0);
-  }
-
-  async function refreshGalaxyArtifact(message = "Artifact refreshed.") {
-    const response = await fetch("/api/galaxy-hormuz/latest");
-    if (!response.ok) {
-      throw new Error(`latest artifact request failed: ${response.status}`);
+  const refreshGalaxyArtifact = useCallback(async (message = "Artifact refreshed.") => {
+    const [agentResponse, galaxyResponse] = await Promise.all([
+      fetch("/api/forecast-agent/latest").catch(() => null),
+      fetch("/api/galaxy-hormuz/latest"),
+    ]);
+    if (agentResponse?.ok) {
+      setLatestAgentArtifact(await agentResponse.json());
     }
-    setRuntimeGalaxyArtifact(await response.json());
+    if (!galaxyResponse.ok) {
+      throw new Error(`latest artifact request failed: ${galaxyResponse.status}`);
+    }
+    setLatestCompletedArtifact(await galaxyResponse.json());
+    if (!liveStatus || liveStatus.status !== "running") {
+      setLiveArtifact(null);
+      setLiveAgentArtifact(null);
+      setLiveTrace(null);
+      setLiveStatus(null);
+    }
     setGalaxyRunMessage(message);
-  }
+  }, [liveStatus]);
+
+  const pollLiveRun = useCallback(async (runId: string) => {
+    const [statusResponse, traceResponse] = await Promise.all([
+      fetch(`/api/forecast-agent/run/status?runId=${encodeURIComponent(runId)}`),
+      fetch(`/api/forecast-agent/run/trace?runId=${encodeURIComponent(runId)}`),
+    ]);
+    if (!statusResponse.ok) {
+      throw new Error(`status request failed: ${statusResponse.status}`);
+    }
+    const statusPayload = (await statusResponse.json()) as LiveRunStatus;
+    setLiveStatus(statusPayload);
+    if (traceResponse.ok) {
+      const tracePayload = (await traceResponse.json()) as TraceResponse;
+      setLiveTrace(tracePayload.trace);
+      if (tracePayload.artifact?.schemaVersion === "hormuz-forecast-agent-run/v1") {
+        setLiveAgentArtifact(tracePayload.artifact);
+      } else if (tracePayload.artifact) {
+        setLiveArtifact(tracePayload.artifact);
+      }
+    }
+    if (statusPayload.status === "completed") {
+      setGalaxyRunMessage("Local forecast-agent run completed; latest artifact now points to this run.");
+      await refreshGalaxyArtifact("Local forecast-agent completed; final forecast is from the current run.");
+    } else if (statusPayload.status === "failed") {
+      setGalaxyRunMessage(statusPayload.error ?? "Local forecast-agent run failed; keeping the last valid trace.");
+    } else {
+      setGalaxyRunMessage(`Live run ${statusPayload.runId} · ${statusPayload.elapsed}s · ${statusPayload.runDir}`);
+    }
+  }, [refreshGalaxyArtifact]);
+
+  useEffect(() => {
+    if (!liveStatus?.runId || liveStatus.status !== "running") return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        await pollLiveRun(liveStatus.runId);
+      } catch (error) {
+        if (!cancelled) {
+          setGalaxyRunMessage(error instanceof Error ? error.message : "Live trace polling failed.");
+        }
+      }
+    };
+    const interval = window.setInterval(() => {
+      void tick();
+    }, 1500);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [liveStatus?.runId, liveStatus?.status, pollLiveRun]);
+
+  useEffect(() => {
+    if (!latestCompletedArtifact) {
+      void refreshGalaxyArtifact("Loaded last completed forecast-agent artifact.");
+    }
+  }, [latestCompletedArtifact, refreshGalaxyArtifact]);
 
   async function handleRefreshGalaxyArtifact() {
     try {
@@ -328,236 +473,106 @@ export function ForecastPage({
   }
 
   async function handleRunGalaxy() {
-    setIsGalaxyRunning(true);
-    setGalaxyRunMessage("Starting galaxy-selfevolve run...");
+    setGalaxyRunMessage("Starting local forecast-agent runtime...");
     try {
-      const response = await fetch("/api/galaxy-hormuz/run", { method: "POST" });
+      const response = await fetch("/api/forecast-agent/run/start", { method: "POST" });
       const payload = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
-        output?: string;
+        runId?: string;
+        pid?: number;
+        runDir?: string;
+        outputDir?: string;
+        taskId?: string;
+        startedAt?: string;
+        runConfig?: string;
         error?: string;
       };
       if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || payload.output || `galaxy run failed: ${response.status}`);
+        throw new Error(payload.error || `local forecast-agent run failed: ${response.status}`);
       }
-      await refreshGalaxyArtifact("Galaxy run completed; graph rebuilt from latest artifact.");
+      const status: LiveRunStatus = {
+        runId: payload.runId ?? "",
+        taskId: payload.taskId ?? "",
+        status: "running",
+        pid: payload.pid ?? null,
+        elapsed: 0,
+        startedAt: payload.startedAt ?? new Date().toISOString(),
+        lastUpdatedAt: payload.startedAt ?? new Date().toISOString(),
+        runDir: payload.runDir ?? "",
+        outputDir: payload.outputDir ?? "",
+        runConfig: payload.runConfig ?? "local-forecast-agent",
+        exitCode: null,
+      };
+      setLiveStatus(status);
+      setLiveArtifact(null);
+      setLiveAgentArtifact(null);
+      setLiveTrace(null);
+      setSelectedActionId(null);
+      setGalaxyRunMessage(`Started ${status.runId}; waiting for events.jsonl live trace.`);
+      if (status.runId) await pollLiveRun(status.runId);
     } catch (error) {
-      setGalaxyRunMessage(error instanceof Error ? error.message : "Galaxy run failed.");
-    } finally {
-      setIsGalaxyRunning(false);
+      setGalaxyRunMessage(error instanceof Error ? error.message : "Local forecast-agent run failed.");
     }
   }
 
-  const dominant = scenarioOrder.reduce((best, current) =>
-    scenarioForState[current] > scenarioForState[best] ? current : best,
-  );
-  const prevDominant = scenarioOrder.reduce((best, current) =>
-    projection.previousScenario[current] > projection.previousScenario[best] ? current : best,
-  );
-
   return (
-    <section className="page-grid forecast-page">
-      <section className="console-card revision-headline">
-        <div className="revision-headline-main">
-          <InfoTitle
-            title="Agent 为什么改判？"
-            subtitle="Evidence path、guardrails 与持久化 forecast state"
-          />
-          <div className="revision-state-pair">
-            <span>
-              <small>上轮 previous</small>
-              {scenarioLabel[prevDominant]} · {projection.previousScenario[prevDominant]}%
-            </span>
-            <ArrowRight size={18} />
-            <strong>
-              <small>{replayStateRevealed ? "当前 current" : "回放中 holding previous"}</small>
-              {scenarioLabel[dominant]} · {scenarioForState[dominant]}%
-            </strong>
-          </div>
-        </div>
-        <p>
-          {replayStateRevealed
-            ? `${projection.checkpoint.revisionReason} ${
-                projection.galaxyRun
-                  ? `Galaxy task ${projection.galaxyRun.runMeta.taskId} generated at ${projection.galaxyRun.runMeta.questionDate}; final prediction ${projection.galaxyRun.runMeta.finalPrediction ?? "pending"}.`
-                  : ""
-              }`
-            : "Replay 尚未到 judgement_updated：当前状态保持 previous，只追加 source/evidence 事件。"}
-        </p>
-        {replayStateRevealed ? (
-          <div className="revision-chips">
-            {Object.entries(projection.scenarioDelta).map(([id, delta]) => (
-              <span key={id}>
-                <i style={{ background: scenarioColor[id as ScenarioId] }} />
-                {scenarioLabel[id as ScenarioId]}{" "}
-                <b className={(delta ?? 0) > 0 ? "positive" : (delta ?? 0) < 0 ? "negative" : ""}>
-                  {(delta ?? 0) > 0 ? "+" : ""}{delta} pp
-                </b>
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </section>
+    <section className="page-grid forecast-page galaxy-agent-page">
+      <GalaxyRunHeader
+        projection={projection}
+        actions={actions}
+        liveStatus={liveStatus}
+        finalSource={finalSource}
+        agentArtifact={agentArtifact}
+        runMessage={galaxyRunMessage}
+        onRun={handleRunGalaxy}
+        onRefresh={handleRefreshGalaxyArtifact}
+      />
 
-      <section className="forecast-main-grid">
-        <main className="forecast-main-column">
-          <GalaxyRunCard
-            projection={projection}
-            isRunning={isGalaxyRunning}
-            runMessage={galaxyRunMessage}
-            onRun={handleRunGalaxy}
-            onRefresh={handleRefreshGalaxyArtifact}
-          />
-
-          <section className="forecast-workbench console-card">
-            <div className="forecast-workbench-header">
-              <InfoTitle
-                title="解释工作台"
-                subtitle="Graph 选中节点会联动 stream 与 inspector；Replay 只做 UI 回放"
-              />
-              <div className="forecast-mode-tabs" role="tablist" aria-label="Forecast graph mode">
-                {(["story", "audit", "replay"] as const).map((m) => (
-                  <button
-                    key={m}
-                    role="tab"
-                    aria-selected={mode === m}
-                    className={mode === m ? "selected" : ""}
-                    onClick={() => handleModeChange(m)}
-                    type="button"
-                  >
-                    {m === "story" ? "故事模式" : m === "audit" ? "审计模式" : "回放模式"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p className="forecast-mode-note">{graphModeCopy(mode)}</p>
-            <ReplayControls
-              events={projection.events}
-              step={replayStep}
-              enabled={replayEnabled}
-              stateRevealed={replayStateRevealed}
-              onToggle={() => handleModeChange(replayEnabled ? "story" : "replay")}
-              onStepChange={handleReplayStep}
+      <section className="galaxy-agent-workbench">
+        <main className="galaxy-agent-main">
+          <section className="console-card galaxy-view-mode">
+            <InfoTitle
+              title="Visualization mode"
+              subtitle="Summary keeps only decision-relevant actions; full expands tool results."
             />
-          </section>
-
-          <EvidenceGraph
-            storyGraph={displayedStoryGraph}
-            auditGraph={displayedAuditGraph}
-            mode={mode === "audit" ? "audit" : "story"}
-            selectedNodeId={selectedNodeId}
-            onSelectNodeId={handleSelectGraphNode}
-            scenarioDelta={replayStateRevealed ? projection.scenarioDelta : {}}
-            scenarioLabels={scenarioLabel}
-          />
-
-          <section className="console-card evidence-shelf">
-            <InfoTitle title="Evidence shelf · 旁支证据" subtitle="非主链 evidence、counter 与 pending caveat" />
-            <ul>
-              {projection.storyPath.shelfEvidenceIds.length === 0 ? (
-                <li>(本轮没有旁支 evidence)</li>
-              ) : (
-                projection.storyPath.shelfEvidenceIds
-                  .filter((id) => !replayEnabled || visibleEvidenceIds.has(id))
-                  .map((id) => {
-                    const claim = projection.evidenceClaims.find((c) => c.evidenceId === id);
-                    if (!claim) return null;
-                    return (
-                      <li key={id}>
-                        <b>{polarityCopy[claim.polarity]}</b> · {claim.claim}{" "}
-                        <em>[{claim.mechanismTags.join(", ")}]</em>
-                      </li>
-                    );
-                  })
-              )}
-            </ul>
-          </section>
-
-          <section className="console-card research-panel forecast-stream-panel">
-            <InfoTitle title="Research stream · 运行事件" subtitle="选择一个事件，右侧 inspector 会显示对应 provenance" />
-            {selectedAnchor ? (
-              <div className="selected-node-bridge">
-                <span>Selected anchor</span>
-                <strong>{selectedGraphNode?.label ?? selectedEvent?.title ?? "event anchor"}</strong>
-                <p>
-                  {selectedGraphNode?.kind ?? selectedEvent?.type}
-                  {selectedAnchor.eventId ? ` · event ${selectedAnchor.eventId}` : ""}
-                  {selectedAnchor.evidenceId ? ` · evidence ${selectedAnchor.evidenceId}` : ""}
-                  {selectedAnchor.sourceObservationId ? ` · observation ${selectedAnchor.sourceObservationId}` : ""}
-                  {selectedAnchor.checkpointId ? ` · checkpoint ${selectedAnchor.checkpointId}` : ""}
-                </p>
-              </div>
-            ) : null}
-            <div className="forecast-controls">
-              <label className="prediction-select">
-                <span>预测目标</span>
-                <select
-                  aria-label="Forecast target"
-                  value={selectedTarget}
-                  onChange={(event) => onSelectTarget(event.target.value as ForecastTarget)}
+            <div className="forecast-mode-tabs" role="tablist" aria-label="Galaxy graph mode">
+              {(["summary", "full"] as const).map((mode) => (
+                <button
+                  aria-selected={graphMode === mode}
+                  className={graphMode === mode ? "selected" : ""}
+                  key={mode}
+                  onClick={() => setGraphMode(mode)}
+                  role="tab"
+                  type="button"
                 >
-                  <optgroup label="资产">
-                    {forecastTargetOptions
-                      .filter((option) => option.group === "assets")
-                      .map((option) => (
-                        <option key={option.target} value={option.target}>
-                          {option.label}
-                        </option>
-                      ))}
-                  </optgroup>
-                  <optgroup label="风险目标">
-                    {forecastTargetOptions
-                      .filter((option) => option.group === "risk_targets")
-                      .map((option) => (
-                        <option key={option.target} value={option.target}>
-                          {option.label}
-                        </option>
-                      ))}
-                  </optgroup>
-                </select>
-              </label>
-            </div>
-            <div className="research-stream-scroll">
-              <ResearchStream
-                events={projection.events}
-                visibleCount={visibleEvents.length}
-                isRunning={replayEnabled && replayStep < projection.events.length}
-                sourceRegistry={sourceRegistry}
-                scenarioLabels={scenarioLabel}
-                highlightedEventId={selectedGraphNode?.eventId ?? null}
-                selectedEventId={selectedEventId}
-                onSelectEventId={handleSelectEvent}
-              />
+                  {mode === "summary" ? "核心动作" : "完整 trace"}
+                </button>
+              ))}
             </div>
           </section>
+          <GalaxyActionGraph
+            actions={actions}
+            graph={agentTrace?.graph}
+            mode={graphMode}
+            selectedActionId={selectedActionId}
+            onSelectAction={setSelectedActionId}
+          />
+          <ActionTimeline
+            actions={actions}
+            selectedActionId={selectedActionId}
+            onSelectAction={setSelectedActionId}
+          />
         </main>
-
-        <aside className="forecast-side-column">
-          <section className="forecast-state-stack">
-            <CrossAssetSideCard forecasts={targetForecastsForState} />
-            <JudgementDeltaCard
-              events={visibleEvents}
-              scenarioDistribution={scenarioForState}
-              targetForecasts={targetForecastsForState}
-              selectedTarget={selectedTarget}
-              scenarioLabels={scenarioLabel}
-            />
-          </section>
-          <section className="forecast-inspector-stack">
-            <ForecastInspector
-              anchor={selectedAnchor}
-              events={projection.events}
-              evidenceClaims={projection.evidenceClaims}
-              observations={projection.observations}
-              checkpoint={projection.checkpoint}
-              sourceRegistry={sourceRegistry}
-            />
-          </section>
-          {replayCheckpointRevealed ? <CheckpointCard checkpoint={projection.checkpoint} /> : null}
+        <aside className="galaxy-agent-side">
+          <FinalForecastCard
+            projection={projection}
+            actions={actions}
+            finalSource={finalSource}
+            agentArtifact={agentArtifact}
+          />
+          <ActionInspector action={selectedAction} />
         </aside>
       </section>
-
-      <ForecastSystemStageCard projection={projection} />
     </section>
   );
 }

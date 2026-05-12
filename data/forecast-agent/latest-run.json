@@ -1,0 +1,1208 @@
+{
+  "schemaVersion": "hormuz-forecast-agent-run/v1",
+  "runMeta": {
+    "runId": "2026-05-12-20260512104855__local-forecast-agent",
+    "taskId": "hormuz-traffic-risk-2026-05-12",
+    "status": "completed",
+    "runner": "hormuz-local-forecast-agent",
+    "schemaVersion": "hormuz-forecast-agent-run/v1",
+    "startedAt": "2026-05-12T10:48:55.000Z",
+    "lastUpdatedAt": "2026-05-12T10:53:12.119Z",
+    "runDir": "data/forecast-agent/runs/2026-05-12/2026-05-12-20260512104855__local-forecast-agent",
+    "questionPath": "data/galaxy/hormuz-daily-question.jsonl",
+    "sourceArtifacts": [
+      "data/generated/canonical_inputs.json",
+      "data/registry/sources.json",
+      "data/galaxy/latest-run.json"
+    ],
+    "completedAt": "2026-05-12T10:53:12.119Z",
+    "finalPrediction": "B",
+    "confidence": "medium"
+  },
+  "trace": {
+    "traceId": "trace-2026-05-12-20260512104855__local-forecast-agent",
+    "runDir": "data/forecast-agent/runs/2026-05-12/2026-05-12-20260512104855__local-forecast-agent",
+    "generatedAt": "2026-05-12T10:53:12.120Z",
+    "actions": [
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started",
+        "index": 0,
+        "kind": "supervisor",
+        "title": "Local forecast agent started",
+        "summary": "Independent Hormuz forecast-agent runtime loaded source-backed case artifacts.",
+        "at": "2026-05-12T10:53:12.098Z",
+        "status": "success",
+        "parentActionIds": [],
+        "lane": "question",
+        "evidenceRole": "source_read",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded",
+        "index": 1,
+        "kind": "question",
+        "title": "Question loaded",
+        "summary": "hormuz-traffic-risk-2026-05-12 · horizon 7d · options A:normal, B:controlled, C:severe, D:closure",
+        "at": "2026-05-12T10:53:12.100Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started"
+        ],
+        "lane": "question",
+        "evidenceRole": "question_audit",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+        "index": 2,
+        "kind": "assistant_note",
+        "title": "Plan evidence routes",
+        "summary": "Plan: audit official advisories, traffic proxy, and market pricing pattern before calling record_forecast.",
+        "at": "2026-05-12T10:53:12.102Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded"
+        ],
+        "lane": "search_batch",
+        "evidenceRole": "source_read",
+        "rawRole": "assistant"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call",
+        "index": 3,
+        "kind": "tool_call",
+        "title": "search_evidence",
+        "summary": "official advisory Hormuz transit risk",
+        "at": "2026-05-12T10:53:12.104Z",
+        "status": "success",
+        "toolName": "search_evidence",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-1",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn"
+        ],
+        "query": "official advisory Hormuz transit risk",
+        "argsSummary": "{\"topic\":\"hormuz\",\"query\":\"official advisory Hormuz transit risk\",\"sourceIds\":[\"official-advisory\"],\"mechanismTags\":[\"transit_risk_up\",\"mine_or_swarm_risk_up\"],\"limit\":4}",
+        "lane": "search_batch",
+        "evidenceRole": "source_search",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call",
+        "index": 4,
+        "kind": "tool_call",
+        "title": "read_source_bundle",
+        "summary": "{\"sourceIds\":[\"official-advisory\",\"imf-portwatch-hormuz\",\"imo-hormuz-monthly\"],\"limit\":6}",
+        "at": "2026-05-12T10:53:12.104Z",
+        "status": "success",
+        "toolName": "read_source_bundle",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-2",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn"
+        ],
+        "argsSummary": "{\"sourceIds\":[\"official-advisory\",\"imf-portwatch-hormuz\",\"imo-hormuz-monthly\"],\"limit\":6}",
+        "lane": "read_artifacts",
+        "evidenceRole": "source_read",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call",
+        "index": 5,
+        "kind": "tool_call",
+        "title": "read_market_pattern",
+        "summary": "Read audited market pricing pattern.",
+        "at": "2026-05-12T10:53:12.105Z",
+        "status": "success",
+        "toolName": "read_market_pattern",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-3",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn"
+        ],
+        "argsSummary": "{}",
+        "lane": "read_artifacts",
+        "evidenceRole": "source_read",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+        "index": 6,
+        "kind": "tool_result",
+        "title": "search_evidence result",
+        "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has…",
+        "at": "2026-05-12T10:53:12.107Z",
+        "status": "success",
+        "toolName": "search_evidence",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-1",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call"
+        ],
+        "lane": "search_batch",
+        "evidenceRole": "source_read",
+        "rawRole": "tool"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+        "index": 7,
+        "kind": "tool_result",
+        "title": "read_source_bundle result",
+        "summary": "UKMTO / JMIC / MARAD advisory: IMO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use rema… | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: UKMTO source_snapshot snap…",
+        "at": "2026-05-12T10:53:12.107Z",
+        "status": "success",
+        "toolName": "read_source_bundle",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-2",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call"
+        ],
+        "lane": "read_artifacts",
+        "evidenceRole": "source_read",
+        "rawRole": "tool"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+        "index": 8,
+        "kind": "tool_result",
+        "title": "read_market_pattern result",
+        "summary": "Brent 118.26 (2026-05-01), WTI 109.76 (2026-05-04), VIX 17.19 (2026-05-08), S&P 500 7412.84 (2026-05-11); cross-asset pattern supports controlled risk premium, not closure pricing.",
+        "at": "2026-05-12T10:53:12.108Z",
+        "status": "success",
+        "toolName": "read_market_pattern",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-3",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call"
+        ],
+        "lane": "read_artifacts",
+        "evidenceRole": "source_read",
+        "rawRole": "tool"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+        "index": 9,
+        "kind": "artifact_read",
+        "title": "Evidence claim accepted",
+        "summary": "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+        "at": "2026-05-12T10:53:12.110Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result"
+        ],
+        "lane": "evidence_synthesis",
+        "evidenceRole": "evidence_extract",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+        "index": 10,
+        "kind": "artifact_read",
+        "title": "Evidence claim accepted",
+        "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confidence remains capped at medium.",
+        "at": "2026-05-12T10:53:12.110Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result"
+        ],
+        "lane": "evidence_synthesis",
+        "evidenceRole": "evidence_extract",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+        "index": 11,
+        "kind": "evidence_synthesis",
+        "title": "Evidence -> mechanism",
+        "summary": "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up.",
+        "at": "2026-05-12T10:53:12.112Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added"
+        ],
+        "lane": "evidence_synthesis",
+        "evidenceRole": "evidence_extract",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated",
+        "index": 12,
+        "kind": "evidence_synthesis",
+        "title": "Judgement delta",
+        "summary": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+        "at": "2026-05-12T10:53:12.114Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped"
+        ],
+        "lane": "evidence_synthesis",
+        "forecastPayload": {
+          "prediction": "B",
+          "confidence": "medium",
+          "rationale": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+          "keyEvidenceItems": [
+            "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+            "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confid…"
+          ],
+          "counterEvidenceItems": [],
+          "openConcerns": [
+            "授权 AIS / PortWatch 指标仍需确认是否出现连续 traffic stop。",
+            "官方 advisory wording 是否升级为 avoidance / closure-class restriction。"
+          ],
+          "temporalNotes": [
+            "Question horizon: 7d.",
+            "Market pattern: mixed.",
+            "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up."
+          ]
+        },
+        "evidenceRole": "evidence_extract",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast",
+        "index": 13,
+        "kind": "final_forecast",
+        "title": "record_forecast",
+        "summary": "Prediction B (controlled); confidence medium.",
+        "at": "2026-05-12T10:53:12.116Z",
+        "status": "success",
+        "toolName": "record_forecast",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-record-forecast",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated"
+        ],
+        "lane": "forecast",
+        "forecastPayload": {
+          "prediction": "B",
+          "confidence": "medium",
+          "rationale": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+          "keyEvidenceItems": [
+            "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+            "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confid…"
+          ],
+          "counterEvidenceItems": [],
+          "openConcerns": [
+            "授权 AIS / PortWatch 指标仍需确认是否出现连续 traffic stop。",
+            "官方 advisory wording 是否升级为 avoidance / closure-class restriction。"
+          ],
+          "temporalNotes": [
+            "Question horizon: 7d.",
+            "Market pattern: mixed.",
+            "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up."
+          ]
+        },
+        "evidenceRole": "forecast_record",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written",
+        "index": 14,
+        "kind": "checkpoint",
+        "title": "Checkpoint written",
+        "summary": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+        "at": "2026-05-12T10:53:12.118Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast"
+        ],
+        "lane": "checkpoint",
+        "evidenceRole": "source_read",
+        "rawRole": "user"
+      },
+      {
+        "actionId": "2026-05-12-20260512104855__local-forecast-agent-evt-015-run_completed",
+        "index": 15,
+        "kind": "supervisor",
+        "title": "Run completed",
+        "summary": "Local forecast agent completed with graph-native trace, final forecast, and checkpoint.",
+        "at": "2026-05-12T10:53:12.119Z",
+        "status": "success",
+        "parentActionIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written"
+        ],
+        "lane": "checkpoint",
+        "evidenceRole": "source_read",
+        "rawRole": "user"
+      }
+    ],
+    "events": [
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started",
+        "sequence": 0,
+        "type": "run_started",
+        "lane": "question",
+        "graphRole": "run_started",
+        "title": "Local forecast agent started",
+        "summary": "Independent Hormuz forecast-agent runtime loaded source-backed case artifacts.",
+        "parentIds": [],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.098Z",
+        "current": false
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded",
+        "sequence": 1,
+        "type": "question_loaded",
+        "lane": "question",
+        "graphRole": "question_loaded",
+        "title": "Question loaded",
+        "summary": "hormuz-traffic-risk-2026-05-12 · horizon 7d · options A:normal, B:controlled, C:severe, D:closure",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.100Z",
+        "current": false
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+        "sequence": 2,
+        "type": "agent_turn",
+        "lane": "source",
+        "graphRole": "agent_turn",
+        "title": "Plan evidence routes",
+        "summary": "Plan: audit official advisories, traffic proxy, and market pricing pattern before calling record_forecast.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.102Z",
+        "current": false
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call",
+        "sequence": 3,
+        "type": "tool_call",
+        "lane": "search",
+        "graphRole": "tool_call",
+        "title": "search_evidence",
+        "summary": "official advisory Hormuz transit risk",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.104Z",
+        "current": false,
+        "toolName": "search_evidence",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-1",
+        "args": {
+          "topic": "hormuz",
+          "query": "official advisory Hormuz transit risk",
+          "sourceIds": [
+            "official-advisory"
+          ],
+          "mechanismTags": [
+            "transit_risk_up",
+            "mine_or_swarm_risk_up"
+          ],
+          "limit": 4
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call",
+        "sequence": 4,
+        "type": "tool_call",
+        "lane": "read",
+        "graphRole": "tool_call",
+        "title": "read_source_bundle",
+        "summary": "{\"sourceIds\":[\"official-advisory\",\"imf-portwatch-hormuz\",\"imo-hormuz-monthly\"],\"limit\":6}",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.104Z",
+        "current": false,
+        "toolName": "read_source_bundle",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-2",
+        "args": {
+          "sourceIds": [
+            "official-advisory",
+            "imf-portwatch-hormuz",
+            "imo-hormuz-monthly"
+          ],
+          "limit": 6
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call",
+        "sequence": 5,
+        "type": "tool_call",
+        "lane": "read",
+        "graphRole": "tool_call",
+        "title": "read_market_pattern",
+        "summary": "Read audited market pricing pattern.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.105Z",
+        "current": false,
+        "toolName": "read_market_pattern",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-3",
+        "args": {}
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+        "sequence": 6,
+        "type": "tool_result",
+        "lane": "search",
+        "graphRole": "tool_result",
+        "title": "search_evidence result",
+        "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has…",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.107Z",
+        "current": false,
+        "toolName": "search_evidence",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-1",
+        "result": {
+          "query": "official advisory Hormuz transit risk",
+          "claimIds": [
+            "ev-local-official-advisory"
+          ],
+          "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has…"
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+        "sequence": 7,
+        "type": "tool_result",
+        "lane": "read",
+        "graphRole": "tool_result",
+        "title": "read_source_bundle result",
+        "summary": "UKMTO / JMIC / MARAD advisory: IMO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use rema… | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: UKMTO source_snapshot snap…",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.107Z",
+        "current": false,
+        "toolName": "read_source_bundle",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-2",
+        "result": {
+          "observationIds": [
+            "obs-local-advisory-imo-strait-of-hormuz-middle-east-data-aspx",
+            "obs-local-advisory-marad-2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
+            "obs-local-advisory-marad-2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commercial-vessels",
+            "obs-local-advisory-ukmto-recent-incidents",
+            "obs-local-imo-chart-data-raw-traffic-imo-hormuz-monthly-2026-05-12t07-44-00-346z-imo-hormuz-chart-1-png",
+            "obs-local-portwatch-daily-2026-05-03"
+          ],
+          "summary": "UKMTO / JMIC / MARAD advisory: IMO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use rema… | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: UKMTO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use re… | IMO monthly Hormuz transits: IMO monthly transit chart image is saved locally; numeric extraction is pending OCR/manual review before evidence use. | IMF PortWatch · Strait of Hormuz: PortWatch chokepoint6 daily_transit_calls=5 on 2026-05-03. This daily metric is stored with AIS/GNSS caveat and is not …",
+          "observations": [
+            {
+              "observationId": "obs-local-advisory-imo-strait-of-hormuz-middle-east-data-aspx",
+              "sourceId": "official-advisory",
+              "sourceName": "UKMTO / JMIC / MARAD advisory",
+              "title": "Monthly data on transits of ships through the Strait of Hormuz",
+              "summary": "IMO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
+              "freshness": "lagging",
+              "licenseStatus": "open",
+              "sourceUrl": "https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx",
+              "retrievedAt": "2026-05-12T07:13:10.373Z"
+            },
+            {
+              "observationId": "obs-local-advisory-marad-2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
+              "sourceId": "official-advisory",
+              "sourceName": "UKMTO / JMIC / MARAD advisory",
+              "title": "2026-001A-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Military Operations and Potential Retaliatory Strikes by Iranian Forces",
+              "summary": "MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
+              "freshness": "fresh",
+              "licenseStatus": "open",
+              "sourceUrl": "https://www.maritime.dot.gov/msci/2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
+              "retrievedAt": "2026-05-12T07:13:10.373Z"
+            },
+            {
+              "observationId": "obs-local-advisory-marad-2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commercial-vessels",
+              "sourceId": "official-advisory",
+              "sourceName": "UKMTO / JMIC / MARAD advisory",
+              "title": "2026-004-Persian Gulf, Strait of Hormuz, and Gulf of Oman-Iranian Attacks on Commercial Vessels",
+              "summary": "MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
+              "freshness": "fresh",
+              "licenseStatus": "open",
+              "sourceUrl": "https://www.maritime.dot.gov/msci/2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commercial-vessels",
+              "retrievedAt": "2026-05-12T07:13:10.373Z"
+            },
+            {
+              "observationId": "obs-local-advisory-ukmto-recent-incidents",
+              "sourceId": "official-advisory",
+              "sourceName": "UKMTO / JMIC / MARAD advisory",
+              "title": "Recent Incidents",
+              "summary": "UKMTO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
+              "freshness": "lagging",
+              "licenseStatus": "unknown",
+              "sourceUrl": "https://www.ukmto.org/recent-incidents",
+              "retrievedAt": "2026-05-12T07:13:10.373Z"
+            },
+            {
+              "observationId": "obs-local-imo-chart-data-raw-traffic-imo-hormuz-monthly-2026-05-12t07-44-00-346z-imo-hormuz-chart-1-png",
+              "sourceId": "imo-hormuz-monthly",
+              "sourceName": "IMO monthly Hormuz transits",
+              "title": "IMO Hormuz monthly transit chart snapshot",
+              "summary": "IMO monthly transit chart image is saved locally; numeric extraction is pending OCR/manual review before evidence use.",
+              "freshness": "lagging",
+              "licenseStatus": "open",
+              "sourceUrl": "https://wwwcdn.imo.org/localresources/en/MediaCentre/PublishingImages/Transit_Hormuz_chart_APRIL_2026.png",
+              "retrievedAt": "2026-05-12T07:44:00.346Z"
+            },
+            {
+              "observationId": "obs-local-portwatch-daily-2026-05-03",
+              "sourceId": "imf-portwatch-hormuz",
+              "sourceName": "IMF PortWatch · Strait of Hormuz",
+              "title": "PortWatch daily_transit_calls 2026-05-03",
+              "summary": "PortWatch chokepoint6 daily_transit_calls=5 on 2026-05-03. This daily metric is stored with AIS/GNSS caveat and is not mixed with the 60 7d avg transit-calls threshold.",
+              "freshness": "lagging",
+              "licenseStatus": "open",
+              "sourceUrl": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
+              "retrievedAt": "2026-05-12T07:44:00.346Z"
+            }
+          ]
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+        "sequence": 8,
+        "type": "tool_result",
+        "lane": "read",
+        "graphRole": "tool_result",
+        "title": "read_market_pattern result",
+        "summary": "Brent 118.26 (2026-05-01), WTI 109.76 (2026-05-04), VIX 17.19 (2026-05-08), S&P 500 7412.84 (2026-05-11); cross-asset pattern supports controlled risk premium, not closure pricing.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.108Z",
+        "current": false,
+        "toolName": "read_market_pattern",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-tool-3",
+        "result": {
+          "pricingPattern": "mixed",
+          "evidenceIds": [
+            "ev-local-market-risk-premium"
+          ],
+          "asOf": "2026-05-11",
+          "caveat": "Market data is evidence input only; it must not act as a second forecast engine or independently raise closure probability.",
+          "summary": "Brent 118.26 (2026-05-01), WTI 109.76 (2026-05-04), VIX 17.19 (2026-05-08), S&P 500 7412.84 (2026-05-11); cross-asset pattern supports controlled risk premium, not closure pricing."
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+        "sequence": 9,
+        "type": "evidence_added",
+        "lane": "evidence",
+        "graphRole": "evidence_added",
+        "title": "Evidence claim accepted",
+        "summary": "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.110Z",
+        "current": false,
+        "sourceObservationIds": [
+          "obs-local-fred-brent-spot-2026-05-01",
+          "obs-local-fred-broad-usd-2026-05-08",
+          "obs-local-fred-sp500-2026-05-11",
+          "obs-local-fred-us10y-2026-05-08",
+          "obs-local-fred-usd-cny-2026-05-08",
+          "obs-local-fred-vix-2026-05-08",
+          "obs-local-fred-wti-spot-2026-05-04"
+        ],
+        "evidenceIds": [
+          "ev-local-market-risk-premium"
+        ],
+        "mechanismTags": [
+          "market_pricing_risk_premium",
+          "market_not_pricing_closure"
+        ]
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+        "sequence": 10,
+        "type": "evidence_added",
+        "lane": "evidence",
+        "graphRole": "evidence_added",
+        "title": "Evidence claim accepted",
+        "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confidence remains capped at medium.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.110Z",
+        "current": false,
+        "sourceObservationIds": [
+          "obs-local-advisory-imo-strait-of-hormuz-middle-east-data-aspx",
+          "obs-local-advisory-marad-2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
+          "obs-local-advisory-marad-2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commercial-vessels",
+          "obs-local-advisory-ukmto-recent-incidents"
+        ],
+        "evidenceIds": [
+          "ev-local-official-advisory"
+        ],
+        "mechanismTags": [
+          "transit_risk_up",
+          "insurance_cost_up"
+        ]
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+        "sequence": 11,
+        "type": "mechanism_mapped",
+        "lane": "mechanism",
+        "graphRole": "mechanism_mapped",
+        "title": "Evidence -> mechanism",
+        "summary": "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.112Z",
+        "current": false,
+        "evidenceIds": [
+          "ev-local-market-risk-premium",
+          "ev-local-official-advisory"
+        ],
+        "mechanismTags": [
+          "market_pricing_risk_premium",
+          "market_not_pricing_closure",
+          "transit_risk_up",
+          "insurance_cost_up"
+        ]
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated",
+        "sequence": 12,
+        "type": "judgement_updated",
+        "lane": "judgement",
+        "graphRole": "judgement_updated",
+        "title": "Judgement delta",
+        "summary": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.114Z",
+        "current": false,
+        "evidenceIds": [
+          "ev-local-market-risk-premium",
+          "ev-local-official-advisory"
+        ],
+        "mechanismTags": [
+          "market_pricing_risk_premium",
+          "market_not_pricing_closure",
+          "transit_risk_up",
+          "insurance_cost_up"
+        ],
+        "forecastPayload": {
+          "prediction": "B",
+          "scenario": "controlled",
+          "confidence": "medium",
+          "rationale": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+          "keyEvidenceItems": [
+            "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+            "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confid…"
+          ],
+          "counterEvidenceItems": [],
+          "openConcerns": [
+            "授权 AIS / PortWatch 指标仍需确认是否出现连续 traffic stop。",
+            "官方 advisory wording 是否升级为 avoidance / closure-class restriction。"
+          ],
+          "temporalNotes": [
+            "Question horizon: 7d.",
+            "Market pattern: mixed.",
+            "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up."
+          ]
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast",
+        "sequence": 13,
+        "type": "final_forecast",
+        "lane": "forecast",
+        "graphRole": "final_forecast",
+        "title": "record_forecast",
+        "summary": "Prediction B (controlled); confidence medium.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.116Z",
+        "current": false,
+        "toolName": "record_forecast",
+        "toolCallId": "2026-05-12-20260512104855__local-forecast-agent-record-forecast",
+        "forecastPayload": {
+          "prediction": "B",
+          "scenario": "controlled",
+          "confidence": "medium",
+          "rationale": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+          "keyEvidenceItems": [
+            "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+            "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confid…"
+          ],
+          "counterEvidenceItems": [],
+          "openConcerns": [
+            "授权 AIS / PortWatch 指标仍需确认是否出现连续 traffic stop。",
+            "官方 advisory wording 是否升级为 avoidance / closure-class restriction。"
+          ],
+          "temporalNotes": [
+            "Question horizon: 7d.",
+            "Market pattern: mixed.",
+            "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up."
+          ]
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written",
+        "sequence": 14,
+        "type": "checkpoint_written",
+        "lane": "checkpoint",
+        "graphRole": "checkpoint_written",
+        "title": "Checkpoint written",
+        "summary": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.118Z",
+        "current": false,
+        "evidenceIds": [
+          "ev-local-market-risk-premium",
+          "ev-local-official-advisory"
+        ],
+        "mechanismTags": [
+          "market_pricing_risk_premium",
+          "market_not_pricing_closure",
+          "transit_risk_up",
+          "insurance_cost_up"
+        ],
+        "checkpoint": {
+          "checkpointId": "agent-cp-12104855",
+          "revisionReason": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+          "finalPrediction": "B",
+          "reusedState": {
+            "activeEvidenceIds": [
+              "ev-local-market-risk-premium",
+              "ev-local-official-advisory"
+            ],
+            "staleEvidenceIds": [],
+            "pendingSourceIds": [
+              "ais-flow-pending",
+              "gold-pending",
+              "usdcnh-pending"
+            ]
+          },
+          "nextWatch": [
+            "UKMTO / JMIC / MARAD 是否出现 avoidance、closure 或 threat wording 升级。",
+            "PortWatch / AIS proxy 是否出现连续多日 transit calls 非线性下降。",
+            "Market pricing pattern 是否从 mixed 升级为 closure shock。"
+          ]
+        }
+      },
+      {
+        "eventId": "2026-05-12-20260512104855__local-forecast-agent-evt-015-run_completed",
+        "sequence": 15,
+        "type": "run_completed",
+        "lane": "checkpoint",
+        "graphRole": "run_completed",
+        "title": "Run completed",
+        "summary": "Local forecast agent completed with graph-native trace, final forecast, and checkpoint.",
+        "parentIds": [
+          "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written"
+        ],
+        "status": "success",
+        "startedAt": "2026-05-12T10:53:12.119Z",
+        "completedAt": "2026-05-12T10:53:12.119Z",
+        "current": false
+      }
+    ],
+    "graph": {
+      "nodes": [
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started",
+          "type": "forecastAgentAction",
+          "lane": "question",
+          "data": {
+            "eventType": "run_started",
+            "graphRole": "run_started",
+            "title": "Local forecast agent started",
+            "summary": "Independent Hormuz forecast-agent runtime loaded source-backed case artifacts.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded",
+          "type": "forecastAgentAction",
+          "lane": "question",
+          "data": {
+            "eventType": "question_loaded",
+            "graphRole": "question_loaded",
+            "title": "Question loaded",
+            "summary": "hormuz-traffic-risk-2026-05-12 · horizon 7d · options A:normal, B:controlled, C:severe, D:closure",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+          "type": "forecastAgentAction",
+          "lane": "source",
+          "data": {
+            "eventType": "agent_turn",
+            "graphRole": "agent_turn",
+            "title": "Plan evidence routes",
+            "summary": "Plan: audit official advisories, traffic proxy, and market pricing pattern before calling record_forecast.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call",
+          "type": "forecastAgentAction",
+          "lane": "search",
+          "data": {
+            "eventType": "tool_call",
+            "graphRole": "tool_call",
+            "title": "search_evidence",
+            "summary": "official advisory Hormuz transit risk",
+            "status": "success",
+            "toolName": "search_evidence",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call",
+          "type": "forecastAgentAction",
+          "lane": "read",
+          "data": {
+            "eventType": "tool_call",
+            "graphRole": "tool_call",
+            "title": "read_source_bundle",
+            "summary": "{\"sourceIds\":[\"official-advisory\",\"imf-portwatch-hormuz\",\"imo-hormuz-monthly\"],\"limit\":6}",
+            "status": "success",
+            "toolName": "read_source_bundle",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call",
+          "type": "forecastAgentAction",
+          "lane": "read",
+          "data": {
+            "eventType": "tool_call",
+            "graphRole": "tool_call",
+            "title": "read_market_pattern",
+            "summary": "Read audited market pricing pattern.",
+            "status": "success",
+            "toolName": "read_market_pattern",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "type": "forecastAgentAction",
+          "lane": "search",
+          "data": {
+            "eventType": "tool_result",
+            "graphRole": "tool_result",
+            "title": "search_evidence result",
+            "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has…",
+            "status": "success",
+            "toolName": "search_evidence",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "type": "forecastAgentAction",
+          "lane": "read",
+          "data": {
+            "eventType": "tool_result",
+            "graphRole": "tool_result",
+            "title": "read_source_bundle result",
+            "summary": "UKMTO / JMIC / MARAD advisory: IMO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use rema… | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use … | UKMTO / JMIC / MARAD advisory: UKMTO source_snapshot snap…",
+            "status": "success",
+            "toolName": "read_source_bundle",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+          "type": "forecastAgentAction",
+          "lane": "read",
+          "data": {
+            "eventType": "tool_result",
+            "graphRole": "tool_result",
+            "title": "read_market_pattern result",
+            "summary": "Brent 118.26 (2026-05-01), WTI 109.76 (2026-05-04), VIX 17.19 (2026-05-08), S&P 500 7412.84 (2026-05-11); cross-asset pattern supports controlled risk premium, not closure pricing.",
+            "status": "success",
+            "toolName": "read_market_pattern",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "type": "forecastAgentAction",
+          "lane": "evidence",
+          "data": {
+            "eventType": "evidence_added",
+            "graphRole": "evidence_added",
+            "title": "Evidence claim accepted",
+            "summary": "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "type": "forecastAgentAction",
+          "lane": "evidence",
+          "data": {
+            "eventType": "evidence_added",
+            "graphRole": "evidence_added",
+            "title": "Evidence claim accepted",
+            "summary": "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confidence remains capped at medium.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+          "type": "forecastAgentAction",
+          "lane": "mechanism",
+          "data": {
+            "eventType": "mechanism_mapped",
+            "graphRole": "mechanism_mapped",
+            "title": "Evidence -> mechanism",
+            "summary": "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated",
+          "type": "forecastAgentAction",
+          "lane": "judgement",
+          "data": {
+            "eventType": "judgement_updated",
+            "graphRole": "judgement_updated",
+            "title": "Judgement delta",
+            "summary": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast",
+          "type": "forecastAgentAction",
+          "lane": "forecast",
+          "data": {
+            "eventType": "final_forecast",
+            "graphRole": "final_forecast",
+            "title": "record_forecast",
+            "summary": "Prediction B (controlled); confidence medium.",
+            "status": "success",
+            "toolName": "record_forecast",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written",
+          "type": "forecastAgentAction",
+          "lane": "checkpoint",
+          "data": {
+            "eventType": "checkpoint_written",
+            "graphRole": "checkpoint_written",
+            "title": "Checkpoint written",
+            "summary": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+            "status": "success",
+            "current": false
+          }
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-015-run_completed",
+          "type": "forecastAgentAction",
+          "lane": "checkpoint",
+          "data": {
+            "eventType": "run_completed",
+            "graphRole": "run_completed",
+            "title": "Run completed",
+            "summary": "Local forecast agent completed with graph-native trace, final forecast, and checkpoint.",
+            "status": "success",
+            "current": false
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started->2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-000-run_started",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded->2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-001-question_loaded",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn->2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn->2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn->2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-002-agent_turn",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call->2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-003-tool_call",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "label": "returns"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call->2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-004-tool_call",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "label": "returns"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call->2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-005-tool_call",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+          "label": "returns"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result->2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result->2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result->2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result->2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-006-tool_result",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result->2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-007-tool_result",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result->2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-008-tool_result",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added->2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-009-evidence_added",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added->2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-010-evidence_added",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped->2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-011-mechanism_mapped",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated",
+          "label": "updates"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated->2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-012-judgement_updated",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast",
+          "label": "depends"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast->2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-013-final_forecast",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written",
+          "label": "persists"
+        },
+        {
+          "id": "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written->2026-05-12-20260512104855__local-forecast-agent-evt-015-run_completed",
+          "source": "2026-05-12-20260512104855__local-forecast-agent-evt-014-checkpoint_written",
+          "target": "2026-05-12-20260512104855__local-forecast-agent-evt-015-run_completed",
+          "label": "depends"
+        }
+      ]
+    }
+  },
+  "finalForecast": {
+    "prediction": "B",
+    "scenario": "controlled",
+    "confidence": "medium",
+    "rationale": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+    "keyEvidenceItems": [
+      "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+      "Official advisory snapshots preserve elevated maritime/security context around Hormuz, but the current local parser has not extracted verified avoidance or closure wording; confid…"
+    ],
+    "counterEvidenceItems": [],
+    "openConcerns": [
+      "授权 AIS / PortWatch 指标仍需确认是否出现连续 traffic stop。",
+      "官方 advisory wording 是否升级为 avoidance / closure-class restriction。"
+    ],
+    "temporalNotes": [
+      "Question horizon: 7d.",
+      "Market pattern: mixed.",
+      "Mapped mechanisms: market_pricing_risk_premium, market_not_pricing_closure, transit_risk_up, insurance_cost_up."
+    ]
+  },
+  "checkpoint": {
+    "checkpointId": "agent-cp-12104855",
+    "revisionReason": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+    "finalPrediction": "B",
+    "reusedState": {
+      "activeEvidenceIds": [
+        "ev-local-market-risk-premium",
+        "ev-local-official-advisory"
+      ],
+      "staleEvidenceIds": [],
+      "pendingSourceIds": [
+        "ais-flow-pending",
+        "gold-pending",
+        "usdcnh-pending"
+      ]
+    },
+    "nextWatch": [
+      "UKMTO / JMIC / MARAD 是否出现 avoidance、closure 或 threat wording 升级。",
+      "PortWatch / AIS proxy 是否出现连续多日 transit calls 非线性下降。",
+      "Market pricing pattern 是否从 mixed 升级为 closure shock。"
+    ]
+  }
+}

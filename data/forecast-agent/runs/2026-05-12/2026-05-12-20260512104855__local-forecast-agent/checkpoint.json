@@ -1,0 +1,22 @@
+{
+  "checkpointId": "agent-cp-12104855",
+  "revisionReason": "Fresh advisory and market-risk evidence support elevated controlled disruption, while verified closure-style traffic stop is still missing.",
+  "finalPrediction": "B",
+  "reusedState": {
+    "activeEvidenceIds": [
+      "ev-local-market-risk-premium",
+      "ev-local-official-advisory"
+    ],
+    "staleEvidenceIds": [],
+    "pendingSourceIds": [
+      "ais-flow-pending",
+      "gold-pending",
+      "usdcnh-pending"
+    ]
+  },
+  "nextWatch": [
+    "UKMTO / JMIC / MARAD 是否出现 avoidance、closure 或 threat wording 升级。",
+    "PortWatch / AIS proxy 是否出现连续多日 transit calls 非线性下降。",
+    "Market pricing pattern 是否从 mixed 升级为 closure shock。"
+  ]
+}

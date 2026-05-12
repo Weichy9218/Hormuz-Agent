@@ -37,6 +37,7 @@ export interface GalaxyAdaptedRun {
   sourceObservations: GalaxyHormuzRunArtifact["sourceObservations"];
   evidenceClaims: EvidenceClaim[];
   marketRead: GalaxyHormuzRunArtifact["marketRead"];
+  actionTrace: GalaxyHormuzRunArtifact["actionTrace"];
   runMeta: GalaxyRunMeta;
   question: GalaxyHormuzRunArtifact["question"];
 }
@@ -251,6 +252,7 @@ export function buildRunFromGalaxyArtifact(
     sourceObservations: artifact.sourceObservations,
     evidenceClaims: artifact.evidenceClaims,
     marketRead: artifact.marketRead,
+    actionTrace: artifact.actionTrace,
     runMeta,
     question: artifact.question,
   };

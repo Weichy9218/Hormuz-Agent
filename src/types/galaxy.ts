@@ -6,6 +6,7 @@ import type {
   MarketRead,
   SourceObservation,
 } from "./forecast";
+import type { ForecastAgentTrace } from "./forecastAgent";
 
 export interface GalaxyQuestionRow {
   task_id: string;
@@ -33,7 +34,10 @@ export interface GalaxyRunMeta {
   venvPath?: string;
   pythonPath?: string;
   outputDir: string;
+  runDir?: string;
   questionPath: string;
+  startedAt?: string;
+  completedAt?: string;
   command?: string[];
   finalPrediction?: string;
   confidence?: "low" | "med" | "medium" | "high";
@@ -44,10 +48,70 @@ export interface GalaxyRunMeta {
   error?: string;
 }
 
+export type GalaxyActionKind =
+  | "question"
+  | "assistant_note"
+  | "tool_call"
+  | "tool_result"
+  | "artifact_read"
+  | "evidence_synthesis"
+  | "final_forecast"
+  | "checkpoint"
+  | "supervisor";
+
+export type GalaxyActionStatus = "pending" | "running" | "success" | "failed" | "skipped";
+
+export interface GalaxyActionTraceItem {
+  actionId: string;
+  index: number;
+  kind: GalaxyActionKind;
+  title: string;
+  summary: string;
+  at: string;
+  status: GalaxyActionStatus;
+  toolName?: string;
+  toolCallId?: string;
+  parentActionIds?: string[];
+  artifactPath?: string;
+  sourceUrl?: string;
+  query?: string;
+  argsSummary?: string;
+  lane?:
+    | "question"
+    | "agent_turn"
+    | "search_batch"
+    | "read_artifacts"
+    | "evidence_synthesis"
+    | "forecast"
+    | "checkpoint";
+  forecastPayload?: {
+    prediction?: string;
+    confidence?: "low" | "medium" | "high";
+    rationale?: string;
+    keyEvidenceItems?: string[];
+    counterEvidenceItems?: string[];
+    openConcerns?: string[];
+    temporalNotes?: string[];
+  };
+  evidenceRole?: "question_audit" | "source_search" | "source_read" | "evidence_extract" | "forecast_record";
+  rawRole?: "user" | "assistant" | "tool" | "system";
+}
+
+export interface GalaxyActionTrace {
+  traceId: string;
+  runDir: string;
+  generatedAt: string;
+  actions: GalaxyActionTraceItem[];
+  stats?: Record<string, unknown>;
+  events?: ForecastAgentTrace["events"];
+  graph?: ForecastAgentTrace["graph"];
+}
+
 export interface GalaxyHormuzRunArtifact {
   schemaVersion: "hormuz-galaxy-run/v1";
   question: GalaxyQuestionRow;
   runMeta: GalaxyRunMeta;
+  actionTrace?: GalaxyActionTrace;
   previousState?: ForecastState;
   sourceObservations: SourceObservation[];
   evidenceClaims: EvidenceClaim[];

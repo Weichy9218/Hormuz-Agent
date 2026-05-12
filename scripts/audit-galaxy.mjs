@@ -3,7 +3,7 @@
 // Validates the daily Hormuz question and normalized galaxy run artifact before
 // the Forecast page consumes it.
 import { readFile } from "node:fs/promises";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +44,14 @@ if (artifact.runMeta?.runner !== "galaxy-selfevolve") {
 if (!artifact.runMeta?.questionDate || !artifact.runMeta?.forecastedAt) {
   violations.push("runMeta must include questionDate and forecastedAt");
 }
+if (!artifact.runMeta?.runDir) {
+  violations.push("runMeta must include the task-specific runDir");
+} else {
+  const runDirParent = basename(dirname(String(artifact.runMeta.runDir)));
+  if (runDirParent === artifact.runMeta.questionDate) {
+    violations.push("runMeta.runDir must be unique per run, not the date/task-id reusable directory");
+  }
+}
 if (artifact.runMeta?.status === "success") {
   if (!artifact.runMeta?.venvPath?.endsWith("galaxy-selfevolve/.venv")) {
     violations.push("successful runMeta must record the reused galaxy-selfevolve/.venv path");
@@ -64,6 +72,61 @@ if (!Array.isArray(artifact.evidenceClaims) || artifact.evidenceClaims.length ==
 }
 if (artifact.marketRead?.pricingPattern == null) {
   violations.push("artifact.marketRead must use pricingPattern");
+}
+if (!artifact.actionTrace || !Array.isArray(artifact.actionTrace.actions)) {
+  violations.push("artifact must include actionTrace.actions generated from Galaxy main_agent.jsonl");
+} else {
+  const actionIds = new Set();
+  for (const action of artifact.actionTrace.actions) {
+    if (!action.actionId) violations.push("actionTrace action missing actionId");
+    if (actionIds.has(action.actionId)) violations.push(`duplicate actionId ${action.actionId}`);
+    actionIds.add(action.actionId);
+    if (!action.kind || !action.title || !action.summary) {
+      violations.push(`${action.actionId}: action must include kind/title/summary`);
+    }
+  }
+  if (!artifact.actionTrace.actions.some((action) => action.kind === "tool_call")) {
+    violations.push("actionTrace must include tool_call actions");
+  }
+  if (!artifact.actionTrace.actions.some((action) => action.kind === "final_forecast")) {
+    violations.push("actionTrace must include final_forecast action");
+  }
+  if (JSON.stringify(artifact.actionTrace.actions).includes("# Role")) {
+    violations.push("actionTrace must not expose raw system prompt content");
+  }
+  if (/Working rhythm|chain-of-thought|system prompt|internal prompt/i.test(JSON.stringify(artifact.actionTrace.actions))) {
+    violations.push("actionTrace must not expose prompt internals or chain-of-thought labels");
+  }
+  if (artifact.actionTrace.actions.some((action) => Object.hasOwn(action, "hiddenReason"))) {
+    violations.push("actionTrace must not include hiddenReason fields");
+  }
+  const actionsById = new Map(artifact.actionTrace.actions.map((action) => [action.actionId, action]));
+  const toolCallsByTurn = new Map();
+  for (const action of artifact.actionTrace.actions) {
+    if (action.kind === "tool_call" && action.parentActionIds?.length === 1) {
+      const parentId = action.parentActionIds[0];
+      const parent = actionsById.get(parentId);
+      if (parent?.kind === "assistant_note" || parent?.kind === "evidence_synthesis") {
+        const calls = toolCallsByTurn.get(parentId) ?? [];
+        calls.push(action);
+        toolCallsByTurn.set(parentId, calls);
+      }
+    }
+    if (action.kind === "tool_result") {
+      const parentId = action.parentActionIds?.[0];
+      const parent = parentId ? actionsById.get(parentId) : null;
+      const validParent =
+        parent &&
+        (parent.kind === "tool_call" || parent.kind === "final_forecast") &&
+        parent.toolCallId === action.toolCallId;
+      if (!validParent) {
+        violations.push(`${action.actionId}: tool_result must parent back to its matching tool_call`);
+      }
+    }
+  }
+  if (![...toolCallsByTurn.values()].some((calls) => calls.length > 1)) {
+    violations.push("actionTrace must preserve parallel tool calls under a shared assistant turn");
+  }
 }
 
 const observationIds = new Set(

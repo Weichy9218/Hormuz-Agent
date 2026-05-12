@@ -24,10 +24,10 @@ const pageIcon: Record<DetailPage["id"], LucideIcon> = {
 };
 
 const pageLabel: Record<DetailPage["id"], string> = {
-  overview: "总览",
-  market: "市场",
-  news: "事件",
-  forecast: "预测",
+  forecast: "Forecast Agent",
+  overview: "背景总览",
+  market: "市场背景",
+  news: "事件背景",
 };
 
 export function AppHeader({
@@ -45,10 +45,10 @@ export function AppHeader({
         <span className="logo-cube">
           <Box size={22} />
         </span>
-        <strong>Hormuz Risk Intelligence Agent</strong>
+        <strong>Galaxy Forecast Agent Viewer</strong>
       </div>
 
-      <span className="base-case-badge">主情景：{scenarioLabel[baseCaseScenarioId]}</span>
+      <span className="base-case-badge">背景情景：{scenarioLabel[baseCaseScenarioId]}</span>
 
       <nav className="page-tabs" aria-label="Workspace pages">
         {detailPages.map((page) => {

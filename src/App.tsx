@@ -13,7 +13,7 @@ import type { ForecastTarget } from "./types/forecast";
 
 function App() {
   const [selectedTarget, setSelectedTarget] = useState<ForecastTarget>("brent");
-  const [activePage, setActivePage] = useState<DetailPage["id"]>("overview");
+  const [activePage, setActivePage] = useState<DetailPage["id"]>("forecast");
 
   // Compute base case from the canonical projection (single source of truth).
   const baseCaseScenarioId = useMemo(() => {
