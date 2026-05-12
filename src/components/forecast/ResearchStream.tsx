@@ -83,6 +83,7 @@ interface ResearchStreamProps {
   isRunning: boolean;
   sourceRegistry: SourceRegistryEntry[];
   scenarioLabels: Record<ScenarioId, string>;
+  highlightedEventId?: string | null;
 }
 
 export function ResearchStream({
@@ -91,6 +92,7 @@ export function ResearchStream({
   isRunning,
   sourceRegistry,
   scenarioLabels,
+  highlightedEventId = null,
 }: ResearchStreamProps) {
   const visibleEvents = events.slice(0, visibleCount);
 
@@ -112,9 +114,10 @@ export function ResearchStream({
       {visibleEvents.map((event, index) => {
         const active = isRunning && index === visibleEvents.length - 1;
         const done = !active;
+        const highlighted = highlightedEventId === event.eventId;
         return (
           <article
-            className={`${event.type} ${active ? "active" : ""} ${done ? "done" : ""}`}
+            className={`${event.type} ${active ? "active" : ""} ${done ? "done" : ""} ${highlighted ? "highlighted" : ""}`}
             key={event.eventId}
           >
             <span className="stream-step">

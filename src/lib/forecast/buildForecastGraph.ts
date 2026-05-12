@@ -94,9 +94,19 @@ export function buildForecastGraph(
     (e): e is Extract<AgentRunEvent, { type: "judgement_updated" }> =>
       e.type === "judgement_updated",
   );
+  const sourceRead = events.find(
+    (e): e is Extract<AgentRunEvent, { type: "source_read" }> =>
+      e.type === "source_read",
+  );
   const checkpoint = events.find(
     (e): e is Extract<AgentRunEvent, { type: "checkpoint_written" }> =>
       e.type === "checkpoint_written",
+  );
+  const evidenceEventById = new Map(
+    events
+      .filter((e): e is Extract<AgentRunEvent, { type: "evidence_added" }> =>
+        e.type === "evidence_added")
+      .map((event) => [event.evidenceId, event]),
   );
 
   function addNode(node: ForecastGraphNode) {
@@ -127,6 +137,7 @@ export function buildForecastGraph(
     addNode({
       id: sourceObsNodeId(obsId),
       kind: "source",
+      eventId: sourceRead?.eventId,
       sourceObservationId: obsId,
       label: obs.title,
       detail: `${obs.freshness} · ${obs.licenseStatus}`,
@@ -142,6 +153,7 @@ export function buildForecastGraph(
     addNode({
       id: evidenceNodeId(claim.evidenceId),
       kind: "evidence",
+      eventId: evidenceEventById.get(claim.evidenceId)?.eventId,
       evidenceId: claim.evidenceId,
       label: claim.claim,
       detail: `${claim.polarity} · ${claim.confidence}`,
@@ -178,9 +190,14 @@ export function buildForecastGraph(
   for (const [tag, evIds] of mechanismFromEvidence) {
     const inStory = primaryMechanismSet.has(tag);
     if (!shouldInclude(inStory)) continue;
+    const firstEvidenceEventId = [...evIds]
+      .sort()
+      .map((evId) => evidenceEventById.get(evId)?.eventId)
+      .find(Boolean);
     addNode({
       id: mechanismNodeId(tag),
       kind: "mechanism",
+      eventId: firstEvidenceEventId,
       mechanismTag: tag,
       label: tag,
       detail: `${evIds.size} evidence`,

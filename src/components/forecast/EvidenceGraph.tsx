@@ -137,8 +137,8 @@ function layoutGraph(graph: ForecastGraph, selectedNodeId: string | null) {
       id: node.id,
       type: "evidenceNode",
       position: {
-        x: 56 + columns[kind] * 300,
-        y: 48 + rowIndex * 172,
+        x: 48 + columns[kind] * 244,
+        y: 46 + rowIndex * 156,
       },
       data: {
         kind: node.kind,
@@ -237,8 +237,8 @@ export function EvidenceGraph({
             edges={laid.edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.08 }}
-            minZoom={0.58}
+            fitViewOptions={{ padding: 0.12 }}
+            minZoom={0.42}
             maxZoom={1.2}
             nodesDraggable={false}
             nodesConnectable={false}

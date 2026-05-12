@@ -51,6 +51,7 @@ const violations = [];
 const observationById = new Map(
   snapshot.canonicalSourceObservations.map((o) => [o.observationId, o]),
 );
+const sourceHashPattern = /^sha256:[a-f0-9]{64}$/;
 
 // Pending sourceIds: any observation whose freshness is "pending" OR whose sourceId
 // belongs to a pending source (we infer pending status via sourceId suffix and
@@ -101,6 +102,22 @@ for (const claim of snapshot.canonicalEvidenceClaims) {
 
   if (!["support", "counter", "uncertain"].includes(claim.polarity)) {
     violations.push(`${claim.evidenceId}: invalid polarity "${claim.polarity}"`);
+  }
+}
+
+for (const observation of snapshot.canonicalSourceObservations) {
+  if (observation.sourceHash && !sourceHashPattern.test(observation.sourceHash)) {
+    violations.push(
+      `${observation.observationId}: sourceHash must be a real sha256:<64 hex> digest or omitted`,
+    );
+  }
+}
+
+for (const event of snapshot.canonicalAgentRunEvents) {
+  if (event.sourceHash && !sourceHashPattern.test(event.sourceHash)) {
+    violations.push(
+      `${event.eventId}: sourceHash must be a real sha256:<64 hex> digest or omitted`,
+    );
   }
 }
 

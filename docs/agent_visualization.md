@@ -32,7 +32,7 @@ Forecast 页回答唯一问题：
 | --- | --- | --- |
 | Story mode | 默认 | 只展示本轮最重要 revision path，控制在 6-9 个节点 |
 | Audit mode | 用户展开 | 展开全部 source、observation、evidence、mechanism、checkpoint |
-| Replay mode | 用户触发 | 按事件时间播放 `AgentRunEvent[]`，展示 state 何时发生变化；锚点是 `eventId` + `retrievedAt` + `sourceHash` |
+| Replay mode | 用户触发 | 按事件时间播放 `AgentRunEvent[]`，展示 state 何时发生变化；锚点是 `eventId` + `retrievedAt`，有真实内容 digest 时再加入 `sourceHash` |
 
 默认不展示完整图。完整图易变 spaghetti graph，降低 reviewer 对核心修订原因的理解。
 
@@ -59,13 +59,16 @@ Forecast 页回答唯一问题：
 └────────────────────────────────────┴─────────────────────────────────┘
 ```
 
+2026-05-12 reviewer pass 明确：Story-mode graph 是 Forecast 首屏主体。任何 `Sense / Interpret / Revise / Persist` 阶段说明只能作为 graph 之后的 contract strip，不能把 evidence chain 推到首屏外。
+
 移动端顺序：
 
 ```text
 Revision headline
 Current forecast state
-Research stream
 Explanation graph
+Evidence shelf
+Research stream
 Evidence/source inspector
 Checkpoint
 ```
@@ -118,7 +121,7 @@ Evidence Shelf 在 Story mode 下折叠为一行 chip，点击展开。Audit mod
 - `eventId`：graph node 稳定 id、replay 锚点。
 - `parentEventIds`：构造 DAG 边、解释 attribution。
 - `evidenceIds` / `sourceObservationIds`：点击 graph node → inspector 反查。
-- `sourceHash` / `retrievedAt` / `licenseStatus`：inspector 显示 provenance 与 caveat。
+- `retrievedAt` / `licenseStatus`：inspector 显示 provenance 与 caveat；`sourceHash` 只有在存在真实 `sha256:<64 hex>` 内容 digest 时才显示。
 
 若这些字段缺失，Story mode 仍可渲染，但 Audit mode 与 Replay mode 不可信。可视化层不允许伪造缺失字段。
 

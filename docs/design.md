@@ -199,6 +199,13 @@ Numbers:       tabular-nums
 - Next watch
 - Current checkpoint：revision reason + checkpoint id
 
+2026-05-12 cold-cache reviewer pass 的排序决策：
+
+- 首屏必须压缩成 `revision brief / scenario state / why-not-closure + next watch`，让 reviewer 先判断当前 update 是否站得住。
+- `Why not closure` 不能只列反证；必须同时显示 missing condition、pending source caveat、guardrail 或 counter evidence。
+- Hormuz baseline strip 与 map 属于判断锚点，应排在内部 workflow 说明之前。
+- `Case room 工作流` 只是解释 PDF 计划如何映射到当前四页，不能早于 baseline、map、checkpoint。
+
 ```text
 ┌────────────────────────────┬────────────────────┬────────────────────┐
 │ Current judgement           │ Scenario dist.      │ Why not closure     │
@@ -279,8 +286,8 @@ export interface MarketRead {
 **注意**：替换 `supportsScenario` 是 P0 改名；理由是 `supportsScenario` 在语义上暗示 Market 在直接投票给 scenario，违反"Market 只能作为 evidence 输入"的硬规则。`pricingPattern` 描述市场自己的定价状态，不直接绑定 scenario。
 
 文案规则：
-- Raw：Brent +x%、VIX flat/up、Broad USD mild up、S&P 500 flat/down。
-- Interpretation：market is pricing disruption risk, not closure shock。
+- Raw 必须区分 level move 与 event-window move。例如：Brent 相对 3 月仍有 elevated level，但 2026-04-07 之后 cross-asset stress 可能回落。
+- Interpretation：若 oil level premium 与 VIX / USD / SPX event-window stress 冲突，`pricingPattern` 应为 `mixed`，文案写成 "risk premium remains, closure shock is not priced"。
 - Forecast effect：none directly；仅当 `judgement_updated` 消费它时才生效。
 
 数据边界：
@@ -318,6 +325,12 @@ export interface MarketRead {
 不展示：底层 prompt；chain-of-thought；纯 debug log；固定 stepper 动画；和 Overview 重复的大段当前判断。
 
 三种模式（默认 Story mode）：详见 `agent_visualization.md`。
+
+2026-05-12 cold-cache reviewer pass 的布局决策：
+
+- Forecast 首屏主体必须优先显示 Story-mode Evidence graph；`Sense / Interpret / Revise / Persist` 是 contract strip，不应放在 graph 之前。
+- 运行阶段卡可以保留，但它服务教学和系统边界，不是 "Why did the agent revise?" 的主要答案。
+- `Current state` 侧栏应与 graph 同屏出现，帮助 reviewer 一边看链路一边核对 scenario / target / checkpoint。
 
 ## 10. 数据模型
 
@@ -574,7 +587,7 @@ Evaluation 不只是"预测准不准"，包含三层。下面这套指标是把 
 
 ### 13.3 Historical replay & online validation
 
-- **Historical replay** `[planned-P2]`：固定 `retrievedAt` 截断，喂入历史 `SourceObservation`，复跑 forecast pipeline，比较产出的 checkpoint 链是否与生产链一致（或解释差异）。`sourceHash` 是 replay 的稳定锚点。
+- **Historical replay** `[planned-P2]`：固定 `retrievedAt` 截断，喂入历史 `SourceObservation`，复跑 forecast pipeline，比较产出的 checkpoint 链是否与生产链一致（或解释差异）。`sourceHash` 只有在存在真实内容 digest 时才作为 replay 锚点；否则不填。
 - **Online validation** `[planned-P2]`：unresolved question（如 `transit_disruption_7d`）在 horizon 到达后用真实数据解析，写回 Brier / log / directional。
 - **Drift watch**：同一 case 上同一 question 跨 checkpoint 的 probability 轨迹必须保存。突变（>X pp 单步）若没有对应 high-quality evidence，标记为 *suspicious revision*。
 

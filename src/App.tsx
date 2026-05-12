@@ -10,7 +10,6 @@ import {
   Bell,
   Box,
   CircleHelp,
-  ClipboardCheck,
   Clock3,
   Gauge,
   Info,
@@ -92,7 +91,7 @@ const pricingPatternCopy: Record<string, string> = {
   pricing_controlled_disruption: "市场正在定价可控扰动",
   pricing_severe_disruption: "市场正在定价严重扰动",
   pricing_closure_shock: "市场正在定价封锁冲击",
-  mixed: "市场信号混合",
+  mixed: "油价风险溢价仍在，但事件窗口压力回落",
 };
 
 const pricingPatternShortCopy: Record<string, string> = {
@@ -100,7 +99,7 @@ const pricingPatternShortCopy: Record<string, string> = {
   pricing_controlled_disruption: "可控扰动定价",
   pricing_severe_disruption: "严重扰动定价",
   pricing_closure_shock: "封锁冲击定价",
-  mixed: "混合定价",
+  mixed: "混合信号",
 };
 
 const polarityCopy: Record<string, string> = {
@@ -213,6 +212,13 @@ function makeLinePath(points: MarketSeries["points"], width = 420, height = 156)
     .join(" ");
 }
 
+function getEventWindowX(points: MarketSeries["points"], eventDate = stressWindowStart, width = 420) {
+  if (points.length < 2) return width;
+  const index = points.findIndex((point) => point.date >= eventDate);
+  const windowIndex = index === -1 ? points.length - 1 : index;
+  return (windowIndex / (points.length - 1)) * width;
+}
+
 function formatBaseCaseMove(delta: number) {
   if (delta > 0) return `上升 ${formatAbsDelta(delta)}`;
   if (delta < 0) return `下降 ${formatAbsDelta(delta)}`;
@@ -308,6 +314,58 @@ function ScenarioProbabilityRail({
         );
       })}
     </div>
+  );
+}
+
+function ScenarioAuditCard({
+  projection,
+}: {
+  projection: ReturnType<typeof projectOverviewState>;
+}) {
+  const closureDelta = projection.scenarioDelta.closure ?? 0;
+  const closureGuardrail = projection.whyNotClosure.appliedGuardrails.find(
+    (guardrail) => guardrail.scenarioId === "closure",
+  );
+  const counterEvidence = projection.whyNotClosure.counterEvidence[0];
+
+  return (
+    <section className="console-card scenario-card">
+      <InfoTitle
+        title="情景状态"
+        subtitle="judgement_updated 之后的 forecast state"
+      />
+      <ScenarioProbabilityRail
+        distribution={projection.scenarioDistribution}
+        deltas={projection.scenarioDelta}
+      />
+      <div className="scenario-audit-row" aria-label="closure audit">
+        <article>
+          <span>Closure check</span>
+          <strong>{projection.scenarioDistribution.closure}%</strong>
+          <p>
+            {formatDelta(closureDelta)} · 缺少 verified traffic stop / official avoidance。
+          </p>
+        </article>
+        <article>
+          <span>Guardrail</span>
+          <strong>
+            {closureGuardrail
+              ? `≤ ${closureGuardrail.cappedTo}%`
+              : "未触发 cap"}
+          </strong>
+          <p>{closureGuardrail?.reasonCode ?? "当前 closure 低于上限。"}</p>
+        </article>
+        <article>
+          <span>Counter evidence</span>
+          <strong>{counterEvidence ? counterEvidence.confidence : "none"}</strong>
+          <p>
+            {counterEvidence
+              ? counterEvidence.claim
+              : "尚无额外 counter evidence。"}
+          </p>
+        </article>
+      </div>
+    </section>
   );
 }
 
@@ -541,13 +599,7 @@ function OverviewPage() {
     <section className="page-grid overview-page">
       <RevisionBriefCard projection={projection} />
 
-      <section className="console-card scenario-card">
-        <InfoTitle title="情景状态" subtitle="judgement_updated 之后的 forecast state" />
-        <ScenarioProbabilityRail
-          distribution={projection.scenarioDistribution}
-          deltas={projection.scenarioDelta}
-        />
-      </section>
+      <ScenarioAuditCard projection={projection} />
 
       <div className="overview-side-stack">
         <section className="console-card compact-list-card">
@@ -575,11 +627,16 @@ function OverviewPage() {
             ))}
           </ul>
         </section>
+        <section className="console-card compact-list-card overview-checkpoint-card">
+          <InfoTitle title="当前 checkpoint" />
+          <strong>{projection.currentCheckpoint.checkpointId.toUpperCase()}</strong>
+          <p>{projection.currentCheckpoint.revisionReason}</p>
+        </section>
       </div>
 
-      <CaseRoomFlow />
       <CaseMap />
       <HormuzBaselineStrip />
+      <CaseRoomFlow />
 
       <div className="status-row">
         <StatusCard
@@ -602,16 +659,6 @@ function OverviewPage() {
         />
       </div>
 
-      <section className="console-card checkpoint-strip">
-        <span className="icon-well">
-          <ClipboardCheck size={25} />
-        </span>
-        <div>
-          <InfoTitle title="当前 checkpoint" />
-          <p>{projection.currentCheckpoint.revisionReason}</p>
-        </div>
-        <b>Checkpoint ID: {projection.currentCheckpoint.checkpointId.toUpperCase()}</b>
-      </section>
     </section>
   );
 }
@@ -665,6 +712,8 @@ function MarketSparkCard({ series }: { series: MarketSeries }) {
   const change = getMarketChange(series);
   const eventChange = getEventWindowChange(series);
   const path = makeLinePath(series.points);
+  const eventWindowX = getEventWindowX(series.points);
+  const eventWindowWidth = Math.max(0, 420 - eventWindowX);
   const trendClass = series.pending ? "pending" : eventChange.percent >= 0 ? "positive" : "negative";
   const eventWindowTitle =
     eventChange.start && eventChange.last
@@ -681,8 +730,8 @@ function MarketSparkCard({ series }: { series: MarketSeries }) {
         <b>{formatMarketValue(series, change.last.value)}</b>
       </div>
       <svg className="spark-chart" viewBox="0 0 420 156" role="img" aria-label={`${series.label} sampled trend`}>
-        <rect className="spark-window" x="232" y="0" width="188" height="156" />
-        <line className="spark-event-line" x1="232" x2="232" y1="0" y2="156" />
+        <rect className="spark-window" x={eventWindowX} y="0" width={eventWindowWidth} height="156" />
+        <line className="spark-event-line" x1={eventWindowX} x2={eventWindowX} y1="0" y2="156" />
         <path className="spark-line" d={path} style={{ stroke: series.color }} />
         {series.points.map((point, index) => {
           const values = series.points.map((p) => p.value);
@@ -720,6 +769,13 @@ function MarketSignalBoard({ series }: { series: MarketSeries[] }) {
   const visible = series.filter((item) =>
     ["brent-spot", "wti-spot", "vix", "broad-usd", "us10y", "sp500"].includes(item.id),
   );
+  const brent = series.find((item) => item.id === "brent-spot");
+  const vix = series.find((item) => item.id === "vix");
+  const sp500 = series.find((item) => item.id === "sp500");
+  const brentFull = brent ? getMarketChange(brent).display : "n/a";
+  const brentWindow = brent ? getEventWindowChange(brent).display : "n/a";
+  const vixWindow = vix ? getEventWindowChange(vix).display : "n/a";
+  const spxWindow = sp500 ? getEventWindowChange(sp500).display : "n/a";
 
   return (
     <section className="console-card market-signal-board">
@@ -731,9 +787,22 @@ function MarketSignalBoard({ series }: { series: MarketSeries[] }) {
         <span className="event-window-badge">分析起点 {stressWindowStart}</span>
       </div>
       <p className="market-window-note">
-        这些小图只回答“市场从分析窗口开始后怎么动”。它们用于描述 pricingPattern evidence，
-        不直接写入 scenario distribution 或 target forecasts。
+        这里分开读两个信号：level risk premium 与 event-window stress。Brent 全区间 {brentFull}，
+        但分析窗口 {brentWindow}；VIX 分析窗口 {vixWindow}，S&P 500 分析窗口 {spxWindow}。
+        因此 MarketRead 记为 mixed：risk premium 仍在，但不是 closure-style shock。
       </p>
+      <div className="market-read-split" aria-label="market read split">
+        <article>
+          <span>Level risk premium</span>
+          <strong>{brentFull}</strong>
+          <p>Brent / WTI 相比 3 月低点仍高，说明 Hormuz premium 没有消失。</p>
+        </article>
+        <article>
+          <span>Event-window stress</span>
+          <strong>{brentWindow}</strong>
+          <p>4 月 7 日后油价和 VIX 回落，权益上行，不支持 closure shock。</p>
+        </article>
+      </div>
       <div className="market-spark-grid">
         {visible.map((item) => (
           <MarketSparkCard key={item.id} series={item} />
@@ -923,6 +992,10 @@ function ForecastPage({
   const projection = useMemo(() => projectForecastState(), []);
   const [mode, setMode] = useState<"story" | "audit">("story");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const activeGraph =
+    mode === "story" ? projection.storyGraph : projection.auditGraph;
+  const selectedGraphNode =
+    activeGraph.nodes.find((node) => node.id === selectedNodeId) ?? null;
 
   const dominant = scenarioOrder.reduce((best, current) =>
     projection.currentScenario[current] > projection.currentScenario[best] ? current : best,
@@ -967,8 +1040,6 @@ function ForecastPage({
 
       <section className="forecast-main-grid">
         <main className="forecast-main-column">
-          <ForecastSystemStageCard projection={projection} />
-
           <div className="forecast-mode-tabs" role="tablist" aria-label="Forecast graph mode">
             {(["story", "audit"] as const).map((m) => (
               <button
@@ -1016,6 +1087,18 @@ function ForecastPage({
 
           <section className="console-card research-panel">
             <InfoTitle title="Research stream · 运行事件" subtitle="AgentRunEvent[] 到达顺序" />
+            {selectedGraphNode ? (
+              <div className="selected-node-bridge">
+                <span>Graph selection</span>
+                <strong>{selectedGraphNode.label}</strong>
+                <p>
+                  {selectedGraphNode.kind}
+                  {selectedGraphNode.eventId ? ` · event ${selectedGraphNode.eventId}` : ""}
+                  {selectedGraphNode.evidenceId ? ` · evidence ${selectedGraphNode.evidenceId}` : ""}
+                  {selectedGraphNode.sourceObservationId ? ` · observation ${selectedGraphNode.sourceObservationId}` : ""}
+                </p>
+              </div>
+            ) : null}
             <div className="forecast-controls">
               <label className="prediction-select">
                 <span>预测目标</span>
@@ -1052,6 +1135,7 @@ function ForecastPage({
                 isRunning={false}
                 sourceRegistry={sourceRegistry}
                 scenarioLabels={scenarioLabel}
+                highlightedEventId={selectedGraphNode?.eventId ?? null}
               />
             </div>
           </section>
@@ -1069,6 +1153,8 @@ function ForecastPage({
           <CheckpointCard checkpoint={projection.checkpoint} />
         </aside>
       </section>
+
+      <ForecastSystemStageCard projection={projection} />
     </section>
   );
 }

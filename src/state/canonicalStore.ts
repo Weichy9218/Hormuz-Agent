@@ -174,7 +174,6 @@ export const canonicalSourceObservations: SourceObservation[] = [
     publishedAt: "2026-05-10T22:00:00Z",
     retrievedAt: "2026-05-11T01:30:00Z",
     sourceUrl: "https://fred.stlouisfed.org/series/DCOILBRENTEU",
-    sourceHash: "sha256:fred-brent-2026-05-10",
     title: "Brent FRED 快照",
     summary: "Brent risk premium 相比 3 月抬升，但还不是 closure-level shock。",
     freshness: "fresh",
@@ -186,7 +185,6 @@ export const canonicalSourceObservations: SourceObservation[] = [
     publishedAt: "2026-05-10T22:00:00Z",
     retrievedAt: "2026-05-11T01:30:00Z",
     sourceUrl: "https://fred.stlouisfed.org/series/VIXCLS",
-    sourceHash: "sha256:fred-vix-2026-05-10",
     title: "VIX FRED 快照",
     summary: "VIX 仍处温和区间，不像 closure-style stress。",
     freshness: "fresh",
@@ -197,7 +195,6 @@ export const canonicalSourceObservations: SourceObservation[] = [
     sourceId: "official-advisory",
     publishedAt: "2026-05-10T14:00:00Z",
     retrievedAt: "2026-05-10T14:25:00Z",
-    sourceHash: "sha256:ukmto-2026-05-10",
     title: "UKMTO advisory：区域风险偏高",
     summary: "Advisory 仍使用 elevated risk wording，但没有 avoidance instruction。",
     freshness: "fresh",
@@ -316,13 +313,13 @@ const RUN_ID = "demo-hormuz-2026-05-11";
 const FORECASTED_AT = "2026-05-11T09:30:00+08:00";
 
 export const canonicalMarketRead: MarketRead = {
-  title: "市场正在定价扰动风险，而非全面封锁",
+  title: "市场信号混合：油价保留风险溢价，但事件窗口压力回落",
   summary:
-    "原油正在定价 Hormuz risk premium，但 VIX、权益、利率与 Broad USD 还没有显示 closure-style shock。",
-  pricingPattern: "pricing_controlled_disruption",
+    "Brent / WTI 相比 3 月低点仍处高位，说明 risk premium 未消失；但 2026-04-07 之后 VIX 回落、S&P 500 上行，cross-asset 组合不支持 closure-style shock。",
+  pricingPattern: "mixed",
   evidenceIds: ["ev-market-risk-premium"],
   caveat:
-    "市场信号只是 evidence input，不直接更新 forecast state。",
+    "市场信号只是 evidence input；mixed pattern 不能直接更新 forecast state，也不能单独推高 closure。",
   asOf: "2026-05-10",
 };
 
@@ -462,7 +459,6 @@ export const canonicalAgentRunEvents: AgentRunEvent[] = [
     affects: ["market", "scenario", "target"],
     confidence: "medium",
     licenseStatus: "open",
-    sourceHash: "sha256:fred-bundle-2026-05-10",
   },
   {
     type: "evidence_added",
@@ -482,7 +478,6 @@ export const canonicalAgentRunEvents: AgentRunEvent[] = [
     affects: ["scenario", "target", "watchlist"],
     confidence: "medium",
     licenseStatus: "open",
-    sourceHash: "sha256:ukmto-2026-05-10",
   },
   {
     type: "evidence_added",

@@ -100,6 +100,7 @@ Routes 不作为顶层页。地图只做 context：标出 Strait of Hormuz、Per
 | Forecast revision headline + Story mode | `[implemented]` |
 | Scenario operational fields（trigger / exit / observable / market signature） | `[implemented]` |
 | `MarketRead.supportsScenario` → `pricingPattern` | `[implemented]` |
+| Cold-cache reviewer pass: Overview ordering, Market mixed read, Forecast graph-first layout | `[implemented]` |
 | Pending caveat 在 Overview / Market / News / Forecast 显式可见 | `[implemented, audit:ui planned]` |
 | `AgentRunEvent` 增 `eventId` / `parentEventIds` / `evidenceIds` / `sourceObservationIds` | `[implemented, sourceHash expansion planned]` |
 | `SourceObservation`、`EvidenceClaim`、`EvidenceQuality` 落地 | `[implemented]` |
