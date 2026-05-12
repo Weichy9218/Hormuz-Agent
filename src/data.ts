@@ -9,7 +9,7 @@ import type {
   MapCountry,
   MarketSeries,
   ShippingLane,
-} from "./types";
+} from "./types/ui";
 import generatedMarketSeries from "../data/generated/market_series.json";
 export { sourceGroups, sourceRegistry, sourceBoundaryFacts } from "./data/sourceRegistry";
 

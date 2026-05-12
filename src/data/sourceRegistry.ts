@@ -1,10 +1,10 @@
 // Source registry for data lineage, refresh cadence, license status, and caveats.
 // Hard constraints: pending sources cannot produce high-confidence live evidence.
-import type { SignalSource, SourceRegistryEntry } from "../types";
+import type { SignalSource, SourceRegistryEntry } from "../types/ui";
 import sourceRegistryData from "../../data/registry/sources.json";
 import marketProviderData from "../../data/registry/market_providers.json";
 import baselineFacts from "../../data/normalized/baseline/hormuz_baseline.json";
-import type { MarketProviderCandidate } from "../types";
+import type { MarketProviderCandidate } from "../types/ui";
 
 export const sourceRegistry = sourceRegistryData as SourceRegistryEntry[];
 export const marketProviders = marketProviderData as MarketProviderCandidate[];

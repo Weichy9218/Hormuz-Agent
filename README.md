@@ -66,18 +66,18 @@ Market    "市场对这一串事件作出了什么反应？"
 
 | 模块 | 状态 |
 | --- | --- |
-| 四页 IA (Overview / News / Market / Forecast) | `[implemented]`（但 Overview/Market 与 forecast revision 强耦合，需 `[P0]` 解耦） |
+| 四页 IA (Overview / News / Market / Forecast) | `[implemented]` |
 | Forecast 页：真实 galaxy live viewer | `[P0]`（详见 PLANS.md） |
 | `data/galaxy/runs/...` artifact 采集 | `[implemented]` |
 | FRED 9 series fetch + normalize + generated `market_series.json` | `[implemented]` |
 | `hormuz_baseline.json`（≈20 mb/d、bypass、LNG、Asia exposure） | `[implemented]` |
 | Advisory snapshots（UKMTO / MARAD / IMO） | `[implemented]` |
 | PortWatch / IMO transits snapshots | `[implemented]`（仅作为 caveat 数据，不直接展示成 traffic_flow_down） |
-| **Events timeline 数据集**（Hormuz 事件脉络专用） | `[P0]` 新增，目前没有独立 JSONL |
-| **Polymarket 引用问题 registry**（Overview 外部对照） | `[P0]` 新增 |
-| Overview / Market 页解耦 forecast revision contract（移除 scenario / pricingPattern / Why not closure） | `[P0]` |
-| `EvidenceClaim` / `judgement_updated` / `scenarioDistribution` 在 Overview/Market/News 的渲染入口 | 待 `[P0]` 中移除；schema 保留供 Forecast 页未来复用 |
-| audit:data / audit:evidence / audit:forecast / audit:legacy / audit:replay | `[implemented]`（部分 audit 范围需随解耦调整） |
+| **Events timeline 数据集**（Hormuz 事件脉络专用） | `[implemented]` |
+| **Polymarket 引用问题 registry**（Overview 外部对照） | `[implemented]` |
+| Overview / Market 页解耦 forecast revision contract（移除 scenario / pricingPattern / Why not closure） | `[implemented]` |
+| `EvidenceClaim` / `judgement_updated` / `scenarioDistribution` 在 Overview/Market/News 的渲染入口 | `[implemented]`；schema 保留供 Forecast 页未来复用 |
+| audit:data / audit:evidence / audit:forecast / audit:legacy / audit:replay | `[implemented]` |
 | audit:ui | `[P2]` |
 
 ## Run

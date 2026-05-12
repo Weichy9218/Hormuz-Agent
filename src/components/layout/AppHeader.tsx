@@ -12,9 +12,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { detailPages } from "../../data";
-import { scenarioLabel } from "../../state/forecastStore";
-import type { DetailPage } from "../../types";
-import type { ScenarioId } from "../../types/forecast";
+import type { DetailPage } from "../../types/ui";
 
 const pageIcon: Record<DetailPage["id"], LucideIcon> = {
   overview: Gauge,
@@ -33,11 +31,9 @@ const pageLabel: Record<DetailPage["id"], string> = {
 export function AppHeader({
   activePage,
   onSelectPage,
-  baseCaseScenarioId,
 }: {
   activePage: DetailPage["id"];
   onSelectPage: (page: DetailPage["id"]) => void;
-  baseCaseScenarioId: ScenarioId;
 }) {
   return (
     <header className="app-header">
@@ -47,8 +43,6 @@ export function AppHeader({
         </span>
         <strong>Galaxy Forecast Agent Viewer</strong>
       </div>
-
-      <span className="base-case-badge">背景情景：{scenarioLabel[baseCaseScenarioId]}</span>
 
       <nav className="page-tabs" aria-label="Workspace pages">
         {detailPages.map((page) => {

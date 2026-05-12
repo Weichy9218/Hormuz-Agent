@@ -1,5 +1,5 @@
 // SVG map projection helpers for the static Hormuz context map.
-import type { CoordinatePoint } from "../types";
+import type { CoordinatePoint } from "../types/ui";
 
 const mapBounds = { minLon: 44, maxLon: 64, minLat: 19.5, maxLat: 32 };
 
