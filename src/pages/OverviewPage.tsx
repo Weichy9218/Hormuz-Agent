@@ -1,292 +1,281 @@
-// Overview page: judgement-first case summary for 10-second reviewer scan.
-import { useMemo } from "react";
+// Overview page consumes the generated background snapshot for a 10-second Hormuz scan.
 import {
-  CheckCircle2,
-  FileCheck2,
-  Gauge,
-  RadioTower,
+  Activity,
+  ArrowRight,
+  BarChart3,
+  CalendarClock,
+  ExternalLink,
   Ship,
 } from "lucide-react";
-import { HormuzBaselineStrip } from "../components/HormuzBaselineStrip";
 import { CaseMap } from "../components/map/CaseMap";
-import { ScenarioProbabilityRail } from "../components/ScenarioProbabilityRail";
 import { InfoTitle } from "../components/shared/InfoTitle";
-import { sourceBoundaryFacts } from "../data";
-import { pricingPatternCopy } from "../lib/forecastCopy";
-import { formatDelta } from "../lib/format";
-import { scenarioLabel } from "../state/forecastStore";
-import { projectOverviewState } from "../state/projections";
+import snapshotJson from "../../data/generated/overview_snapshot.json";
+import type { HormuzBaselineFact, OverviewSnapshot } from "../types/marketChart";
+import type { PolymarketQuestionRef } from "../types/polymarket";
+import type { TimelineEvent } from "../types/timeline";
 
-const overviewBaselineFactIds = new Set([
-  "oil-flow",
-  "bypass-capacity",
-  "asia-exposure",
-  "lng-relevance",
-]);
-const overviewBaselineFacts = sourceBoundaryFacts.filter((fact) =>
-  overviewBaselineFactIds.has(fact.id),
-);
+const snapshot = snapshotJson as OverviewSnapshot;
 
-function uniqueSourceIds(facts: Array<{ sourceId: string }>) {
-  return [...new Set(facts.map((fact) => fact.sourceId))];
+const severityCopy: Record<OverviewSnapshot["current_severity"], string> = {
+  quiet: "quiet",
+  routine: "routine",
+  watch: "watch",
+  elevated: "elevated",
+  severe: "severe",
+};
+
+const baselineLabels: Record<string, string> = {
+  "oil-flow": "Oil flow",
+  "bypass-capacity": "Bypass capacity",
+  "asia-exposure": "Asia exposure",
+  "lng-relevance": "LNG relevance",
+};
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "pending";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-function RevisionBriefCard({
-  projection,
-}: {
-  projection: ReturnType<typeof projectOverviewState>;
-}) {
-  const brief = projection.updateBrief;
-  const currentBaseCase = scenarioLabel[brief.currentBaseCaseScenarioId];
-  const previousBaseCase = scenarioLabel[brief.previousBaseCaseScenarioId];
-  const baseCaseDelta =
-    projection.scenarioDelta[brief.currentBaseCaseScenarioId] ?? 0;
-  const largestDelta = brief.largestScenarioDelta;
-  const largestDeltaLabel = scenarioLabel[largestDelta.scenarioId];
-  const baselineSourceIds = uniqueSourceIds(projection.baselineFacts);
-  const closureProbability = projection.scenarioDistribution.closure;
+function formatDate(value?: string | null) {
+  if (!value) return "pending";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function formatNumber(value: number | null | undefined, digits = 2) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("en", {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: value % 1 === 0 ? 0 : Math.min(digits, 2),
+  }).format(value);
+}
+
+function formatDelta(value: number | null | undefined, unit = "") {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value, 2)}${unit}`;
+}
+
+function bestOutcome(ref: PolymarketQuestionRef) {
+  const priced = ref.outcomes.filter((outcome) => outcome.last_price !== null);
+  return priced.sort((a, b) => Number(b.last_price) - Number(a.last_price))[0] ?? ref.outcomes[0];
+}
+
+function HeadlineStrip({ snapshot }: { snapshot: OverviewSnapshot }) {
+  const latest = snapshot.latest_events[0];
 
   return (
     <section className="console-card update-brief-card overview-brief-card">
       <div className="update-brief-kicker">
         <span>
-          <FileCheck2 size={16} />
-          judgement_updated
+          <CalendarClock size={16} />
+          Hormuz status as of {formatDateTime(snapshot.data_as_of)}
         </span>
-        <b>checkpoint · {projection.currentCheckpoint.checkpointId.toUpperCase()}</b>
+        <b>{severityCopy[snapshot.current_severity]}</b>
       </div>
 
       <div className="update-brief-headline unchanged">
-        <span>主情景未改变</span>
-        <strong>{currentBaseCase}</strong>
+        <span>Latest event</span>
+        <strong>{latest?.title ?? "No recent event"}</strong>
       </div>
 
       <p>
-        结论：{currentBaseCase} 仍是主情景。油价 risk premium 与官方
-        advisory 支持扰动上修；但 flow evidence 仍 pending，closure 维持
-        {closureProbability}%。
+        {latest?.description ??
+          "No promoted timeline event is available in the current generated snapshot."}
       </p>
-
-      <div className="update-metric-row">
-        <article>
-          <span>主情景概率</span>
-          <strong>{brief.currentProbability}%</strong>
-          <em>
-            上轮 {previousBaseCase} {brief.previousProbability}% · {formatDelta(baseCaseDelta)}
-          </em>
-        </article>
-        <article>
-          <span>最大情景变化</span>
-          <strong>{largestDeltaLabel}</strong>
-          <em>{formatDelta(largestDelta.delta)}</em>
-        </article>
-      </div>
 
       <div className="overview-brief-meta" aria-label="overview source boundary">
-        <span>as-of {projection.marketRead.asOf}</span>
-        <span>source ids: {baselineSourceIds.join(", ")}</span>
+        <span>last event {formatDateTime(latest?.event_at)}</span>
+        <span>data built {formatDateTime(snapshot.built_at)}</span>
+        <a href="/news" className="checkpoint-state-chip">
+          see News <ArrowRight size={14} />
+        </a>
       </div>
     </section>
   );
 }
 
-function ScenarioStateCard({
-  projection,
-}: {
-  projection: ReturnType<typeof projectOverviewState>;
-}) {
-  const closureDelta = projection.scenarioDelta.closure ?? 0;
-  const guardrail = projection.whyNotClosure.appliedGuardrails[0];
-
+function BaselineStrip({ facts }: { facts: HormuzBaselineFact[] }) {
   return (
-    <section className="console-card scenario-card overview-scenario-card">
-      <InfoTitle
-        title="情景状态"
-        subtitle="judgement_updated 之后的 forecast state"
-      />
-      <ScenarioProbabilityRail
-        distribution={projection.scenarioDistribution}
-        deltas={projection.scenarioDelta}
-      />
-      <div className="scenario-audit-row">
-        <article>
-          <span>base case</span>
-          <strong>{scenarioLabel[projection.baseCaseScenarioId]}</strong>
-          <p>当前最高概率情景，用于首页判断而非完整解释链。</p>
-        </article>
-        <article>
-          <span>closure check</span>
-          <strong>{projection.scenarioDistribution.closure}% · {formatDelta(closureDelta)}</strong>
-          <p>仍低于中心判断，需要 verified flow stop / official avoidance 才能上修。</p>
-        </article>
-        <article>
-          <span>guardrail</span>
-          <strong>{guardrail ? "cap active" : "未触发 cap"}</strong>
-          <p>
-            {guardrail
-              ? `${scenarioLabel[guardrail.scenarioId]} 上限 ${guardrail.cappedTo}%。`
-              : "当前没有新的 closure guardrail。"}
-          </p>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function WhyNotClosureCard({
-  projection,
-}: {
-  projection: ReturnType<typeof projectOverviewState>;
-}) {
-  const counterEvidence = projection.whyNotClosure.counterEvidence[0];
-  const guardrail = projection.whyNotClosure.appliedGuardrails[0];
-
-  return (
-    <section className="console-card compact-list-card overview-decision-card">
-      <InfoTitle
-        title="为什么还不是封锁？"
-        subtitle="缺的是能改变中心判断的证据"
-      />
-      <p>
-        {counterEvidence?.claim ??
-          "尚无 verified traffic stop 或 official avoidance，因此 closure 不能成为主情景。"}
-      </p>
+    <section className="console-card baseline-strip">
+      <InfoTitle title="Why Hormuz matters" subtitle="Structural baseline, not same-day throughput" />
       <ul>
-        <li>missing: verified traffic stop / official avoidance</li>
-        <li>
-          guardrail:{" "}
-          {guardrail
-            ? `${scenarioLabel[guardrail.scenarioId]} capped at ${guardrail.cappedTo}%`
-            : "no active closure cap"}
-        </li>
-        <li>pending caveat: {projection.pendingSourceIds.join(", ")}</li>
-      </ul>
-    </section>
-  );
-}
-
-function NextWatchCard({
-  projection,
-}: {
-  projection: ReturnType<typeof projectOverviewState>;
-}) {
-  return (
-    <section className="console-card compact-list-card overview-decision-card">
-      <InfoTitle title="下一步观察" subtitle="会让判断真正移动的触发器" />
-      <ul>
-        {projection.nextWatch.map((item) => (
-          <li key={item}>{item}</li>
+        {facts.map((fact) => (
+          <li key={fact.fact_id} title={`${fact.caveat} Retrieved ${formatDateTime(fact.retrieved_at)}`}>
+            <strong>{fact.value}</strong>
+            <em>{fact.unit}</em>
+            <p>{baselineLabels[fact.fact_id] ?? fact.fact_id}</p>
+            <small>
+              {fact.source_id} · retrieved {formatDateTime(fact.retrieved_at)}
+            </small>
+          </li>
         ))}
       </ul>
     </section>
   );
 }
 
-function KeySignalsRow({
-  projection,
-}: {
-  projection: ReturnType<typeof projectOverviewState>;
-}) {
+function LatestEventsCard({ events }: { events: TimelineEvent[] }) {
   return (
-    <div className="overview-signal-row">
-      <article className="console-card">
-        <Ship size={19} />
-        <span>Maritime advisory</span>
-        <strong>elevated, no avoidance wording</strong>
-        <p>官方措辞支持 transit risk premium，但不足以单独触发 closure。</p>
-      </article>
-      <article className="console-card">
-        <RadioTower size={19} />
-        <span>Flow evidence</span>
-        <strong>pending caveat visible</strong>
-        <p>授权 AIS / tanker / LNG flow 仍待接入，不能渲染为实时船数。</p>
-      </article>
-      <article className="console-card">
-        <Gauge size={19} />
-        <span>Market read · as-of {projection.marketRead.asOf}</span>
-        <strong>{pricingPatternCopy[projection.marketRead.pricingPattern]}</strong>
-        <p>{projection.marketRead.caveat}</p>
-      </article>
-    </div>
+    <section className="console-card compact-list-card overview-decision-card">
+      <InfoTitle title="Latest events" subtitle="Top promoted timeline entries" />
+      <ul>
+        {events.map((event) => (
+          <li key={event.event_id}>
+            <a href={`/news#${event.event_id}`}>
+              <strong>{event.title}</strong>
+            </a>
+            <p>
+              {event.source_name} · {event.severity_hint} · {formatDateTime(event.event_at)}
+            </p>
+            <small title={`retrieved ${formatDateTime(event.retrieved_at)}`}>
+              source: {event.source_id}
+            </small>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
-function CurrentCheckpointCard({
-  projection,
-}: {
-  projection: ReturnType<typeof projectOverviewState>;
-}) {
-  const checkpoint = projection.currentCheckpoint;
+function TrafficSnapshotCard({ snapshot }: { snapshot: OverviewSnapshot["traffic_snapshot"] }) {
+  return (
+    <section className="console-card compact-list-card overview-decision-card">
+      <InfoTitle title="Traffic snapshot" subtitle="PortWatch daily transit calls" />
+      {snapshot ? (
+        <>
+          <div className="update-metric-row">
+            <article title={snapshot.caveat}>
+              <span>{formatDate(snapshot.latest_date)}</span>
+              <strong>{formatNumber(snapshot.latest_value, 0)}</strong>
+              <em>daily calls</em>
+            </article>
+            <article title={snapshot.caveat}>
+              <span>7d avg</span>
+              <strong>{formatNumber(snapshot.avg_7d, 2)}</strong>
+              <em>{formatDelta(snapshot.delta_vs_baseline_pct, "%")} vs 1y window</em>
+            </article>
+          </div>
+          <p title={snapshot.caveat}>
+            Baseline {formatNumber(snapshot.baseline_1y_same_window, 2)} · {snapshot.source_id} ·
+            retrieved {formatDateTime(snapshot.retrieved_at)}
+          </p>
+        </>
+      ) : (
+        <p>PortWatch traffic snapshot pending.</p>
+      )}
+    </section>
+  );
+}
 
+function MarketSnapshotCard({ snapshot }: { snapshot: OverviewSnapshot["market_snapshot"] }) {
+  return (
+    <section className="console-card compact-list-card overview-decision-card">
+      <InfoTitle title="Market snapshot" subtitle="FRED active rows plus pending references" />
+      <ul>
+        {snapshot.map((item) => (
+          <li key={item.target} title={`${item.caveat ?? ""} Retrieved ${formatDateTime(item.retrieved_at)}`}>
+            <a href="/market">
+              <strong>{item.label}</strong>
+            </a>
+            <p>
+              {item.status === "pending_source" ? "pending" : `${formatNumber(item.value, 2)} ${item.unit}`}
+              {item.status === "active" ? ` · 1d ${formatDelta(item.delta_1d)} · 7d ${formatDelta(item.delta_7d)}` : ""}
+            </p>
+            <small>{item.source_id}</small>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function PolymarketCard({ refs }: { refs: PolymarketQuestionRef[] }) {
   return (
     <section className="console-card checkpoint-strip overview-checkpoint-strip">
       <div>
         <InfoTitle
-          title="当前 checkpoint"
-          subtitle={`${checkpoint.checkpointId.toUpperCase()} · ${checkpoint.writtenAt}`}
+          title="External prediction markets"
+          subtitle="External market, not our forecast"
         />
-        <span className="checkpoint-state-chip">
-          <CheckCircle2 size={15} />
-          state change source: judgement_updated
-        </span>
+        <span className="checkpoint-state-chip">External market, not our forecast</span>
       </div>
       <div className="overview-checkpoint-grid">
-        <article>
-          <span>revision reason</span>
-          <p>{checkpoint.revisionReason}</p>
-        </article>
-        <article>
-          <span>active evidence</span>
-          <strong>{checkpoint.reusedState.activeEvidenceIds.join(", ")}</strong>
-        </article>
-        <article>
-          <span>pending sources</span>
-          <strong>{checkpoint.reusedState.pendingSourceIds.join(", ")}</strong>
-        </article>
+        {refs.map((ref) => {
+          const outcome = bestOutcome(ref);
+          return (
+            <article key={ref.question_id} title={ref.caveat}>
+              <span>{ref.topic_tags.join(" / ")}</span>
+              <a href={ref.question_url} rel="noreferrer" target="_blank">
+                <strong>
+                  {ref.title} <ExternalLink size={13} />
+                </strong>
+              </a>
+              <p>
+                {outcome?.last_price === null || outcome?.last_price === undefined
+                  ? "odds pending"
+                  : `${outcome.outcome_id}: ${formatNumber(outcome.last_price * 100, 1)}%`}
+                {ref.total_volume_usd ? ` · volume $${formatNumber(ref.total_volume_usd, 0)}` : ""}
+              </p>
+              <p>{ref.resolution_criteria}</p>
+              <small>retrieved {formatDateTime(ref.retrieved_at)}</small>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
 }
 
 export function OverviewPage() {
-  const projection = useMemo(
-    () =>
-      projectOverviewState(
-        overviewBaselineFacts.map(({ label, value, unit, sourceId, detail }) => ({
-          label,
-          value,
-          unit,
-          sourceId,
-          detail,
-        })),
-      ),
-    [],
-  );
-
   return (
     <section className="page-grid overview-page">
       <div className="overview-main-layout">
         <div className="overview-left-column">
+          <HeadlineStrip snapshot={snapshot} />
+
           <div className="overview-top-row">
-            <RevisionBriefCard projection={projection} />
-            <ScenarioStateCard projection={projection} />
+            <BaselineStrip facts={snapshot.baseline} />
+            <CaseMap compact />
           </div>
 
-          <div className="overview-map-row">
-            <CaseMap />
+          <div className="overview-signal-row">
+            <article className="console-card">
+              <Ship size={19} />
+              <span>Traffic</span>
+              <strong>{snapshot.traffic_snapshot ? `${formatNumber(snapshot.traffic_snapshot.latest_value, 0)} daily calls` : "pending"}</strong>
+              <p>{snapshot.traffic_snapshot?.source_id ?? "PortWatch pending"}</p>
+            </article>
+            <article className="console-card">
+              <BarChart3 size={19} />
+              <span>Markets</span>
+              <strong>{snapshot.market_snapshot.filter((item) => item.status === "active").length} active rows</strong>
+              <p>Brent · WTI · VIX · Broad USD from local generated snapshot.</p>
+            </article>
+            <article className="console-card">
+              <Activity size={19} />
+              <span>Events</span>
+              <strong>{snapshot.latest_events.length} latest entries</strong>
+              <p>Deep links point to News timeline anchors.</p>
+            </article>
           </div>
         </div>
 
         <aside className="overview-side-column">
-          <WhyNotClosureCard projection={projection} />
-          <NextWatchCard projection={projection} />
-          <HormuzBaselineStrip />
+          <LatestEventsCard events={snapshot.latest_events} />
+          <TrafficSnapshotCard snapshot={snapshot.traffic_snapshot} />
+          <MarketSnapshotCard snapshot={snapshot.market_snapshot} />
         </aside>
       </div>
 
-      <KeySignalsRow projection={projection} />
-
-      <CurrentCheckpointCard projection={projection} />
+      <PolymarketCard refs={snapshot.polymarket_refs} />
     </section>
   );
 }
