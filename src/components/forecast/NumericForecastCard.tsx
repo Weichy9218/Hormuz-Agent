@@ -114,50 +114,50 @@ export function NumericForecastCard({
   const direction = delta == null ? "flat" : delta > 0 ? "up" : delta < 0 ? "down" : "flat";
   const DirectionIcon = direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
   const payload = final.payload;
-  const runtimeLabel = runtime === "galaxy" ? "real galaxy run" : "offline demo";
+  const runtimeLabel = runtime === "galaxy" ? "真实 galaxy 运行" : "离线 Demo";
 
   return (
     <section className="console-card numeric-forecast-card">
-      <InfoTitle title="Numeric forecast" subtitle={`${finalSource} · ${final.terminal}`} />
+      <InfoTitle title="数值预测" subtitle={`${finalSource} · ${final.terminal}`} />
       <div className="numeric-forecast-answer">
         <span>Brent weekly high · USD/bbl · FRED DCOILBRENTEU</span>
         <em>{runtimeLabel}</em>
         <strong>{formatPrice(prediction)} <small>USD/bbl</small></strong>
-        <p>FRED DCOILBRENTEU · {window ? `${window.start_date} → ${window.end_date}` : "target window pending"}</p>
+        <p>FRED DCOILBRENTEU · {window ? `${window.start_date} → ${window.end_date}` : "目标窗口待定"}</p>
       </div>
       <div className="numeric-forecast-chart">
         <Sparkline points={brentSeries.points} prediction={prediction} />
         <div className="numeric-forecast-metrics">
           <span>
-            <b>latest spot</b>
+            <b>最新现货</b>
             <strong>{formatPrice(latest?.value)}</strong>
-            <small>{latest?.date ?? "pending"}</small>
+            <small>{latest?.date ?? "待定"}</small>
           </span>
           <span>
-            <b>window high</b>
+            <b>区间最高</b>
             <strong>{formatPrice(observedWindowHigh)}</strong>
-            <small>{windowPoints.length ? `${windowPoints.length} observed days` : "pending FRED close"}</small>
+            <small>{windowPoints.length ? `${windowPoints.length} 个观测日` : "待 FRED 收盘"}</small>
           </span>
           <span className={direction}>
-            <b>vs latest</b>
+            <b>vs 现价</b>
             <strong><DirectionIcon size={15} /> {formatDelta(delta)}</strong>
-            <small>{deltaPct == null ? "pending" : `${formatDelta(deltaPct)}%`}</small>
+            <small>{deltaPct == null ? "待定" : `${formatDelta(deltaPct)}%`}</small>
           </span>
         </div>
       </div>
       <div className="numeric-forecast-source">
-        <span><Target size={14} /> target series {brentSeries.seriesId}</span>
-        <span><Activity size={14} /> retrieved {brentSeries.retrievedAt || "pending"}</span>
+        <span><Target size={14} /> 目标序列 {brentSeries.seriesId}</span>
+        <span><Activity size={14} /> 数据获取 {brentSeries.retrievedAt || "待定"}</span>
       </div>
-      <p>{payload?.rationale ?? final.action?.summary ?? "Current run has not recorded a numeric forecast yet."}</p>
+      <p>{payload?.rationale ?? final.action?.summary ?? "当前运行尚未记录数值预测。"}</p>
       <div className="galaxy-final-lists">
-        <strong>key evidence</strong>
-        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["pending record_forecast payload"]).map((item) => (
+        <strong>关键证据</strong>
+        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item) => (
           <p key={item}>{item}</p>
         ))}
-        {payload?.counterEvidenceItems?.length ? <strong>counter evidence</strong> : null}
+        {payload?.counterEvidenceItems?.length ? <strong>反向证据</strong> : null}
         {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
-        {payload?.openConcerns?.length ? <strong>open concerns</strong> : null}
+        {payload?.openConcerns?.length ? <strong>待观察风险</strong> : null}
         {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
       </div>
     </section>

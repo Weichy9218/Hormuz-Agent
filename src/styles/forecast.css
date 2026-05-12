@@ -547,7 +547,7 @@
 
 .forecast-page .galaxy-agent-workbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 400px;
   gap: 18px;
   align-items: start;
 }
@@ -594,7 +594,7 @@
 
 .forecast-page .galaxy-action-graph-shell {
   overflow: hidden;
-  height: 560px;
+  height: 600px;
   border: 1px solid #d8e6f7;
   border-radius: 8px;
   background:

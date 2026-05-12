@@ -186,38 +186,38 @@ function GalaxyRunHeader({
   return (
     <section className="console-card galaxy-agent-hero">
       <div className="galaxy-agent-copy">
-        <span className="galaxy-kicker">Forecast agent primary surface</span>
-        <h1>Forecast Agent Behavior Viewer</h1>
+        <span className="galaxy-kicker">预测 Agent 主界面</span>
+        <h1>预测决策查看器</h1>
         <p>{questionText(projection)}</p>
         <div className="galaxy-run-chips">
-          <span>status {status}</span>
+          <span>状态 {status}</span>
           {meta?.demo ? <span className="demo">[DEMO]</span> : null}
-          <span>pid {pid ?? "none"}</span>
-          <span>elapsed {elapsed != null ? `${elapsed}s` : "pending"}</span>
+          <span>pid {pid ?? "无"}</span>
+          <span>耗时 {elapsed != null ? `${elapsed}s` : "待定"}</span>
           <span>{taskId}</span>
-          <span>runtime {runtimeInfo.label}</span>
-          <span>final {final.prediction} · {finalSource}</span>
+          <span>运行时 {runtimeInfo.label}</span>
+          <span>预测 {final.prediction} · {finalSource}</span>
         </div>
       </div>
       <div className="galaxy-agent-command">
         <InfoTitle
-          title="Run control"
-          subtitle={`${runtimeInfo.detail} · start/status/trace`}
+          title="运行控制"
+          subtitle={`galaxy-selfevolve · 启动 / 状态 / 追踪`}
         />
         <dl className="galaxy-run-kv">
-          <div><dt>runtime</dt><dd>{liveStatus?.runConfig ?? runtimeInfo.label}</dd></div>
-          <div><dt>runDir</dt><dd title={runDir}>{compactPath(runDir, 2)}</dd></div>
-          <div><dt>last updated</dt><dd>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "unknown"}</dd></div>
+          <div><dt>运行时</dt><dd>{liveStatus?.runConfig ?? runtimeInfo.label}</dd></div>
+          <div><dt>输出目录</dt><dd title={runDir}>{compactPath(runDir, 2)}</dd></div>
+          <div><dt>最后更新</dt><dd>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "未知"}</dd></div>
         </dl>
         <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
         <div className="galaxy-run-actions">
           <button type="button" onClick={onRun} disabled={isRunning}>
             {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
-            {isRunning ? "Running live" : "Run galaxy"}
+            {isRunning ? "运行中..." : "运行 Galaxy"}
           </button>
           <button type="button" onClick={onRefresh}>
             <RefreshCw size={15} />
-            Refresh last completed
+            刷新上次结果
           </button>
         </div>
         {runMessage ? <p className="galaxy-run-message">{runMessage}</p> : null}
@@ -241,28 +241,28 @@ function FinalForecastCard({
 
   return (
     <section className="console-card galaxy-final-card">
-      <InfoTitle title="Final forecast" subtitle={`record_forecast payload · ${finalSource}`} />
+      <InfoTitle title="最终预测" subtitle={`record_forecast 载荷 · ${finalSource}`} />
       <div className="galaxy-final-answer">
-        <span>prediction</span>
+        <span>预测值</span>
         <strong>{final.prediction}</strong>
-        <p>confidence {final.confidence} · terminal {final.terminal}</p>
+        <p>置信度 {final.confidence} · 终止原因 {final.terminal}</p>
       </div>
-      <p>{payload?.rationale ?? final.action?.summary ?? "Current run has not recorded a final forecast yet."}</p>
+      <p>{payload?.rationale ?? final.action?.summary ?? "当前运行尚未记录最终预测。"}</p>
       <div className="galaxy-final-lists">
-        <strong>key evidence</strong>
-        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["pending record_forecast payload"]).map((item) => (
+        <strong>关键证据</strong>
+        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item) => (
           <p key={item}>{item}</p>
         ))}
-        {payload?.counterEvidenceItems?.length ? <strong>counter evidence</strong> : null}
+        {payload?.counterEvidenceItems?.length ? <strong>反向证据</strong> : null}
         {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
-        {payload?.openConcerns?.length ? <strong>open concerns</strong> : null}
+        {payload?.openConcerns?.length ? <strong>待观察风险</strong> : null}
         {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
       </div>
       <div className="galaxy-stats-grid">
-        <span><b>{stats.question_audit}</b> audit</span>
-        <span><b>{stats.source_search}</b> search</span>
-        <span><b>{stats.source_read}</b> read</span>
-        <span><b>{stats.evidence_extract}</b> extract</span>
+        <span><b>{stats.question_audit}</b> 审计</span>
+        <span><b>{stats.source_search}</b> 检索</span>
+        <span><b>{stats.source_read}</b> 读取</span>
+        <span><b>{stats.evidence_extract}</b> 提取</span>
       </div>
     </section>
   );
@@ -279,7 +279,7 @@ function ActionTimeline({
 }) {
   return (
     <section className="console-card galaxy-action-timeline">
-      <InfoTitle title="Action timeline" subtitle="events.jsonl -> reviewer-safe action trace" />
+      <InfoTitle title="动作时间线" subtitle="events.jsonl → 脱敏动作追踪" />
       <div className="galaxy-action-list">
         {actions.map((action) => (
           <button
@@ -339,13 +339,13 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
   }
   return (
     <section className={`console-card galaxy-action-inspector ${action ? "has-action" : ""}`}>
-      <InfoTitle title="Inspector" subtitle="selected action provenance" />
+      <InfoTitle title="检查器" subtitle="选中动作 · 来源溯源" />
       {action ? (
         <div className="galaxy-inspector-body">
           <span>{kindLabel[action.kind]} · {action.status}</span>
           <div className={`galaxy-critical-badge ${action.criticalPath ? "yes" : "no"}`}>
-            <b>Critical path</b>
-            <strong>{action.criticalPath ? "yes" : "no"}</strong>
+            <b>关键路径</b>
+            <strong>{action.criticalPath ? "是" : "否"}</strong>
             {action.criticalReason ? <small>{action.criticalReason}</small> : null}
           </div>
           <strong>{action.title}</strong>
@@ -388,7 +388,7 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
             {action.forecastPayload?.prediction ? (
               <div>
                 <dt>forecast</dt>
-                <dd>{action.forecastPayload.prediction} · {action.forecastPayload.confidence ?? "unknown"}</dd>
+                <dd>{action.forecastPayload.prediction} · {action.forecastPayload.confidence ?? "未知"}</dd>
               </div>
             ) : null}
             {action.lane ? (
@@ -405,11 +405,11 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
           {raw ? (
             <div className="galaxy-raw-preview">
               <div>
-                <span>Raw payload</span>
+                <span>原始载荷</span>
                 <strong>{raw.title}</strong>
                 <small>
-                  {raw.rawFilePath ?? "generated trace"}
-                  {raw.rawLine ? `:${raw.rawLine}` : ""} · {raw.fullLength} chars
+                  {raw.rawFilePath ?? "生成追踪"}
+                  {raw.rawLine ? `:${raw.rawLine}` : ""} · {raw.fullLength} 字符
                 </small>
               </div>
               {raw.boxedAnswer ? <p className="galaxy-boxed-answer">{raw.boxedAnswer}</p> : null}
@@ -426,14 +426,14 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
               <pre>{rawDisplay}{!showFullRaw && rawText.length > rawDisplay.length ? "\n..." : ""}</pre>
               {rawText.length > 1200 ? (
                 <button type="button" onClick={() => setShowFullRaw((value) => !value)}>
-                  {showFullRaw ? "Collapse payload" : "View full preview"}
+                  {showFullRaw ? "收起" : "展开完整载荷"}
                 </button>
               ) : null}
               {rawPath ? (
                 <div className="galaxy-raw-actions">
                   <button type="button" onClick={handleCopyRawPath}>
                     <Copy size={13} />
-                    Copy raw path
+                    复制文件路径
                   </button>
                   {copyMessage ? <small>{copyMessage}</small> : null}
                 </div>
@@ -444,8 +444,8 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
       ) : (
         <div className="galaxy-inspector-empty">
           <ShieldAlert size={22} />
-          <strong>Select a graph node or timeline step</strong>
-          <p>Inspector shows safe provenance: tool name, source URL, query, artifact path, and trace role.</p>
+          <strong>点击图节点或时间线步骤</strong>
+          <p>展示工具名称、来源链接、查询词、证据路径及行动角色。</p>
         </div>
       )}
     </section>
@@ -652,30 +652,11 @@ export function ForecastPage({
 
       <section className="galaxy-agent-workbench">
         <main className="galaxy-agent-main">
-          <section className="console-card galaxy-view-mode">
-            <InfoTitle
-              title="Visualization mode"
-              subtitle="Story keeps the decision path; Full preserves every tool call/result for audit."
-            />
-            <div className="forecast-mode-tabs" role="tablist" aria-label="Galaxy graph mode">
-              {(["summary", "full"] as const).map((mode) => (
-                <button
-                  aria-selected={graphMode === mode}
-                  className={graphMode === mode ? "selected" : ""}
-                  key={mode}
-                  onClick={() => setGraphMode(mode)}
-                  role="tab"
-                  type="button"
-                >
-                  {mode === "summary" ? "Story path" : "Full audit"}
-                </button>
-              ))}
-            </div>
-          </section>
           <GalaxyActionGraph
             actions={actions}
             graph={agentTrace?.graph}
             mode={graphMode}
+            onSetMode={setGraphMode}
             traceKey={traceKey}
             selectedActionId={selectedActionId}
             onSelectAction={setSelectedActionId}

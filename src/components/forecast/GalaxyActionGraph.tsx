@@ -62,13 +62,13 @@ const laneOrder: GalaxyLane[] = [
 ];
 
 const laneLabel: Record<GalaxyLane, string> = {
-  question: "Question",
-  agent_turn: "Agent turn",
-  search_batch: "Search batch",
-  read_artifacts: "Read artifacts",
-  evidence_synthesis: "Evidence synthesis",
-  forecast: "Forecast",
-  checkpoint: "Checkpoint",
+  question: "问题定义",
+  agent_turn: "Agent 思考",
+  search_batch: "检索批次",
+  read_artifacts: "读取证据",
+  evidence_synthesis: "证据综合",
+  forecast: "预测记录",
+  checkpoint: "检查点",
 };
 
 const forecastAgentLaneOrder = [
@@ -84,15 +84,15 @@ const forecastAgentLaneOrder = [
 ] as const;
 
 const forecastAgentLaneLabel: Record<(typeof forecastAgentLaneOrder)[number], string> = {
-  question: "Question",
-  source: "Source boundary",
-  search: "Search batch",
-  read: "Read artifacts",
-  evidence: "Evidence",
-  mechanism: "Mechanism",
-  judgement: "Judgement delta",
-  forecast: "Forecast",
-  checkpoint: "Checkpoint",
+  question: "问题",
+  source: "数据边界",
+  search: "检索",
+  read: "读取",
+  evidence: "证据",
+  mechanism: "机制",
+  judgement: "判断",
+  forecast: "预测",
+  checkpoint: "检查点",
 };
 
 const keyEvidenceThemes = [
@@ -494,6 +494,7 @@ export function GalaxyActionGraph({
   actions,
   graph,
   mode,
+  onSetMode,
   traceKey = "latest",
   selectedActionId,
   onSelectAction,
@@ -501,6 +502,7 @@ export function GalaxyActionGraph({
   actions: GalaxyActionTraceItem[];
   graph?: { nodes: ForecastAgentGraphNode[]; edges: ForecastAgentGraphEdge[] };
   mode: GraphMode;
+  onSetMode: (mode: GraphMode) => void;
   traceKey?: string;
   selectedActionId: string | null;
   onSelectAction: (actionId: string | null) => void;
@@ -518,17 +520,32 @@ export function GalaxyActionGraph({
   const laneStrip = mode === "full" && graph
     ? forecastAgentLaneOrder.map((lane) => <span key={lane}>{forecastAgentLaneLabel[lane]}</span>)
     : laneOrder.map((lane) => <span key={lane}>{laneLabel[lane]}</span>);
+  const criticalCount = stableLayout.nodes.filter((n) => (n.data as GalaxyNodeData).criticalPath).length;
   const graphCaption = mode === "summary"
-    ? `Story path: ${stableLayout.nodes.length} key actions from ${actions.length}; repeated search/read chatter is folded into bridged edges.`
-    : `Full audit trace: ${stableLayout.nodes.length} actions and ${stableLayout.edges.length} dependency edges.`;
+    ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 橙色节点为直接支撑最终预测的证据链`
+    : `完整审计 · ${stableLayout.nodes.length} 个动作 · ${stableLayout.edges.length} 条依赖边 · 其中 ${criticalCount} 个关键路径节点`;
 
   return (
     <section className="console-card galaxy-action-graph-card">
       <div className="galaxy-section-head">
         <div>
-          <span>XYFlow action graph</span>
-          <h2>Forecast agent behavior</h2>
+          <span>Agent 行为图</span>
+          <h2>预测决策路径</h2>
           <p>{graphCaption}</p>
+        </div>
+        <div className="replay-command-row" role="tablist" aria-label="视图模式">
+          {(["summary", "full"] as const).map((m) => (
+            <button
+              key={m}
+              role="tab"
+              type="button"
+              aria-selected={mode === m}
+              className={mode === m ? "selected" : ""}
+              onClick={() => onSetMode(m)}
+            >
+              {m === "summary" ? "故事路径" : "完整审计"}
+            </button>
+          ))}
         </div>
       </div>
       <div className="galaxy-lane-strip" aria-label="Galaxy graph lanes">
