@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   Clock3,
+  Copy,
   Database,
   FileText,
   Flag,
@@ -13,8 +14,10 @@ import {
   Wrench,
 } from "lucide-react";
 import { GalaxyActionGraph } from "../components/forecast/GalaxyActionGraph";
+import { NumericForecastCard } from "../components/forecast/NumericForecastCard";
 import { InfoTitle } from "../components/shared/InfoTitle";
-import { projectForecastState } from "../state/projections";
+import { isNumericForecastQuestion } from "../lib/forecast/numericForecast";
+import { projectBrentDailySeries, projectForecastState } from "../state/projections";
 import type { ForecastTarget } from "../types/forecast";
 import type {
   GalaxyActionKind,
@@ -84,12 +87,16 @@ const kindLabel: Record<GalaxyActionKind, string> = {
 };
 
 function questionText(projection: ForecastProjection) {
-  return (
-    projection.galaxyRun?.question.task_question
-      .split('"""')[1]
-      ?.trim()
-      .replace(/\s+/g, " ") ?? "No forecast question artifact loaded."
-  );
+  const question = projection.galaxyRun?.question.task_question;
+  if (!question) return "No forecast question artifact loaded.";
+  const quoted = question.match(/"""([\s\S]*?)"""/)?.[1];
+  return (quoted ?? question).trim().replace(/\s+/g, " ");
+}
+
+function compactPath(path: string, keepSegments = 2) {
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length <= keepSegments + 1) return path;
+  return `.../${parts.slice(-keepSegments).join("/")}`;
 }
 
 function finalPayload(
@@ -184,6 +191,7 @@ function GalaxyRunHeader({
         <p>{questionText(projection)}</p>
         <div className="galaxy-run-chips">
           <span>status {status}</span>
+          {meta?.demo ? <span className="demo">[DEMO]</span> : null}
           <span>pid {pid ?? "none"}</span>
           <span>elapsed {elapsed != null ? `${elapsed}s` : "pending"}</span>
           <span>{taskId}</span>
@@ -198,7 +206,7 @@ function GalaxyRunHeader({
         />
         <dl className="galaxy-run-kv">
           <div><dt>runtime</dt><dd>{liveStatus?.runConfig ?? runtimeInfo.label}</dd></div>
-          <div><dt>runDir</dt><dd>{runDir}</dd></div>
+          <div><dt>runDir</dt><dd title={runDir}>{compactPath(runDir, 2)}</dd></div>
           <div><dt>last updated</dt><dd>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "unknown"}</dd></div>
         </dl>
         <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
@@ -295,18 +303,51 @@ function ActionTimeline({
 
 function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
   const [showFullRaw, setShowFullRaw] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
   useEffect(() => {
     setShowFullRaw(false);
+    setCopyMessage("");
   }, [action?.actionId]);
   const raw = action?.rawPreview;
   const rawText = raw?.text ?? "";
   const rawDisplay = showFullRaw ? rawText : rawText.slice(0, 1200);
+  const rawPath = raw?.rawFilePath ? `${raw.rawFilePath}${raw.rawLine ? `:${raw.rawLine}` : ""}` : "";
+  function copyWithFallback(value: string) {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  }
+  async function handleCopyRawPath() {
+    if (!rawPath) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(rawPath);
+      } else if (!copyWithFallback(rawPath)) {
+        throw new Error("clipboard unavailable");
+      }
+      setCopyMessage("Copied raw path");
+    } catch {
+      setCopyMessage(copyWithFallback(rawPath) ? "Copied raw path" : "Copy failed");
+    }
+  }
   return (
     <section className={`console-card galaxy-action-inspector ${action ? "has-action" : ""}`}>
       <InfoTitle title="Inspector" subtitle="selected action provenance" />
       {action ? (
         <div className="galaxy-inspector-body">
           <span>{kindLabel[action.kind]} · {action.status}</span>
+          <div className={`galaxy-critical-badge ${action.criticalPath ? "yes" : "no"}`}>
+            <b>Critical path</b>
+            <strong>{action.criticalPath ? "yes" : "no"}</strong>
+            {action.criticalReason ? <small>{action.criticalReason}</small> : null}
+          </div>
           <strong>{action.title}</strong>
           <p>{action.summary}</p>
           <dl>
@@ -388,6 +429,15 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
                   {showFullRaw ? "Collapse payload" : "View full preview"}
                 </button>
               ) : null}
+              {rawPath ? (
+                <div className="galaxy-raw-actions">
+                  <button type="button" onClick={handleCopyRawPath}>
+                    <Copy size={13} />
+                    Copy raw path
+                  </button>
+                  {copyMessage ? <small>{copyMessage}</small> : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -421,6 +471,7 @@ export function ForecastPage({
     () => projectForecastState(runtimeGalaxyArtifact ?? undefined),
     [runtimeGalaxyArtifact],
   );
+  const brentDailySeries = useMemo(() => projectBrentDailySeries(30), []);
   const agentTrace = liveTrace ?? projection.galaxyRun?.actionTrace ?? null;
   const traceKey =
     agentTrace?.runDir ??
@@ -436,6 +487,8 @@ export function ForecastPage({
     liveArtifact
       ? "current run"
       : "last completed";
+  const final = finalPayload(projection, actions, finalSource, runtimeLiveStatus?.runId);
+  const showNumericForecast = isNumericForecastQuestion(projection.galaxyRun?.question, final.prediction);
 
   const refreshGalaxyArtifact = useCallback(async (message = "Artifact refreshed.") => {
     const galaxyResponse = await fetch("/api/galaxy-hormuz/latest");
@@ -634,11 +687,21 @@ export function ForecastPage({
           />
         </main>
         <aside className="galaxy-agent-side">
-          <FinalForecastCard
-            projection={projection}
-            actions={actions}
-            finalSource={finalSource}
-          />
+          {showNumericForecast ? (
+            <NumericForecastCard
+              question={projection.galaxyRun?.question}
+              final={final}
+              brentSeries={brentDailySeries}
+              finalSource={finalSource}
+              runtime="galaxy"
+            />
+          ) : (
+            <FinalForecastCard
+              projection={projection}
+              actions={actions}
+              finalSource={finalSource}
+            />
+          )}
           <ActionInspector action={selectedAction} />
         </aside>
       </section>

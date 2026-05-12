@@ -16,6 +16,7 @@ import type {
 import type { SourceRegistryEntry } from "../types";
 import type { MarketSeries } from "../types";
 import generatedMarketSeries from "../../data/generated/market_series.json";
+import fredSeriesCsv from "../../data/normalized/market/fred_series.csv?raw";
 import {
   buildForecastGraph,
   type ForecastGraph,
@@ -220,6 +221,93 @@ export function projectMarketState(
 }
 
 // --- Forecast ---------------------------------------------------------------
+
+export interface BrentDailyPoint {
+  date: string;
+  value: number;
+}
+
+export interface BrentDailySeriesProjection {
+  seriesId: "DCOILBRENTEU";
+  target: "brent";
+  label: string;
+  unit: "USD/bbl";
+  source: string;
+  sourceUrl: string;
+  retrievedAt: string;
+  points: BrentDailyPoint[];
+}
+
+function parseCsvLine(line: string) {
+  const values: string[] = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === "\"" && line[index + 1] === "\"") {
+      current += "\"";
+      index += 1;
+    } else if (char === "\"") {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      values.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  values.push(current);
+  return values;
+}
+
+function parseFredBrentDailySeries(): BrentDailySeriesProjection {
+  const rows = fredSeriesCsv
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .map(parseCsvLine);
+  const header = rows.shift() ?? [];
+  const column = (name: string) => header.indexOf(name);
+  const seriesIndex = column("series_id");
+  const targetIndex = column("target");
+  const dateIndex = column("date");
+  const valueIndex = column("value");
+  const unitIndex = column("unit");
+  const sourceUrlIndex = column("source_url");
+  const retrievedAtIndex = column("retrieved_at");
+
+  let sourceUrl = "https://fred.stlouisfed.org/series/DCOILBRENTEU";
+  let retrievedAt = "";
+  const points: BrentDailyPoint[] = [];
+
+  for (const row of rows) {
+    if (row[seriesIndex] !== "DCOILBRENTEU" || row[targetIndex] !== "brent") continue;
+    const value = Number.parseFloat(row[valueIndex] ?? "");
+    if (!Number.isFinite(value)) continue;
+    if ((row[unitIndex] ?? "USD/bbl") !== "USD/bbl") continue;
+    sourceUrl = row[sourceUrlIndex] || sourceUrl;
+    retrievedAt = row[retrievedAtIndex] || retrievedAt;
+    points.push({ date: row[dateIndex], value });
+  }
+
+  return {
+    seriesId: "DCOILBRENTEU",
+    target: "brent",
+    label: "Brent crude oil spot price",
+    unit: "USD/bbl",
+    source: "FRED DCOILBRENTEU",
+    sourceUrl,
+    retrievedAt,
+    points: points.sort((a, b) => a.date.localeCompare(b.date)),
+  };
+}
+
+export function projectBrentDailySeries(window = 30): BrentDailySeriesProjection {
+  const series = parseFredBrentDailySeries();
+  return {
+    ...series,
+    points: series.points.slice(-window),
+  };
+}
 
 export interface ForecastProjection {
   runId: string;

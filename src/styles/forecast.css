@@ -380,7 +380,7 @@
   grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
   gap: 18px;
   align-items: stretch;
-  padding: 20px;
+  padding: 16px 20px;
   border-color: #c8dcf6;
   background: #ffffff;
 }
@@ -388,7 +388,7 @@
 .forecast-page .galaxy-agent-copy {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -406,7 +406,7 @@
 .forecast-page .galaxy-agent-copy h1 {
   margin: 0;
   color: var(--text);
-  font-size: 2rem;
+  font-size: 1.8rem;
   line-height: 1.05;
   letter-spacing: 0;
 }
@@ -418,6 +418,10 @@
   font-size: 0.95rem;
   line-height: 1.55;
   text-wrap: pretty;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .forecast-page .galaxy-run-chips {
@@ -440,9 +444,16 @@
   font-weight: 850;
 }
 
+.forecast-page .galaxy-run-chips span.demo {
+  border-color: #f4c56e;
+  color: #92400e;
+  background: #fffbeb;
+  font-weight: 950;
+}
+
 .forecast-page .galaxy-agent-command {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
   padding: 14px;
   border: 1px solid #d8e6f7;
@@ -452,7 +463,7 @@
 
 .forecast-page .galaxy-agent-command code {
   display: block;
-  max-height: 92px;
+  max-height: 42px;
   overflow: auto;
   padding: 10px;
   border: 1px solid #d9e5f3;
@@ -645,6 +656,31 @@
   font-weight: 900;
 }
 
+.forecast-page .galaxy-action-node.critical-path {
+  border-color: #f59e0b;
+  border-top-color: #d97706;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18), 0 14px 28px rgba(146, 64, 14, 0.08);
+}
+
+.forecast-page .galaxy-action-node.critical-path span {
+  color: #92400e;
+}
+
+.forecast-page .galaxy-action-node.critical-path em {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid #f4c56e;
+  border-radius: 999px;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .forecast-page .galaxy-action-node.question {
   border-top-color: #38bdf8;
 }
@@ -702,7 +738,18 @@
   stroke-width: 2.2;
 }
 
+.forecast-page .galaxy-action-edge.critical-path path {
+  stroke: #d97706;
+  stroke-width: 3;
+}
+
+.forecast-page .galaxy-action-edge.critical-path text {
+  fill: #92400e;
+  font-weight: 900;
+}
+
 .forecast-page .galaxy-final-card,
+.forecast-page .numeric-forecast-card,
 .forecast-page .galaxy-action-inspector,
 .forecast-page .galaxy-action-timeline {
   display: grid;
@@ -725,6 +772,178 @@
   font-size: 0.73rem;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.forecast-page .numeric-forecast-answer {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.forecast-page .numeric-forecast-answer span {
+  color: #315b88;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.forecast-page .numeric-forecast-answer em {
+  width: fit-content;
+  padding: 3px 7px;
+  border: 1px solid #cfe0f5;
+  border-radius: 999px;
+  color: #1f4f86;
+  background: #ffffff;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.forecast-page .numeric-forecast-answer strong {
+  color: var(--blue);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.forecast-page .numeric-forecast-answer small {
+  color: #315b88;
+  font-size: 0.82rem;
+}
+
+.forecast-page .numeric-forecast-answer p,
+.forecast-page .numeric-forecast-card > p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.48;
+}
+
+.forecast-page .numeric-forecast-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.forecast-page .numeric-forecast-sparkline {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 128px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.forecast-page .numeric-forecast-sparkline text {
+  fill: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.forecast-page .numeric-forecast-sparkline .spark-date {
+  text-anchor: end;
+}
+
+.forecast-page .spark-grid {
+  stroke: #dbe7f5;
+  stroke-dasharray: 3 4;
+}
+
+.forecast-page .spark-line {
+  fill: none;
+  stroke: #0b66f6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.forecast-page .spark-dot {
+  fill: #93c5fd;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.forecast-page .spark-dot.latest {
+  fill: #0b66f6;
+}
+
+.forecast-page .spark-prediction-line {
+  stroke: #d97706;
+  stroke-dasharray: 4 4;
+  stroke-width: 1.7;
+}
+
+.forecast-page .spark-prediction-dot {
+  fill: #f59e0b;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.forecast-page .numeric-forecast-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.forecast-page .numeric-forecast-metrics span {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.forecast-page .numeric-forecast-metrics b {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.forecast-page .numeric-forecast-metrics strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.forecast-page .numeric-forecast-metrics small {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.forecast-page .numeric-forecast-metrics .up strong {
+  color: #b45309;
+}
+
+.forecast-page .numeric-forecast-metrics .down strong {
+  color: #0f766e;
+}
+
+.forecast-page .numeric-forecast-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.forecast-page .numeric-forecast-source span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #d8e6f7;
+  border-radius: 999px;
+  color: #315b88;
+  background: #f8fbff;
+  font-size: 0.72rem;
+  font-weight: 850;
 }
 
 .forecast-page .galaxy-final-answer strong {
@@ -867,6 +1086,52 @@
   gap: 10px;
 }
 
+.forecast-page .galaxy-critical-badge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.forecast-page .galaxy-critical-badge b {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.forecast-page .galaxy-critical-badge strong {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #475569;
+  background: #e2e8f0;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.forecast-page .galaxy-critical-badge small {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.forecast-page .galaxy-critical-badge.yes {
+  border-color: #f4c56e;
+  background: #fffbeb;
+}
+
+.forecast-page .galaxy-critical-badge.yes strong {
+  color: #ffffff;
+  background: #d97706;
+}
+
 .forecast-page .galaxy-inspector-body strong {
   color: var(--text);
   font-size: 1rem;
@@ -958,6 +1223,10 @@
 }
 
 .forecast-page .galaxy-raw-preview button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: fit-content;
   padding: 7px 10px;
   border: 1px solid #cfe0f5;
@@ -967,6 +1236,19 @@
   font-size: 0.75rem;
   font-weight: 900;
   cursor: pointer;
+}
+
+.forecast-page .galaxy-raw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.forecast-page .galaxy-raw-actions small {
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 850;
 }
 
 .forecast-page .galaxy-boxed-answer {
@@ -1021,6 +1303,10 @@
   .forecast-page .galaxy-view-mode {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .forecast-page .numeric-forecast-metrics {
+    grid-template-columns: 1fr;
   }
 
   .forecast-page .galaxy-action-graph-shell {

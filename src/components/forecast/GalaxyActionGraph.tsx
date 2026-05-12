@@ -45,6 +45,8 @@ interface GalaxyNodeData extends Record<string, unknown> {
   summary: string;
   status: string;
   selected: boolean;
+  criticalPath: boolean;
+  criticalReason?: string;
   toolName?: string;
   lane?: string;
 }
@@ -137,7 +139,7 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
   const Icon = iconFor(data.kind, data.toolName);
   return (
     <article
-      className={`galaxy-action-node ${actionTone(data.kind)} ${data.status} ${data.selected ? "selected" : ""}`}
+      className={`galaxy-action-node ${actionTone(data.kind)} ${data.status} ${data.criticalPath ? "critical-path" : ""} ${data.selected ? "selected" : ""}`}
       tabIndex={0}
     >
       <Handle className="graph-handle" type="target" position={Position.Left} />
@@ -146,6 +148,7 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
         {data.toolName ?? data.lane ?? data.kind}
       </span>
       <strong>{data.title}</strong>
+      {data.criticalPath ? <em>{data.criticalReason ?? "critical path"}</em> : null}
       <p>{data.summary}</p>
       <Handle className="graph-handle" type="source" position={Position.Right} />
     </article>
@@ -242,7 +245,7 @@ function storyActionIds(actions: GalaxyActionTraceItem[]) {
   const allById = actionById(actions);
   const ids = new Set<string>();
   for (const action of actions) {
-    if (action.kind === "question") addActionId(ids, action.actionId);
+    if (action.kind === "question" || action.criticalPath) addActionId(ids, action.actionId);
   }
 
   const openingTurn =
@@ -250,8 +253,13 @@ function storyActionIds(actions: GalaxyActionTraceItem[]) {
     actions.find((action) => action.kind === "assistant_note" || action.kind === "evidence_synthesis");
   addActionId(ids, openingTurn?.actionId);
 
-  for (const action of keyEvidenceActions(actions)) {
-    addSourcePair(ids, action, allById);
+  if (![...ids].some((id) => {
+    const action = allById.get(id);
+    return action?.kind === "tool_result" || action?.kind === "artifact_read";
+  })) {
+    for (const action of keyEvidenceActions(actions)) {
+      addSourcePair(ids, action, allById);
+    }
   }
 
   const finalSynthesis = [...actions].reverse().find((action) => action.kind === "evidence_synthesis");
@@ -366,6 +374,8 @@ function dagreLayout(
         summary: node.data.summary,
         status: node.data.current ? "running" : node.data.status,
         selected: selectedActionId === node.id,
+        criticalPath: Boolean(node.data.criticalPath ?? action?.criticalPath),
+        criticalReason: node.data.criticalReason ?? action?.criticalReason,
         toolName: node.data.toolName ?? action?.toolName,
         lane: nodeLaneLabel(node),
       },
@@ -380,7 +390,7 @@ function dagreLayout(
       type: edge.label === "returns" ? "step" : "smoothstep",
       animated: edge.label === "returns" || edge.label === "records" || edge.label === "persists",
       label: edge.label,
-      className: `galaxy-action-edge ${targetAction?.kind ?? edge.label}`,
+      className: `galaxy-action-edge ${edge.criticalPath ? "critical-path" : ""} ${targetAction?.kind ?? edge.label}`,
     };
   });
   return { nodes, edges };
@@ -413,6 +423,8 @@ function graphFromActions(actions: GalaxyActionTraceItem[], mode: GraphMode) {
       status: action.status,
       toolName: action.toolName,
       current: action.status === "running",
+      criticalPath: Boolean(action.criticalPath),
+      criticalReason: action.criticalReason,
     },
   }));
   const edges: GraphEdgeInput[] = [];
@@ -422,6 +434,7 @@ function graphFromActions(actions: GalaxyActionTraceItem[], mode: GraphMode) {
         id: `${parent}->${action.actionId}`,
         source: parent,
         target: action.actionId,
+        criticalPath: Boolean(action.criticalPath && allById.get(parent)?.criticalPath),
         label:
           action.kind === "tool_result" || action.kind === "artifact_read"
             ? "returns"

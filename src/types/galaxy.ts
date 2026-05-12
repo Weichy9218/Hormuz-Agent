@@ -14,9 +14,24 @@ export interface GalaxyQuestionRow {
   task_description: string;
   metadata?: {
     case_id?: "hormuz";
+    question_kind?: "brent_weekly_high" | "hormuz_traffic_risk";
+    target_series_id?: "DCOILBRENTEU";
     generated_for_date?: string;
     timezone?: string;
-    horizon?: "7d";
+    horizon?: "7d" | "this_week";
+    target?: "brent";
+    target_series?: "DCOILBRENTEU";
+    unit?: "USD/bbl";
+    resolution_window?: "weekly" | {
+      start_date: string;
+      end_date: string;
+      timezone: string;
+    };
+    resolution_window_detail?: {
+      start_date: string;
+      end_date: string;
+      timezone: string;
+    };
     scenario_options?: Record<string, string>;
     source_boundary?: string[];
   };
@@ -39,6 +54,7 @@ export interface GalaxyRunMeta {
   startedAt?: string;
   completedAt?: string;
   command?: string[];
+  demo?: boolean;
   finalPrediction?: string;
   confidence?: "low" | "med" | "medium" | "high";
   durationSeconds?: number;
@@ -95,6 +111,8 @@ export interface GalaxyActionTraceItem {
   };
   evidenceRole?: "question_audit" | "source_search" | "source_read" | "evidence_extract" | "forecast_record";
   rawRole?: "user" | "assistant" | "tool" | "system";
+  criticalPath?: boolean;
+  criticalReason?: string;
   rawPreview?: {
     kind: "question" | "user" | "assistant" | "tool_call" | "tool_result" | "record_forecast" | "checkpoint";
     title: string;

@@ -91,6 +91,8 @@ export interface ForecastAgentGraphNode {
     status: string;
     toolName?: string;
     current?: boolean;
+    criticalPath?: boolean;
+    criticalReason?: string;
   };
 }
 
@@ -99,6 +101,7 @@ export interface ForecastAgentGraphEdge {
   source: string;
   target: string;
   label: string;
+  criticalPath?: boolean;
 }
 
 export interface ForecastAgentTrace {

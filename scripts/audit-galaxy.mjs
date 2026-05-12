@@ -17,6 +17,42 @@ const questionRows = (await readFile(questionPath, "utf8"))
   .map((line) => JSON.parse(line));
 const artifact = JSON.parse(await readFile(artifactPath, "utf8"));
 const violations = [];
+const isDemoArtifact = artifact.runMeta?.demo === true;
+const rawPreviewLeakPattern =
+  /"role"\s*:\s*"system"|# Role|Working rhythm|chain-of-thought|system prompt|internal prompt/i;
+
+function storyActionIdsForAudit(actions) {
+  const ids = new Set();
+  for (const action of actions) {
+    if (action.kind === "question" || action.criticalPath || action.kind === "final_forecast" || action.kind === "checkpoint") {
+      ids.add(action.actionId);
+    }
+  }
+  const hasEvidenceSource = actions.some(
+    (action) => ids.has(action.actionId) && (action.kind === "tool_result" || action.kind === "artifact_read"),
+  );
+  if (!hasEvidenceSource) {
+    for (const action of [...actions].reverse()) {
+      if (
+        action.toolName !== "record_forecast" &&
+        (action.kind === "tool_result" || action.kind === "artifact_read" || action.kind === "tool_call")
+      ) {
+        ids.add(action.actionId);
+      }
+      if (ids.size >= 8) break;
+    }
+  }
+  return ids;
+}
+
+function parseFinalPrediction(artifact, recordForecast) {
+  return Number.parseFloat(String(
+    artifact.runMeta?.finalPrediction ??
+    recordForecast?.forecastPayload?.prediction ??
+    artifact.finalForecast?.prediction ??
+    "",
+  ).replace(/[^\d.-]/g, ""));
+}
 
 if (questionRows.length !== 1) {
   violations.push(`daily question file must contain exactly one row, found ${questionRows.length}`);
@@ -24,14 +60,39 @@ if (questionRows.length !== 1) {
 const question = questionRows[0];
 const questionKind = question?.metadata?.question_kind || "hormuz_traffic_risk";
 const isBrentWeeklyHigh = questionKind === "brent_weekly_high";
-if (!/^hormuz-(traffic-risk|brent-weekly-high)-\d{4}-\d{2}-\d{2}$/.test(question?.task_id ?? "")) {
-  violations.push("question.task_id must use hormuz-traffic-risk-<date> or hormuz-brent-weekly-high-<date>");
+const validTaskId = isDemoArtifact
+  ? question?.task_id === "hormuz-brent-weekly-high-demo"
+  : /^hormuz-(traffic-risk|brent-weekly-high)-\d{4}-\d{2}-\d{2}$/.test(question?.task_id ?? "");
+if (!validTaskId) {
+  violations.push("question.task_id must use a dated Hormuz task id, except explicit hormuz-brent-weekly-high-demo fixtures");
 }
 if (!question?.task_question?.includes(isBrentWeeklyHigh ? "\\boxed{number}" : "\\boxed{letter}")) {
   violations.push("question must preserve boxed final answer format");
 }
-if (isBrentWeeklyHigh && question?.metadata?.target_series !== "DCOILBRENTEU") {
-  violations.push("Brent weekly-high question must declare FRED DCOILBRENTEU as target_series");
+if (
+  isBrentWeeklyHigh &&
+  question?.metadata?.target_series !== "DCOILBRENTEU" &&
+  question?.metadata?.target_series_id !== "DCOILBRENTEU"
+) {
+  violations.push("Brent weekly-high question must declare FRED DCOILBRENTEU as target_series or target_series_id");
+}
+if (isBrentWeeklyHigh) {
+  if (question?.metadata?.target !== "brent") {
+    violations.push("Brent weekly-high question must declare metadata.target = brent");
+  }
+  if (question?.metadata?.unit !== "USD/bbl") {
+    violations.push("Brent weekly-high question must declare metadata.unit = USD/bbl");
+  }
+  const window =
+    typeof question?.metadata?.resolution_window === "object"
+      ? question.metadata.resolution_window
+      : question?.metadata?.resolution_window_detail;
+  if (!isDemoArtifact && (!window?.start_date || !window?.end_date || !window?.timezone)) {
+    violations.push("Brent weekly-high question must declare resolution_window start_date/end_date/timezone");
+  }
+  if (isDemoArtifact && question?.metadata?.resolution_window !== "weekly") {
+    violations.push("demo Brent weekly-high question must declare metadata.resolution_window = weekly");
+  }
 }
 if (!question?.task_description?.includes("Market data is evidence input only")) {
   violations.push("question description must state market-data boundary");
@@ -58,14 +119,15 @@ if (!artifact.runMeta?.runDir) {
   }
 }
 if (artifact.runMeta?.status === "success") {
-  if (!artifact.runMeta?.venvPath?.endsWith("galaxy-selfevolve/.venv")) {
+  if (!isDemoArtifact && !artifact.runMeta?.venvPath?.endsWith("galaxy-selfevolve/.venv")) {
     violations.push("successful runMeta must record the reused galaxy-selfevolve/.venv path");
   }
-  if (!artifact.runMeta?.pythonPath?.endsWith("galaxy-selfevolve/.venv/bin/python")) {
+  if (!isDemoArtifact && !artifact.runMeta?.pythonPath?.endsWith("galaxy-selfevolve/.venv/bin/python")) {
     violations.push("successful runMeta must execute through galaxy-selfevolve/.venv/bin/python");
   }
   const commandHead = artifact.runMeta?.command?.[0] ?? "";
-  if (!commandHead.endsWith("galaxy-selfevolve/.venv/bin/python")) {
+  const validDemoCommand = isDemoArtifact && artifact.runMeta?.command?.join(" ") === "node scripts/build-demo-artifact.mjs --demo";
+  if (!validDemoCommand && !commandHead.endsWith("galaxy-selfevolve/.venv/bin/python")) {
     violations.push("successful runMeta.command must start with the reused .venv python");
   }
 }
@@ -89,6 +151,9 @@ if (!artifact.actionTrace || !Array.isArray(artifact.actionTrace.actions)) {
     if (!action.kind || !action.title || !action.summary) {
       violations.push(`${action.actionId}: action must include kind/title/summary`);
     }
+    if (action.rawPreview?.text && rawPreviewLeakPattern.test(action.rawPreview.text)) {
+      violations.push(`${action.actionId}: rawPreview must not expose system/internal prompt content`);
+    }
   }
   if (!artifact.actionTrace.actions.some((action) => action.kind === "tool_call")) {
     violations.push("actionTrace must include tool_call actions");
@@ -104,6 +169,17 @@ if (!artifact.actionTrace || !Array.isArray(artifact.actionTrace.actions)) {
   }
   if (artifact.actionTrace.actions.some((action) => Object.hasOwn(action, "hiddenReason"))) {
     violations.push("actionTrace must not include hiddenReason fields");
+  }
+  const recordForecast = artifact.actionTrace.actions.find(
+    (action) => action.kind === "final_forecast" && action.toolName === "record_forecast",
+  );
+  if (!recordForecast) {
+    violations.push("Story/action trace must include record_forecast final_forecast action");
+  } else if (!storyActionIdsForAudit(artifact.actionTrace.actions).has(recordForecast.actionId)) {
+    violations.push("Story view selection must retain the record_forecast node");
+  }
+  if (isBrentWeeklyHigh && !Number.isFinite(parseFinalPrediction(artifact, recordForecast))) {
+    violations.push("Brent weekly-high final prediction must parse as a finite number");
   }
   const graph = artifact.actionTrace.graph;
   if (!graph || !Array.isArray(graph.nodes) || graph.nodes.length === 0) {

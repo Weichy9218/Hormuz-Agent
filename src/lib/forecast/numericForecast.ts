@@ -1,0 +1,12 @@
+// Numeric forecast helpers shared by the Forecast page and cards.
+import type { GalaxyQuestionRow } from "../../types/galaxy";
+
+export function parseForecastNumber(value: unknown) {
+  const parsed = Number.parseFloat(String(value ?? "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function isNumericForecastQuestion(question?: GalaxyQuestionRow | null, prediction?: unknown) {
+  return question?.metadata?.question_kind === "brent_weekly_high" ||
+    (question?.metadata?.target_series === "DCOILBRENTEU" && parseForecastNumber(prediction) != null);
+}

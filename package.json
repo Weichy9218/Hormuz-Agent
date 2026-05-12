@@ -16,6 +16,7 @@
     "build:evidence": "node scripts/build-local-evidence.mjs",
     "build:generated": "node scripts/build-generated.mjs",
     "build:data": "npm run fetch:p0 && npm run curate:events && (npm run curate:polymarket || echo '[WARN] polymarket fetch failed, using seed') && npm run build:evidence && npm run build:generated",
+    "demo:artifact": "node scripts/build-demo-artifact.mjs",
     "galaxy:hormuz": "node scripts/run-galaxy-hormuz.mjs",
     "galaxy:hormuz:run": "node scripts/run-galaxy-hormuz.mjs --execute",
     "forecast-agent:run": "node scripts/forecast-agent/runner.mjs",
