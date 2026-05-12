@@ -60,6 +60,7 @@ const gdeltOnly = args.has("--gdelt-only");
 const paths = {
   advisories: resolve(root, "data", "normalized", "maritime", "advisories.jsonl"),
   candidates: resolve(root, "data", "events", "events_candidates.jsonl"),
+  historySeed: resolve(root, "data", "events", "history_seed.jsonl"),
   timeline: resolve(root, "data", "events", "events_timeline.jsonl"),
   registry: resolve(root, "data", "registry", "sources.json"),
 };
@@ -147,8 +148,27 @@ function mirrorEventId(advisory) {
   return `evt-advisory-${slugify(advisory.advisory_id, "advisory")}`;
 }
 
+function inferAdvisoryDate(advisory_id) {
+  const m = String(advisory_id ?? "").match(/marad-(\d{4})-(\d{1,3})/);
+  if (!m) return null;
+  const year = parseInt(m[1]);
+  const seq = parseInt(m[2]);
+  const month = seq <= 3 ? "02" : seq <= 6 ? "05" : seq <= 9 ? "08" : "11";
+  return `${year}-${month}-01T00:00:00Z`;
+}
+
 function advisoryEventAt(advisory) {
-  return advisory.published_at ?? advisory.effective_from ?? advisory.retrieved_at ?? RETRIEVED_AT;
+  return (
+    advisory.published_at ??
+    advisory.effective_from ??
+    inferAdvisoryDate(advisory.advisory_id) ??
+    advisory.retrieved_at ??
+    RETRIEVED_AT
+  );
+}
+
+function shouldMirrorAdvisory(advisory) {
+  return advisory.event_type !== "source_snapshot";
 }
 
 function mirrorAdvisoryToEvent(advisory) {
@@ -180,23 +200,55 @@ function mirrorAdvisoryToEvent(advisory) {
 
 async function mirrorAdvisories() {
   const advisories = await readJsonLines(paths.advisories);
-  const timeline = await readJsonLines(paths.timeline);
-  const byAdvisoryId = new Set(
-    timeline.flatMap((event) => event.related_advisory_ids ?? []),
+  const mirrorableAdvisoryIds = new Set(
+    advisories.filter(shouldMirrorAdvisory).map((advisory) => advisory.advisory_id),
+  );
+  const timeline = (await readJsonLines(paths.timeline)).filter((event) => {
+    if (event.source_id !== "official-advisory") return true;
+    const advisoryIds = event.related_advisory_ids ?? [];
+    return advisoryIds.length === 0 || advisoryIds.some((advisoryId) => mirrorableAdvisoryIds.has(advisoryId));
+  });
+  const byAdvisoryId = new Map(
+    timeline.flatMap((event) => (event.related_advisory_ids ?? []).map((advisoryId) => [advisoryId, event])),
   );
   const byEventId = new Set(timeline.map((event) => event.event_id));
   let added = 0;
+  let updated = 0;
+  let historyAdded = 0;
   for (const advisory of advisories) {
-    if (!advisory.advisory_id || byAdvisoryId.has(advisory.advisory_id)) continue;
+    if (!shouldMirrorAdvisory(advisory)) continue;
+    if (!advisory.advisory_id) continue;
     const event = mirrorAdvisoryToEvent(advisory);
+    const existing = byAdvisoryId.get(advisory.advisory_id);
+    if (existing) {
+      if (existing.source_id === "official-advisory" && existing.event_at !== event.event_at) {
+        existing.event_at = event.event_at;
+        updated += 1;
+      }
+      continue;
+    }
     if (byEventId.has(event.event_id)) continue;
     timeline.push(event);
-    byAdvisoryId.add(advisory.advisory_id);
+    byAdvisoryId.set(advisory.advisory_id, event);
     byEventId.add(event.event_id);
     added += 1;
   }
+  historyAdded = await mergeHistorySeed(timeline);
   timeline.sort((a, b) => String(b.event_at).localeCompare(String(a.event_at)));
   await writeJsonLines(paths.timeline, timeline);
+  return { added, updated, historyAdded };
+}
+
+async function mergeHistorySeed(timeline) {
+  const historySeed = await readJsonLines(paths.historySeed);
+  const existingIds = new Set(timeline.map((event) => event.event_id));
+  let added = 0;
+  for (const entry of historySeed) {
+    if (existingIds.has(entry.event_id)) continue;
+    timeline.push(entry);
+    existingIds.add(entry.event_id);
+    added += 1;
+  }
   return added;
 }
 
@@ -445,7 +497,7 @@ async function promoteCandidates({ candidates, mode }) {
 }
 
 async function main() {
-  let mirrored = 0;
+  let mirrored = { added: 0, updated: 0, historyAdded: 0 };
   if (!gdeltOnly) {
     mirrored = await mirrorAdvisories();
   }
@@ -473,7 +525,9 @@ async function main() {
   await updateSourceStatus("gdelt-news", status);
 
   console.log(
-    `curate:events mirrored=${mirrored} gdelt_success=${successes.length}/${GDELT_QUERIES.length} ` +
+    `curate:events mirrored=${mirrored.added} mirror_updated=${mirrored.updated} ` +
+      `history_seed=${mirrored.historyAdded} ` +
+      `gdelt_success=${successes.length}/${GDELT_QUERIES.length} ` +
       `candidate_added=${added} candidate_updated=${updated} promoted=${promoted} gdelt_status=${status}`,
   );
 

@@ -1,6 +1,6 @@
 {
-  "built_at": "2026-05-12T16:48:32.108Z",
-  "data_as_of": "2026-05-12T15:33:10.060Z",
+  "built_at": "2026-05-12T19:57:48.357Z",
+  "data_as_of": "2026-05-13T00:00:00Z",
   "baseline": [
     {
       "fact_id": "oil-flow",
@@ -59,86 +59,93 @@
       "caveat": "结构性 LNG relevance；不是 live cargo count。"
     }
   ],
-  "current_severity": "routine",
+  "current_severity": "severe",
   "latest_events": [
     {
-      "event_id": "evt-advisory-ukmto-recent-incidents",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "Recent Incidents",
-      "description": "UKMTO advisory snapshot for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea. Entry is mirrored from the official advisory index for background timeline context only.",
-      "source_type": "official",
-      "source_id": "official-advisory",
-      "source_name": "UKMTO",
-      "source_url": "https://www.ukmto.org/recent-incidents",
-      "retrieved_at": "2026-05-12T13:26:30.360Z",
-      "raw_path": "data/raw/advisories/ukmto/recent-incidents/2026-05-12T13-26-30-360Z-index.html",
-      "source_hash": "sha256:0f120e99bdef602253ed6752bb00a68323203ce2e170cc7df50709b42bdc7104",
-      "severity_hint": "routine",
+      "event_id": "evt-history-us-disables-iranian-tankers-2026",
+      "event_at": "2026-05-08T00:00:00Z",
+      "title": "US disables two Iranian tankers in Strait of Hormuz",
+      "description": "AP reported that US forces fired on and disabled two Iranian oil tankers after exchanging fire with Iranian forces in the Strait of Hormuz overnight.",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://apnews.com/article/6490db55a65880a61a6233eff7acc68b",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
       "geography": [
         "Strait of Hormuz",
-        "Persian Gulf",
-        "Gulf of Oman",
-        "Arabian Sea"
+        "Persian Gulf"
       ],
-      "cross_check_source_urls": [],
-      "related_advisory_ids": [
-        "ukmto-recent-incidents"
+      "cross_check_source_urls": [
+        "https://apnews.com/article/0c25b2ca53ee90bc19bfbf6c44a66e6e"
       ],
+      "related_advisory_ids": [],
       "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
         "traffic"
       ],
       "tags": [
-        "advisory",
-        "ukmto"
+        "us-iran",
+        "tankers",
+        "naval",
+        "hormuz"
       ],
-      "curated_by": "curate-events.mjs",
-      "curated_at": "2026-05-12T15:01:00.351Z"
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
     },
     {
-      "event_id": "evt-advisory-marad-msci-alerts",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "USA Banner",
+      "event_id": "evt-history-us-intercepts-iranian-attacks-ships-2026",
+      "event_at": "2026-05-07T00:00:00Z",
+      "title": "US says it intercepted Iranian attacks on Navy ships in Hormuz",
+      "description": "AP reported that the US military said it intercepted Iranian attacks on three Navy ships in the Strait of Hormuz and struck Iranian military facilities tied to attacks on US forces.",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://apnews.com/article/fdc6d2ae9396377919c967746fa9996b",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Bandar Abbas",
+        "Iran"
+      ],
+      "cross_check_source_urls": [
+        "https://apnews.com/article/73fd3ca47f6c19a736993b45310afcac"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "traffic"
+      ],
+      "tags": [
+        "us-iran",
+        "naval",
+        "attack",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-advisory-marad-2026-006-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-and-somali-bas",
+      "event_at": "2026-05-01T00:00:00Z",
+      "title": "2026-006-Red Sea, Bab el Mandeb Strait, Gulf of Aden, Arabian Sea, and Somali...",
       "description": "MARAD advisory snapshot for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea. Entry is mirrored from the official advisory index for background timeline context only.",
       "source_type": "official",
       "source_id": "official-advisory",
       "source_name": "MARAD",
-      "source_url": "https://www.maritime.dot.gov/msci-alerts",
+      "source_url": "https://www.maritime.dot.gov/msci/2026-006-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-and-somali-basin-houthi-attacks",
       "retrieved_at": "2026-05-12T13:26:30.360Z",
-      "raw_path": "data/raw/advisories/marad/alerts/2026-05-12T13-26-30-360Z-index.html",
-      "source_hash": "sha256:2c8b1388727b616e5a15682c35ccbcea99a67362f745ae2521908facb796b30c",
-      "severity_hint": "routine",
-      "geography": [
-        "Strait of Hormuz",
-        "Persian Gulf",
-        "Gulf of Oman",
-        "Arabian Sea"
-      ],
-      "cross_check_source_urls": [],
-      "related_advisory_ids": [
-        "marad-msci-alerts"
-      ],
-      "related_market_targets": [
-        "traffic"
-      ],
-      "tags": [
-        "advisory",
-        "marad"
-      ],
-      "curated_by": "curate-events.mjs",
-      "curated_at": "2026-05-12T15:01:00.351Z"
-    },
-    {
-      "event_id": "evt-advisory-marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-o",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2026-0001B-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Mili...",
-      "description": "MARAD advisory snapshot for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea. Entry is mirrored from the official advisory index for background timeline context only.",
-      "source_type": "official",
-      "source_id": "official-advisory",
-      "source_name": "MARAD",
-      "source_url": "https://www.maritime.dot.gov/msci/2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
-      "retrieved_at": "2026-05-12T13:26:30.360Z",
-      "raw_path": "data/raw/advisories/marad/alerts/2026-05-12T13-26-30-360Z-marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and.html",
-      "source_hash": "sha256:7eb9c6a1483a7b85ec94fe2d8cba3ebc2313ed4f387f1f0fa2896e7088d11600",
+      "raw_path": "data/raw/advisories/marad/advisories/2026-05-12T13-26-30-360Z-marad-2026-006-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-and-somali-basin-houthi-attacks.html",
+      "source_hash": "sha256:aab06126cb808761ea140e08c6d2d869809aa756b24f0d11bc0d0003da58bd9a",
       "severity_hint": "elevated",
       "geography": [
         "Strait of Hormuz",
@@ -148,7 +155,7 @@
       ],
       "cross_check_source_urls": [],
       "related_advisory_ids": [
-        "marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and"
+        "marad-2026-006-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-and-somali-basin-houthi-attacks"
       ],
       "related_market_targets": [
         "traffic"
@@ -227,7 +234,7 @@
       "value": null,
       "unit": "USD/oz",
       "source_id": "gold-pending",
-      "retrieved_at": "2026-05-12T16:48:32.108Z",
+      "retrieved_at": "2026-05-12T19:57:48.357Z",
       "status": "pending_source",
       "caveat": "Pending stable daily source."
     },
@@ -237,7 +244,7 @@
       "value": null,
       "unit": "CNH per USD",
       "source_id": "usdcnh-pending",
-      "retrieved_at": "2026-05-12T16:48:32.108Z",
+      "retrieved_at": "2026-05-12T19:57:48.357Z",
       "status": "pending_source",
       "caveat": "Pending offshore CNH source."
     }

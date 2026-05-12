@@ -1,6 +1,6 @@
 {
-  "built_at": "2026-05-12T19:14:55.368Z",
-  "data_as_of": "2026-05-12T15:33:10.060Z",
+  "built_at": "2026-05-12T19:57:48.357Z",
+  "data_as_of": "2026-05-13T00:00:00Z",
   "series": [
     {
       "id": "portwatch-daily-transit-calls-all",
@@ -12042,116 +12042,32 @@
   ],
   "event_overlays": [
     {
-      "event_id": "evt-advisory-ukmto-recent-incidents",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "Recent Incidents",
-      "severity_hint": "routine",
+      "event_id": "evt-history-us-disables-iranian-tankers-2026",
+      "event_at": "2026-05-08T00:00:00Z",
+      "title": "US disables two Iranian tankers in Strait of Hormuz",
+      "severity_hint": "severe",
       "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
         "traffic"
       ]
     },
     {
-      "event_id": "evt-advisory-marad-msci-alerts",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "USA Banner",
-      "severity_hint": "routine",
+      "event_id": "evt-history-us-intercepts-iranian-attacks-ships-2026",
+      "event_at": "2026-05-07T00:00:00Z",
+      "title": "US says it intercepted Iranian attacks on Navy ships in Hormuz",
+      "severity_hint": "severe",
       "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-o",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2026-0001B-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Mili...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-op",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2026-001A-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Milit...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2025-003a-arabian-gulf-strait-hormuz-gulf-oman-and-arabian-sea-retaliatory",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2025-003A-Arabian Gulf, Strait of Hormuz, Gulf of Oman, and Arabian Sea-Retal...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2025-002a-strait-hormuz-arabian-gulf-gulf-oman-and-arabian-sea-potential-r",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2025-002A-Strait of Hormuz, Arabian Gulf, Gulf of Oman, and Arabian Sea-Poten...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2025-001a-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-persian-gulf-",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2025-001A-Red Sea, Bab el Mandeb Strait, Gulf of Aden, Arabian Sea, Persian G...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2024-001b-red-sea-and-gulf-aden-potential-retaliatory-attacks-houthi-force",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2024-001B-Red Sea and Gulf of Aden-Potential Retaliatory Attacks by Houthi Fo...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2024-001a-red-sea-and-gulf-aden-potential-retaliatory-attacks-houthi-force",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2024-001A-Red Sea and Gulf of Aden-Potential Retaliatory Attacks by Houthi Fo...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2023-008a-arabian-sea-boarding-sea",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2023-008A-Arabian Sea-Boarding at Sea",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2023-007a-southern-red-sea-multiple",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2023-007A-Southern Red Sea-Multiple",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-msci-advisories",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "USA Banner",
-      "severity_hint": "routine",
-      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
         "traffic"
       ]
     },
     {
       "event_id": "evt-advisory-marad-2026-006-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-and-somali-bas",
-      "event_at": "2026-05-12T13:26:30.360Z",
+      "event_at": "2026-05-01T00:00:00Z",
       "title": "2026-006-Red Sea, Bab el Mandeb Strait, Gulf of Aden, Arabian Sea, and Somali...",
       "severity_hint": "elevated",
       "related_market_targets": [
@@ -12160,7 +12076,7 @@
     },
     {
       "event_id": "evt-advisory-marad-2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commerci",
-      "event_at": "2026-05-12T13:26:30.360Z",
+      "event_at": "2026-05-01T00:00:00Z",
       "title": "2026-004-Persian Gulf, Strait of Hormuz, and Gulf of Oman-Iranian Attacks on ...",
       "severity_hint": "elevated",
       "related_market_targets": [
@@ -12168,8 +12084,63 @@
       ]
     },
     {
+      "event_id": "evt-history-persian-gulf-seafarers-stranded-2026",
+      "event_at": "2026-04-27T00:00:00Z",
+      "title": "AP reports thousands of seafarers stranded by Hormuz shutdown",
+      "severity_hint": "severe",
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ]
+    },
+    {
+      "event_id": "evt-history-us-iran-blockade-expanded-2026",
+      "event_at": "2026-04-16T00:00:00Z",
+      "title": "US expands Iran-linked maritime blockade beyond Hormuz",
+      "severity_hint": "severe",
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "broad_usd",
+        "traffic"
+      ]
+    },
+    {
+      "event_id": "evt-history-iran-claims-hormuz-shut-2026",
+      "event_at": "2026-02-28T00:00:00Z",
+      "title": "Iran-linked report says Strait of Hormuz is shut down",
+      "severity_hint": "severe",
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "broad_usd",
+        "traffic"
+      ]
+    },
+    {
+      "event_id": "evt-advisory-marad-2026-0001b-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-o",
+      "event_at": "2026-02-01T00:00:00Z",
+      "title": "2026-0001B-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Mili...",
+      "severity_hint": "elevated",
+      "related_market_targets": [
+        "traffic"
+      ]
+    },
+    {
+      "event_id": "evt-advisory-marad-2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-op",
+      "event_at": "2026-02-01T00:00:00Z",
+      "title": "2026-001A-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Milit...",
+      "severity_hint": "elevated",
+      "related_market_targets": [
+        "traffic"
+      ]
+    },
+    {
       "event_id": "evt-advisory-marad-2026-002-gulf-aden-arabian-sea-indian-ocean-piracyarmed-robberykidnapping-",
-      "event_at": "2026-05-12T13:26:30.360Z",
+      "event_at": "2026-02-01T00:00:00Z",
       "title": "2026-002-Gulf of Aden, Arabian Sea, Indian Ocean-Piracy/Armed Robbery/Kidnapp...",
       "severity_hint": "elevated",
       "related_market_targets": [
@@ -12178,7 +12149,7 @@
     },
     {
       "event_id": "evt-advisory-marad-2025-012-red-sea-bab-el-mandeb-strait-gulf-aden-arabian-sea-persian-gulf-a",
-      "event_at": "2026-05-12T13:26:30.360Z",
+      "event_at": "2025-11-01T00:00:00Z",
       "title": "2025-012-Red Sea, Bab el Mandeb Strait, Gulf of Aden, Arabian Sea, Persian Gu...",
       "severity_hint": "elevated",
       "related_market_targets": [
@@ -12187,7 +12158,7 @@
     },
     {
       "event_id": "evt-advisory-marad-2025-010-gulf-aden-arabian-sea-indian-ocean-piracyarmed-robberykidnapping-",
-      "event_at": "2026-05-12T13:26:30.360Z",
+      "event_at": "2025-11-01T00:00:00Z",
       "title": "2025-010-Gulf of Aden, Arabian Sea, Indian Ocean-Piracy/Armed Robbery/Kidnapp...",
       "severity_hint": "elevated",
       "related_market_targets": [
@@ -12196,36 +12167,9 @@
     },
     {
       "event_id": "evt-advisory-marad-2025-009-strait-hormuz-and-gulf-oman-iranian-illegal-boarding-detention-se",
-      "event_at": "2026-05-12T13:26:30.360Z",
+      "event_at": "2025-08-01T00:00:00Z",
       "title": "2025-009-Strait of Hormuz and Gulf of Oman-Iranian Illegal Boarding / Detenti...",
       "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2025-003-gulf-aden-arabian-sea-indian-ocean-piracyarmed-robberykidnapping-",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2025-003-Gulf of Aden, Arabian Sea, Indian Ocean-Piracy/Armed Robbery/Kidnapp...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-marad-2025-002-strait-hormuz-and-gulf-oman-iranian-illegal-boarding-detention-se",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "2025-002-Strait of Hormuz, and Gulf of Oman-Iranian Illegal Boarding / Detent...",
-      "severity_hint": "elevated",
-      "related_market_targets": [
-        "traffic"
-      ]
-    },
-    {
-      "event_id": "evt-advisory-imo-strait-of-hormuz-middle-east-data-aspx",
-      "event_at": "2026-05-12T13:26:30.360Z",
-      "title": "Monthly data on transits of ships through the Strait of Hormuz",
-      "severity_hint": "routine",
       "related_market_targets": [
         "traffic"
       ]
