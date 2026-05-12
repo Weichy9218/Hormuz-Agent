@@ -84,6 +84,8 @@ interface ResearchStreamProps {
   sourceRegistry: SourceRegistryEntry[];
   scenarioLabels: Record<ScenarioId, string>;
   highlightedEventId?: string | null;
+  selectedEventId?: string | null;
+  onSelectEventId?: (eventId: string) => void;
 }
 
 export function ResearchStream({
@@ -93,6 +95,8 @@ export function ResearchStream({
   sourceRegistry,
   scenarioLabels,
   highlightedEventId = null,
+  selectedEventId = null,
+  onSelectEventId,
 }: ResearchStreamProps) {
   const visibleEvents = events.slice(0, visibleCount);
 
@@ -114,11 +118,23 @@ export function ResearchStream({
       {visibleEvents.map((event, index) => {
         const active = isRunning && index === visibleEvents.length - 1;
         const done = !active;
-        const highlighted = highlightedEventId === event.eventId;
+        const highlighted =
+          highlightedEventId === event.eventId || selectedEventId === event.eventId;
         return (
           <article
             className={`${event.type} ${active ? "active" : ""} ${done ? "done" : ""} ${highlighted ? "highlighted" : ""}`}
             key={event.eventId}
+            role="button"
+            tabIndex={0}
+            aria-pressed={highlighted}
+            aria-label={`Select ${event.type} event ${event.eventId}: ${event.title}`}
+            onClick={() => onSelectEventId?.(event.eventId)}
+            onKeyDown={(keyboardEvent) => {
+              if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+                keyboardEvent.preventDefault();
+                onSelectEventId?.(event.eventId);
+              }
+            }}
           >
             <span className="stream-step">
               {done ? <CheckCircle2 size={16} /> : index + 1}
@@ -127,6 +143,9 @@ export function ResearchStream({
               <div className="stream-title-row">
                 <span>{eventTypeLabel[event.type]} · {event.at}</span>
                 <strong>{event.title}</strong>
+                <em className="stream-select-hint">
+                  {highlighted ? "selected" : "select"}
+                </em>
               </div>
               <p>{eventSummary(event)}</p>
               <AgentEventDetails
@@ -237,8 +256,8 @@ function AgentEventDetails({
           <div className="stream-detail-block sensitivity">
             <span>Sensitivity</span>
             <div className="stream-chips">
-              {event.sensitivity.map((s) => (
-                <span key={s.sensitivityId} title={s.statement}>
+              {event.sensitivity.map((s, index) => (
+                <span key={`${s.sensitivityId}-${String(s.target)}-${index}`} title={s.statement}>
                   {s.expectedFailureMode} · {s.target === "scenario" ? "情景" : targetLabel[s.target]}
                 </span>
               ))}

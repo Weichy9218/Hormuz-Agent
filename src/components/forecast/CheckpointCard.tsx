@@ -52,8 +52,10 @@ export function CheckpointCard({ checkpoint }: { checkpoint: ForecastCheckpoint 
             {checkpoint.deltaAttribution.length === 0 ? (
               <li>(没有记录 attribution)</li>
             ) : (
-              checkpoint.deltaAttribution.map((a) => (
-                <li key={`${String(a.target)}-${a.contributingEvidenceIds.join(",")}`}>
+              checkpoint.deltaAttribution.map((a, index) => (
+                <li
+                  key={`${String(a.target)}-${a.magnitudeLabel ?? index}-${a.contributingEvidenceIds.join(",")}`}
+                >
                   <b>{a.target === "scenario" ? "情景" : targetLabel[a.target]}</b>{" "}
                   {directionLabel[a.direction]} · evidence{" "}
                   {a.contributingEvidenceIds.join(", ") || "—"} · mechanisms{" "}

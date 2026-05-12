@@ -1,0 +1,420 @@
+/* Product page refinements for reviewer scanning across Overview, Market, and News. */
+.overview-page,
+.market-page,
+.news-page {
+  --product-hairline: #d8e4f2;
+  --product-soft-blue: #f2f7ff;
+  --product-cold-blue: #e7f1ff;
+  --product-note: #475569;
+}
+
+.overview-page .console-card,
+.market-page .console-card,
+.news-page .console-card {
+  scroll-margin-top: 96px;
+}
+
+.overview-page .info-title h2,
+.market-page .info-title h2,
+.news-page .info-title h2 {
+  letter-spacing: 0;
+}
+
+.overview-page .update-brief-card,
+.market-page .market-signal-board,
+.news-page .news-hero-card {
+  border-color: #c9dcf4;
+}
+
+.overview-page .update-brief-card > p,
+.market-page .market-window-note,
+.news-page .news-hero-card p,
+.news-page .news-bridge-note {
+  color: var(--product-note);
+  text-wrap: pretty;
+}
+
+.overview-page {
+  grid-template-columns: 1fr;
+  padding-bottom: 16px;
+}
+
+.overview-main-layout {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.34fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.overview-left-column {
+  display: grid;
+  gap: 22px;
+}
+
+.overview-top-row {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
+  gap: 22px;
+}
+
+.overview-brief-card {
+  gap: 16px;
+  min-height: 0;
+  padding: 20px;
+}
+
+.overview-brief-card .update-brief-headline strong {
+  font-size: clamp(2.2rem, 3.6vw, 4.1rem);
+}
+
+.overview-brief-card > p {
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.overview-brief-meta,
+.checkpoint-state-chip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.overview-brief-meta span,
+.checkpoint-state-chip {
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid #d2e2f6;
+  border-radius: 7px;
+  color: var(--soft);
+  background: #fbfdff;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.overview-scenario-card {
+  min-height: 0;
+}
+
+.overview-scenario-card .scenario-rail {
+  margin-top: 18px;
+  padding-top: 26px;
+}
+
+.overview-scenario-card .scenario-tick {
+  min-height: 116px;
+  padding: 13px;
+}
+
+.overview-scenario-card .scenario-tick b {
+  font-size: 1.55rem;
+}
+
+.overview-scenario-card .scenario-tick i {
+  width: 22px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.overview-side-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.overview-decision-card {
+  min-height: 0;
+}
+
+.overview-decision-card li,
+.overview-signal-row p,
+.overview-checkpoint-grid p {
+  text-wrap: pretty;
+}
+
+.overview-map-row {
+  min-width: 0;
+}
+
+.overview-map-row .case-map {
+  grid-column: auto;
+  min-height: 300px;
+}
+
+.overview-signal-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.overview-signal-row article {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 15px;
+  border-color: var(--product-hairline);
+  background: #fbfdff;
+}
+
+.overview-signal-row svg {
+  color: var(--blue);
+}
+
+.overview-signal-row span,
+.overview-checkpoint-grid span,
+.baseline-strip li span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.overview-signal-row strong,
+.overview-checkpoint-grid strong {
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.overview-signal-row p {
+  color: var(--product-note);
+  font-size: 0.9rem;
+  line-height: 1.48;
+}
+
+.chokepoint-zone ellipse {
+  fill: rgba(11, 102, 246, 0.08);
+  stroke: rgba(11, 102, 246, 0.38);
+  stroke-width: 3;
+  stroke-dasharray: 8 8;
+}
+
+.chokepoint-zone circle {
+  fill: #ffffff;
+  stroke: var(--blue);
+  stroke-width: 4;
+}
+
+.baseline-strip {
+  display: grid;
+  gap: 14px;
+}
+
+.baseline-strip ul {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.baseline-strip li {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 13px;
+  border: 1px solid var(--product-hairline);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.baseline-strip li strong,
+.baseline-strip li em {
+  display: inline;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-style: normal;
+  font-weight: 920;
+  line-height: 1.15;
+}
+
+.baseline-strip li p {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.baseline-strip li small {
+  color: var(--product-note);
+  font-size: 0.74rem;
+  line-height: 1.34;
+}
+
+.overview-checkpoint-strip {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(280px, 0.5fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.overview-checkpoint-strip > div:first-child {
+  display: grid;
+  gap: 12px;
+}
+
+.overview-checkpoint-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 12px;
+}
+
+.overview-checkpoint-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--product-hairline);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.overview-page .update-evidence-chain article:last-child,
+.market-page .market-boundary-strip,
+.news-page .news-forecast-bridge {
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+}
+
+.market-page .market-boundary-strip {
+  display: grid;
+  grid-column: 1 / 4;
+  grid-template-columns: 1.05fr 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+}
+
+.market-page .market-boundary-strip article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--product-hairline);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.market-page .market-boundary-strip span,
+.market-page .market-boundary-strip p,
+.market-page .market-spark-card small,
+.news-page .news-source-list small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.market-page .market-boundary-strip span {
+  font-weight: 900;
+  text-transform: none;
+}
+
+.market-page .market-boundary-strip strong {
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.market-page .market-boundary-strip p {
+  color: var(--product-note);
+}
+
+.market-page .market-read-split article:first-child {
+  border-color: #bfdbfe;
+  background: var(--product-soft-blue);
+}
+
+.market-page .market-read-split article:nth-child(2) {
+  border-color: #fed7aa;
+  background: #fffaf3;
+}
+
+.market-page .market-spark-card small {
+  display: block;
+  margin-top: -4px;
+}
+
+.news-page .news-hero-card {
+  align-items: center;
+}
+
+.news-page .news-hero-card strong {
+  max-width: 58rem;
+}
+
+.news-page .news-hero-metrics article:first-child {
+  border-color: #bfdbfe;
+  background: var(--product-soft-blue);
+}
+
+.news-page .news-bridge-note {
+  max-width: 68rem;
+  margin-top: -4px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.news-page .bridge-metrics article {
+  align-content: start;
+}
+
+.news-page .news-source-list article {
+  border-color: var(--product-hairline);
+  background: #fbfdff;
+}
+
+.news-page .news-source-list small {
+  display: block;
+  font-weight: 850;
+}
+
+.news-page .news-pipeline-card {
+  border-color: #c8dcff;
+  background: linear-gradient(180deg, #ffffff, var(--product-soft-blue));
+}
+
+@media (max-width: 1120px) {
+  .overview-main-layout,
+  .overview-top-row,
+  .overview-checkpoint-strip,
+  .overview-checkpoint-grid,
+  .overview-signal-row,
+  .baseline-strip ul,
+  .market-page .market-boundary-strip {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 980px) {
+  .market-page .market-boundary-strip {
+    grid-column: auto;
+  }
+
+  .market-page .market-boundary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-map-row .case-map {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 640px) {
+  .overview-brief-card .update-brief-headline strong {
+    font-size: 3rem;
+  }
+
+  .overview-scenario-card .scenario-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-map-row .case-map {
+    min-height: 340px;
+  }
+}

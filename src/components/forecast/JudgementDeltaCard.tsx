@@ -112,8 +112,8 @@ export function JudgementDeltaCard({
         <div className="judgement-sensitivity">
           <span>Sensitivity（结构性）</span>
           <ul>
-            {judgementEvent.sensitivity.map((s) => (
-              <li key={s.sensitivityId}>
+            {judgementEvent.sensitivity.map((s, index) => (
+              <li key={`${s.sensitivityId}-${String(s.target)}-${index}`}>
                 <b>{String(s.target)}</b>: {s.statement}{" "}
                 <em>[{s.expectedFailureMode}]</em>
               </li>

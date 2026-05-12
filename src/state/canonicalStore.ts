@@ -17,6 +17,7 @@
 //   canonicalPredictionRecords
 import { applyForecastUpdate } from "../lib/forecast/applyForecastUpdate";
 import { buildPredictionRecords } from "../lib/forecast/buildPredictionRecords";
+import localCanonicalInputs from "../../data/generated/canonical_inputs.json";
 import type { AgentRunEvent } from "../types/agentEvents";
 import type {
   CalibrationConfig,
@@ -30,6 +31,7 @@ import type {
   ScenarioId,
   SourceObservation,
   TargetForecast,
+  LicenseStatus,
 } from "../types/forecast";
 
 // --- Static helpers ---------------------------------------------------------
@@ -92,6 +94,36 @@ export const forecastTargetOptions: Array<{
 export const targetLabel: Record<ForecastTarget, string> = Object.fromEntries(
   forecastTargetOptions.map((option) => [option.target, option.label]),
 ) as Record<ForecastTarget, string>;
+
+function sourceIdsForObservationIds(observationIds: string[]): string[] {
+  const sourceIds = new Set<string>();
+  for (const observationId of observationIds) {
+    const observation = canonicalSourceObservations.find((item) =>
+      item.observationId === observationId
+    );
+    if (observation) sourceIds.add(observation.sourceId);
+  }
+  return [...sourceIds].sort();
+}
+
+function evidenceTitle(claim: EvidenceClaim): string {
+  if (claim.evidenceId.includes("market")) return "Market evidence";
+  if (claim.evidenceId.includes("advisory")) return "Official advisory evidence";
+  if (claim.evidenceId.includes("portwatch")) return "PortWatch metric-boundary evidence";
+  return "Evidence added";
+}
+
+function evidenceLicenseStatus(claim: EvidenceClaim): LicenseStatus {
+  const statuses = claim.sourceObservationIds
+    .map((observationId) =>
+      canonicalSourceObservations.find((item) => item.observationId === observationId)?.licenseStatus
+    )
+    .filter(Boolean);
+  if (statuses.includes("pending")) return "pending";
+  if (statuses.includes("restricted")) return "restricted";
+  if (statuses.includes("unknown")) return "unknown";
+  return "open";
+}
 
 // --- Scenario definitions ---------------------------------------------------
 
@@ -165,117 +197,24 @@ export const canonicalCalibrationConfig: CalibrationConfig = {
   ],
 };
 
-// --- Source observations (append-only) --------------------------------------
+// --- Generated local canonical inputs ---------------------------------------
 
-export const canonicalSourceObservations: SourceObservation[] = [
-  {
-    observationId: "obs-fred-brent-2026-05-10",
-    sourceId: "fred-market",
-    publishedAt: "2026-05-10T22:00:00Z",
-    retrievedAt: "2026-05-11T01:30:00Z",
-    sourceUrl: "https://fred.stlouisfed.org/series/DCOILBRENTEU",
-    title: "Brent FRED 快照",
-    summary: "Brent risk premium 相比 3 月抬升，但还不是 closure-level shock。",
-    freshness: "fresh",
-    licenseStatus: "open",
-  },
-  {
-    observationId: "obs-fred-vix-2026-05-10",
-    sourceId: "fred-market",
-    publishedAt: "2026-05-10T22:00:00Z",
-    retrievedAt: "2026-05-11T01:30:00Z",
-    sourceUrl: "https://fred.stlouisfed.org/series/VIXCLS",
-    title: "VIX FRED 快照",
-    summary: "VIX 仍处温和区间，不像 closure-style stress。",
-    freshness: "fresh",
-    licenseStatus: "open",
-  },
-  {
-    observationId: "obs-ukmto-2026-05-10",
-    sourceId: "official-advisory",
-    publishedAt: "2026-05-10T14:00:00Z",
-    retrievedAt: "2026-05-10T14:25:00Z",
-    title: "UKMTO advisory：区域风险偏高",
-    summary: "Advisory 仍使用 elevated risk wording，但没有 avoidance instruction。",
-    freshness: "fresh",
-    licenseStatus: "open",
-  },
-  {
-    observationId: "obs-ais-pending",
-    sourceId: "ais-flow-pending",
-    retrievedAt: "2026-05-11T01:30:00Z",
-    title: "AIS flow proxy 待接入",
-    summary: "尚未接入授权 AIS provider。",
-    freshness: "pending",
-    licenseStatus: "pending",
-  },
-];
+interface LocalCanonicalInputs {
+  schemaVersion: "hormuz-local-canonical-inputs/v1";
+  generatedAt: string;
+  sourceObservations: SourceObservation[];
+  evidenceClaims: EvidenceClaim[];
+  marketRead: MarketRead;
+  notes: string[];
+}
 
-// --- Evidence claims --------------------------------------------------------
+const localInputs = localCanonicalInputs as LocalCanonicalInputs;
 
-export const canonicalEvidenceClaims: EvidenceClaim[] = [
-  {
-    evidenceId: "ev-market-risk-premium",
-    sourceObservationIds: ["obs-fred-brent-2026-05-10", "obs-fred-vix-2026-05-10"],
-    claim:
-      "油价 risk premium 支持可控扰动；VIX、Broad USD 与权益组合尚未定价 closure。",
-    polarity: "support",
-    affects: ["market", "scenario", "target"],
-    mechanismTags: ["market_pricing_risk_premium", "market_not_pricing_closure"],
-    confidence: "medium",
-    quality: {
-      sourceReliability: "high",
-      freshness: "fresh",
-      corroboration: "multi_source",
-      directness: "direct",
-    },
-    targetHints: [
-      { target: "brent", direction: "up", weight: 0.8 },
-      { target: "wti", direction: "up", weight: 0.6 },
-      { target: "vix", direction: "up", weight: 0.4 },
-      { target: "sp500", direction: "down", weight: 0.4 },
-    ],
-  },
-  {
-    evidenceId: "ev-official-advisory",
-    sourceObservationIds: ["obs-ukmto-2026-05-10"],
-    claim:
-      "海事 advisory 仍处 elevated，但没有 avoidance wording；支撑 transit risk premium，但不足以触发 closure。",
-    polarity: "support",
-    affects: ["scenario", "target", "watchlist"],
-    mechanismTags: ["transit_risk_up", "insurance_cost_up"],
-    confidence: "medium",
-    quality: {
-      sourceReliability: "high",
-      freshness: "fresh",
-      corroboration: "single_source",
-      directness: "direct",
-    },
-    targetHints: [
-      { target: "transit_disruption_7d", direction: "up", weight: 0.8 },
-      { target: "regional_escalation_7d", direction: "up", weight: 0.6 },
-    ],
-  },
-  {
-    evidenceId: "ev-flow-not-verified",
-    sourceObservationIds: ["obs-ais-pending"],
-    claim:
-      "flow layer 仍是 pending，不能作为 traffic stop 的 live evidence；这削弱 closure 成为主情景的依据。",
-    polarity: "counter",
-    affects: ["scenario", "watchlist"],
-    mechanismTags: ["market_not_pricing_closure"],
-    confidence: "low",
-    quality: {
-      sourceReliability: "low",
-      freshness: "stale",
-      corroboration: "single_source",
-      directness: "context",
-    },
-    targetHints: [
-      { target: "deescalation_signal_14d", direction: "down", weight: 0.3 },
-    ],
-  },
-];
+export const canonicalSourceObservations: SourceObservation[] =
+  localInputs.sourceObservations;
+
+export const canonicalEvidenceClaims: EvidenceClaim[] =
+  localInputs.evidenceClaims;
 
 // --- Previous state (cp1) ---------------------------------------------------
 
@@ -312,16 +251,7 @@ const previousForecastState: ForecastState = {
 const RUN_ID = "demo-hormuz-2026-05-11";
 const FORECASTED_AT = "2026-05-11T09:30:00+08:00";
 
-export const canonicalMarketRead: MarketRead = {
-  title: "市场信号混合：油价保留风险溢价，但事件窗口压力回落",
-  summary:
-    "Brent / WTI 相比 3 月低点仍处高位，说明 risk premium 未消失；但 2026-04-07 之后 VIX 回落、S&P 500 上行，cross-asset 组合不支持 closure-style shock。",
-  pricingPattern: "mixed",
-  evidenceIds: ["ev-market-risk-premium"],
-  caveat:
-    "市场信号只是 evidence input；mixed pattern 不能直接更新 forecast state，也不能单独推高 closure。",
-  asOf: "2026-05-10",
-};
+export const canonicalMarketRead: MarketRead = localInputs.marketRead;
 
 const updateOutput = applyForecastUpdate({
   previousState: previousForecastState,
@@ -398,12 +328,37 @@ export const canonicalForecastCheckpoints: ForecastCheckpoint[] = [
 
 const runStartedEventId = `${RUN_ID}-evt-run-started`;
 const sourceReadEventId = `${RUN_ID}-evt-source-read`;
-const evidenceMarketEventId = `${RUN_ID}-evt-evidence-market`;
-const evidenceAdvisoryEventId = `${RUN_ID}-evt-evidence-advisory`;
-const evidenceFlowEventId = `${RUN_ID}-evt-evidence-flow`;
 const judgementEventId = `${RUN_ID}-evt-judgement`;
 const checkpointEventId = `${RUN_ID}-evt-checkpoint`;
 const runCompletedEventId = `${RUN_ID}-evt-run-completed`;
+
+const evidenceEvents = canonicalEvidenceClaims.map<AgentRunEvent>((claim, index) => ({
+  type: "evidence_added",
+  eventId: `${RUN_ID}-evt-evidence-${index + 1}-${claim.evidenceId}`,
+  runId: RUN_ID,
+  at: `T+00:${String(11 + index * 6).padStart(2, "0")}`,
+  parentEventIds: [sourceReadEventId],
+  evidenceId: claim.evidenceId,
+  evidenceIds: [claim.evidenceId],
+  sourceObservationIds: claim.sourceObservationIds,
+  title: evidenceTitle(claim),
+  evidence: claim.claim,
+  sourceIds: sourceIdsForObservationIds(claim.sourceObservationIds),
+  polarity: claim.polarity,
+  mechanismTags: claim.mechanismTags,
+  affects: claim.affects,
+  confidence: claim.confidence,
+  licenseStatus: evidenceLicenseStatus(claim),
+}));
+
+const sourceReadSourceIds = [
+  ...new Set([
+    ...canonicalSourceObservations.map((observation) => observation.sourceId),
+    "gold-pending",
+    "usdcnh-pending",
+    "ais-flow-pending",
+  ]),
+].sort();
 
 export const canonicalAgentRunEvents: AgentRunEvent[] = [
   {
@@ -422,92 +377,20 @@ export const canonicalAgentRunEvents: AgentRunEvent[] = [
     at: "T+00:04",
     parentEventIds: [runStartedEventId],
     sourceObservationIds: canonicalSourceObservations.map((o) => o.observationId),
-    sourceIds: [
-      "eia-iea-hormuz",
-      "official-advisory",
-      "fred-market",
-      "ais-flow-pending",
-      "gold-pending",
-      "usdcnh-pending",
-      "acled-conflict",
-      "ucdp-ged",
-    ],
+    sourceIds: sourceReadSourceIds,
     status: "fresh",
     title: "读取固定 source bundle",
     summary:
-      "结构性 baseline、operational source、market benchmark、pending 与 historical sources 分开登记。",
+      "结构性 baseline、official advisory、market benchmark、PortWatch/IMO proxy 与 pending sources 分开登记。",
     licenseStatus: "open",
   },
-  {
-    type: "evidence_added",
-    eventId: evidenceMarketEventId,
-    runId: RUN_ID,
-    at: "T+00:11",
-    parentEventIds: [sourceReadEventId],
-    evidenceId: "ev-market-risk-premium",
-    evidenceIds: ["ev-market-risk-premium"],
-    sourceObservationIds: [
-      "obs-fred-brent-2026-05-10",
-      "obs-fred-vix-2026-05-10",
-    ],
-    title: "市场 evidence 支持 risk premium",
-    evidence:
-      "油价 risk premium 上行，但 VIX / Broad USD / US10Y / SPX 组合尚未定价 closure。",
-    sourceIds: ["fred-market"],
-    polarity: "support",
-    mechanismTags: ["market_pricing_risk_premium", "market_not_pricing_closure"],
-    affects: ["market", "scenario", "target"],
-    confidence: "medium",
-    licenseStatus: "open",
-  },
-  {
-    type: "evidence_added",
-    eventId: evidenceAdvisoryEventId,
-    runId: RUN_ID,
-    at: "T+00:18",
-    parentEventIds: [sourceReadEventId],
-    evidenceId: "ev-official-advisory",
-    evidenceIds: ["ev-official-advisory"],
-    sourceObservationIds: ["obs-ukmto-2026-05-10"],
-    title: "Maritime advisory：偏高但没有 avoidance",
-    evidence:
-      "UKMTO advisory 保持 elevated risk wording；没有 avoidance instruction。它支撑 transit risk，但不足以触发 closure。",
-    sourceIds: ["official-advisory"],
-    polarity: "support",
-    mechanismTags: ["transit_risk_up", "insurance_cost_up"],
-    affects: ["scenario", "target", "watchlist"],
-    confidence: "medium",
-    licenseStatus: "open",
-  },
-  {
-    type: "evidence_added",
-    eventId: evidenceFlowEventId,
-    runId: RUN_ID,
-    at: "T+00:23",
-    parentEventIds: [sourceReadEventId],
-    evidenceId: "ev-flow-not-verified",
-    evidenceIds: ["ev-flow-not-verified"],
-    sourceObservationIds: ["obs-ais-pending"],
-    title: "Flow layer 仍是 pending",
-    evidence:
-      "AIS flow source 仍是 pending；不能作为 traffic stop 的 live evidence。因此削弱 closure 作为主情景。",
-    sourceIds: ["ais-flow-pending"],
-    polarity: "counter",
-    mechanismTags: ["market_not_pricing_closure"],
-    affects: ["scenario", "watchlist"],
-    confidence: "low",
-    licenseStatus: "pending",
-  },
+  ...evidenceEvents,
   {
     type: "judgement_updated",
     eventId: judgementEventId,
     runId: RUN_ID,
     at: "T+00:31",
-    parentEventIds: [
-      evidenceMarketEventId,
-      evidenceAdvisoryEventId,
-      evidenceFlowEventId,
-    ],
+    parentEventIds: evidenceEvents.map((event) => event.eventId),
     evidenceIds: canonicalEvidenceClaims.map((c) => c.evidenceId),
     sourceObservationIds: canonicalSourceObservations.map((o) => o.observationId),
     title: "情景与 target forecast 修订",

@@ -1,0 +1,394 @@
+/*
+ * Global reviewer-console system overrides.
+ * Imported after the base stylesheet to tune shell rhythm, navigation states,
+ * shared surfaces, and responsive behavior without changing product logic.
+ */
+
+:root {
+  --system-bg: #f7f9fc;
+  --system-bg-quiet: #eef3f8;
+  --system-surface: #ffffff;
+  --system-surface-subtle: #f8fafc;
+  --system-line: #d7e1ee;
+  --system-line-strong: #b8c7da;
+  --system-text: #101828;
+  --system-muted: #5f6f83;
+  --system-accent: #1f6ed4;
+  --system-accent-soft: #e8f1ff;
+  --system-shadow: 0 14px 36px rgba(35, 55, 82, 0.08);
+  --system-shadow-soft: 0 8px 22px rgba(35, 55, 82, 0.055);
+  --system-radius: 8px;
+  --system-radius-lg: 12px;
+  --system-shell-x: clamp(16px, 3vw, 32px);
+}
+
+html {
+  background: var(--system-bg);
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    linear-gradient(180deg, #fbfcfe 0, var(--system-bg) 280px),
+    var(--system-bg);
+  color: var(--system-text);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.024) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.02) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.52), transparent 62%);
+}
+
+button,
+select,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.evidence-node:focus-visible,
+.stream-card:focus-visible {
+  outline: 2px solid rgba(31, 110, 212, 0.42);
+  outline-offset: 3px;
+}
+
+.app-shell {
+  width: min(calc(100% - (var(--system-shell-x) * 2)), 1680px);
+  padding: 16px 0 44px;
+}
+
+.app-header {
+  top: 10px;
+  min-height: 62px;
+  padding: 9px 12px 9px 16px;
+  border-color: rgba(184, 199, 218, 0.78);
+  border-radius: var(--system-radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--system-shadow-soft);
+}
+
+.brand-mark {
+  min-width: min(260px, 26vw);
+  gap: 10px;
+}
+
+.brand-mark strong {
+  color: var(--system-text);
+  font-size: 0.96rem;
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.logo-cube {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #c7d7ec;
+  border-radius: 9px;
+  color: var(--system-accent);
+  background: linear-gradient(180deg, #ffffff, #edf4ff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.base-case-badge {
+  min-height: 32px;
+  border-color: #c4d6ef;
+  border-radius: 8px;
+  background: #eef5ff;
+  color: #1458ad;
+  font-size: 0.8rem;
+  font-weight: 760;
+}
+
+.page-tabs {
+  width: min(100%, 500px);
+  border-color: #d5deea;
+  border-radius: 10px;
+  background: #f4f7fb;
+  box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.035);
+}
+
+.page-tabs button {
+  min-width: 78px;
+  min-height: 34px;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 680;
+  line-height: 1;
+}
+
+.page-tabs button:hover {
+  color: #1d4f91;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.page-tabs button.selected {
+  color: #0f376b;
+  background: var(--system-surface);
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.05),
+    0 8px 18px rgba(35, 55, 82, 0.08);
+}
+
+.page-tabs button.selected svg {
+  color: var(--system-accent);
+}
+
+.header-actions {
+  gap: 5px;
+}
+
+.header-actions button,
+.icon-button {
+  width: 36px;
+  height: 36px;
+  border-color: #d5deea;
+  border-radius: 8px;
+  color: #526276;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.header-actions button:hover,
+.icon-button:hover {
+  border-color: #b8cbe4;
+  color: var(--system-accent);
+  background: #f9fbfe;
+  box-shadow: 0 8px 18px rgba(35, 55, 82, 0.08);
+}
+
+.page-grid {
+  gap: clamp(16px, 1.5vw, 24px);
+  margin-top: 18px;
+}
+
+.console-card,
+.panel {
+  border-color: var(--system-line);
+  border-radius: var(--system-radius);
+  background: var(--system-surface);
+  box-shadow: 0 1px 2px rgba(35, 55, 82, 0.035);
+}
+
+.console-card:hover,
+.panel:hover {
+  border-color: var(--system-line-strong);
+  box-shadow: var(--system-shadow-soft);
+}
+
+.update-brief-card,
+.news-hero-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfe 100%);
+}
+
+.info-title h2,
+.panel-title h2,
+.chart-card-head h2,
+.group-card-head h3,
+.compact-list-card h3,
+.status-card h3 {
+  letter-spacing: 0;
+}
+
+.info-title p,
+.panel-title p,
+.compact-list-card p,
+.status-card p,
+.how-read-card p {
+  color: var(--system-muted);
+}
+
+.market-spark-card,
+.target-forecast-card,
+.target-delta-panel,
+.stream-card,
+.evidence-node,
+.scenario-tick,
+.timeline-event {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.market-spark-card:hover,
+.target-forecast-card:hover,
+.target-delta-panel:hover,
+.stream-card:hover,
+.evidence-node:hover,
+.scenario-tick:hover {
+  box-shadow: 0 8px 20px rgba(35, 55, 82, 0.07);
+}
+
+.forecast-mode-tabs {
+  border-color: #d5deea;
+  background: #f4f7fb;
+}
+
+.forecast-mode-tabs button:hover {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.forecast-mode-tabs button.selected {
+  background: #ffffff;
+  color: #0f376b;
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.05),
+    0 8px 18px rgba(35, 55, 82, 0.08);
+}
+
+@media (min-width: 1440px) {
+  .app-shell {
+    padding-top: 18px;
+  }
+
+  .app-header {
+    grid-template-columns: minmax(250px, auto) auto minmax(420px, 1fr) auto;
+  }
+}
+
+@media (max-width: 1180px) {
+  .app-header {
+    grid-template-columns: minmax(220px, 1fr) auto auto;
+    grid-template-areas:
+      "brand badge actions"
+      "tabs tabs tabs";
+    gap: 9px 12px;
+  }
+
+  .brand-mark {
+    grid-area: brand;
+  }
+
+  .base-case-badge {
+    grid-area: badge;
+    justify-self: end;
+  }
+
+  .page-tabs {
+    grid-area: tabs;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .header-actions {
+    grid-area: actions;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --system-shell-x: 12px;
+  }
+
+  .app-shell {
+    padding-top: 10px;
+    padding-bottom: 28px;
+  }
+
+  .app-header {
+    position: static;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand actions"
+      "badge badge"
+      "tabs tabs";
+    padding: 10px;
+  }
+
+  .brand-mark {
+    min-width: 0;
+  }
+
+  .brand-mark strong {
+    font-size: 0.9rem;
+  }
+
+  .logo-cube {
+    width: 34px;
+    height: 34px;
+  }
+
+  .base-case-badge {
+    justify-self: stretch;
+    white-space: normal;
+  }
+
+  .header-actions button,
+  .icon-button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .page-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .page-tabs button {
+    min-width: 0;
+    padding: 8px 6px;
+    gap: 5px;
+    font-size: 0.78rem;
+  }
+
+  .console-card,
+  .panel {
+    border-radius: 7px;
+  }
+
+  .update-brief-card,
+  .scenario-card,
+  .compact-list-card,
+  .checkpoint-strip,
+  .how-read-card,
+  .research-panel,
+  .forecast-stage-card,
+  .side-card,
+  .panel,
+  .news-hero-card,
+  .news-forecast-bridge,
+  .news-timeline-card,
+  .news-source-card,
+  .news-pipeline-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "badge"
+      "tabs"
+      "actions";
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+
+  .header-actions button,
+  .icon-button {
+    width: 100%;
+  }
+
+  .page-tabs button span {
+    display: none;
+  }
+}

@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="10" fill="#061018"/>
-  <path d="M12 38c9-2 18-3 27-6 5-2 9-5 13-8" fill="none" stroke="#74ddd6" stroke-width="4" stroke-linecap="round"/>
-  <path d="M14 46c12-1 23-3 35-8" fill="none" stroke="#56b9ff" stroke-width="3" stroke-linecap="round" opacity=".55"/>
-  <circle cx="32" cy="32" r="7" fill="#061018" stroke="#efbd4f" stroke-width="3"/>
-  <circle cx="32" cy="32" r="2.5" fill="#efbd4f"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hormuz Risk Intelligence Agent">
+  <rect width="64" height="64" rx="14" fill="#f8fafc"/>
+  <path d="M11 40c8-11 19-16 32-16h10" fill="none" stroke="#0b66f6" stroke-width="5" stroke-linecap="round"/>
+  <path d="M13 47c10-6 21-8 34-6" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="43" cy="24" r="6" fill="#ff9f1c"/>
 </svg>

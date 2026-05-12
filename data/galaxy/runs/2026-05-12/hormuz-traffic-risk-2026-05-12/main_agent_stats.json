@@ -1,0 +1,44 @@
+{
+  "agent_role": "main",
+  "llm_calls": 12,
+  "prompt_tokens": 138271,
+  "completion_tokens": 7241,
+  "total_tokens": 145512,
+  "cached_tokens": 0,
+  "tool_calls": {
+    "search_web": 14,
+    "read_webpage": 8
+  },
+  "mcp_tool_calls_total": 22,
+  "synthetic_tool_calls": {
+    "record_forecast": 1
+  },
+  "synthetic_tool_calls_total": 1,
+  "tool_failures": {},
+  "tool_soft_failures": {
+    "read_webpage": 2
+  },
+  "cached_hits": {},
+  "cached_hits_total": 0,
+  "cached_hits_by_kind": {},
+  "batch_dedups": 0,
+  "findings_without_anchor": {},
+  "findings_without_anchor_total": 0,
+  "parallel_downgrades": {},
+  "parallel_downgrades_total": 0,
+  "forced_tool_cap": false,
+  "terminal_reason": "record_forecast",
+  "supervisor_nudges_total": 0,
+  "supervisor_nudge_rules": [],
+  "context_window": {
+    "estimated_input_tokens_peak": 9655,
+    "estimated_input_tokens_last": 9028,
+    "snapshots_recorded": 12,
+    "message_count": 38,
+    "llm_message_count": 14,
+    "structured_compression_enabled": true,
+    "compress_threshold": 32000,
+    "keep_recent_tools": 6,
+    "max_tool_content_chars": 8000
+  }
+}

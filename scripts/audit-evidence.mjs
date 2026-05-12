@@ -53,14 +53,11 @@ const observationById = new Map(
 );
 const sourceHashPattern = /^sha256:[a-f0-9]{64}$/;
 
-// Pending sourceIds: any observation whose freshness is "pending" OR whose sourceId
-// belongs to a pending source (we infer pending status via sourceId suffix and
-// known pending ids).
-const PENDING_SOURCE_IDS = new Set([
-  "ais-flow-pending",
-  "gold-pending",
-  "usdcnh-pending",
-]);
+const pendingSourceIds = new Set(
+  snapshot.sourceRegistry
+    .filter((source) => source.pending)
+    .map((source) => source.id),
+);
 
 for (const claim of snapshot.canonicalEvidenceClaims) {
   if (!Array.isArray(claim.sourceObservationIds) || claim.sourceObservationIds.length === 0) {
@@ -74,7 +71,7 @@ for (const claim of snapshot.canonicalEvidenceClaims) {
       continue;
     }
     if (
-      (obs.freshness === "pending" || PENDING_SOURCE_IDS.has(obs.sourceId)) &&
+      (obs.freshness === "pending" || pendingSourceIds.has(obs.sourceId)) &&
       claim.confidence === "high"
     ) {
       violations.push(

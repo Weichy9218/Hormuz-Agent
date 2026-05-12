@@ -34,6 +34,12 @@ import {
   canonicalSourceObservations,
   scenarioOrder,
 } from "./canonicalStore";
+import latestGalaxyRun from "../../data/galaxy/latest-run.json";
+import {
+  buildRunFromGalaxyArtifact,
+  isGalaxyArtifact,
+  type GalaxyAdaptedRun,
+} from "../lib/forecast/galaxyArtifact";
 
 // --- Overview ---------------------------------------------------------------
 
@@ -180,52 +186,84 @@ export interface ForecastProjection {
   appliedGuardrails: AppliedGuardrail[];
   sensitivity: SensitivityItem[];
   primaryTarget: "scenario" | ForecastTarget;
+  galaxyRun: GalaxyAdaptedRun | null;
 }
 
-export function projectForecastState(): ForecastProjection {
-  const judgement = canonicalAgentRunEvents.find(
+export function projectForecastState(galaxyArtifact?: unknown): ForecastProjection {
+  const artifactSource = galaxyArtifact ?? latestGalaxyRun;
+  const galaxyRun = isGalaxyArtifact(artifactSource)
+    ? buildRunFromGalaxyArtifact({
+        artifact: artifactSource,
+        fallbackPreviousState: canonicalRun.previousState,
+        scenarioDefinitions: canonicalScenarioDefinitions,
+        calibrationConfig: canonicalCalibrationConfig,
+        previousCheckpoint: canonicalForecastCheckpoints.at(-1),
+      })
+    : null;
+  const runId = galaxyRun?.runId ?? canonicalRun.runId;
+  const forecastedAt = galaxyRun?.forecastedAt ?? canonicalRun.forecastedAt;
+  const previousScenario =
+    galaxyRun?.previousState.scenarioDistribution ??
+    canonicalRun.previousState.scenarioDistribution;
+  const currentScenario =
+    galaxyRun?.currentState.scenarioDistribution ??
+    canonicalRun.currentState.scenarioDistribution;
+  const scenarioDeltaValue = galaxyRun?.scenarioDelta ?? canonicalRun.scenarioDelta;
+  const previousTargetForecasts =
+    galaxyRun?.previousState.targetForecasts ??
+    canonicalRun.previousState.targetForecasts;
+  const currentTargetForecasts =
+    galaxyRun?.currentState.targetForecasts ??
+    canonicalRun.currentState.targetForecasts;
+  const events = galaxyRun?.events ?? canonicalAgentRunEvents;
+  const evidenceClaims = galaxyRun?.evidenceClaims ?? canonicalEvidenceClaims;
+  const observations = galaxyRun?.sourceObservations ?? canonicalSourceObservations;
+  const checkpoint = galaxyRun?.checkpoint ?? canonicalRun.checkpoint;
+
+  const judgement = events.find(
     (e): e is Extract<AgentRunEvent, { type: "judgement_updated" }> =>
       e.type === "judgement_updated",
   );
   const storyPath = selectStoryPath({
-    events: canonicalAgentRunEvents,
-    evidenceClaims: canonicalEvidenceClaims,
+    events,
+    evidenceClaims,
     deltaAttribution: judgement?.deltaAttribution ?? [],
   });
 
   const storyGraph = buildForecastGraph({
-    events: canonicalAgentRunEvents,
-    evidenceClaims: canonicalEvidenceClaims,
-    sourceObservations: canonicalSourceObservations,
+    events,
+    evidenceClaims,
+    sourceObservations: observations,
     storyPath,
     mode: "story",
   });
   const auditGraph = buildForecastGraph({
-    events: canonicalAgentRunEvents,
-    evidenceClaims: canonicalEvidenceClaims,
-    sourceObservations: canonicalSourceObservations,
+    events,
+    evidenceClaims,
+    sourceObservations: observations,
     storyPath,
     mode: "audit",
   });
 
   return {
-    runId: canonicalRun.runId,
-    forecastedAt: canonicalRun.forecastedAt,
-    previousScenario: canonicalRun.previousState.scenarioDistribution,
-    currentScenario: canonicalRun.currentState.scenarioDistribution,
-    scenarioDelta: canonicalRun.scenarioDelta,
-    previousTargetForecasts: canonicalRun.previousState.targetForecasts,
-    currentTargetForecasts: canonicalRun.currentState.targetForecasts,
-    events: canonicalAgentRunEvents,
-    evidenceClaims: canonicalEvidenceClaims,
-    observations: canonicalSourceObservations,
-    checkpoint: canonicalRun.checkpoint,
+    runId,
+    forecastedAt,
+    previousScenario,
+    currentScenario,
+    scenarioDelta: scenarioDeltaValue,
+    previousTargetForecasts,
+    currentTargetForecasts,
+    events,
+    evidenceClaims,
+    observations,
+    checkpoint,
     storyPath,
     storyGraph,
     auditGraph,
     appliedGuardrails: judgement?.appliedGuardrails ?? [],
     sensitivity: judgement?.sensitivity ?? [],
     primaryTarget: storyPath.primaryTarget,
+    galaxyRun,
   };
 }
 

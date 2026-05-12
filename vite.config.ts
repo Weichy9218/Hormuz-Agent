@@ -2,6 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
+import { spawn } from "node:child_process";
 import process from "node:process";
 
 const DEFAULT_GALAXY_ENV_PATH =
@@ -310,6 +311,76 @@ function hormuzAgentPlugin() {
   };
 }
 
+function runGalaxyHormuz() {
+  return new Promise<{ status: number; output: string }>((resolve) => {
+    const child = spawn("node", ["scripts/run-galaxy-hormuz.mjs", "--execute"], {
+      cwd: process.cwd(),
+      env: process.env,
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.on("close", (status) => {
+      resolve({ status: status ?? 1, output });
+    });
+  });
+}
+
+function galaxyRunPlugin() {
+  let isRunning = false;
+  return {
+    name: "hormuz-galaxy-runner",
+    configureServer(server: import("vite").ViteDevServer) {
+      server.middlewares.use("/api/galaxy-hormuz/latest", async (request, response) => {
+        if (request.method !== "GET") {
+          sendJson(response, 405, { error: "method not allowed" });
+          return;
+        }
+        try {
+          const text = await fs.promises.readFile("data/galaxy/latest-run.json", "utf8");
+          sendJson(response, 200, JSON.parse(text));
+        } catch (error) {
+          sendJson(response, 404, {
+            error: "latest galaxy artifact not found",
+            detail: error instanceof Error ? error.message : "unknown error",
+          });
+        }
+      });
+      server.middlewares.use("/api/galaxy-hormuz/run", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { error: "method not allowed" });
+          return;
+        }
+        if (isRunning) {
+          sendJson(response, 409, { error: "galaxy run already in progress" });
+          return;
+        }
+
+        isRunning = true;
+        try {
+          const result = await runGalaxyHormuz();
+          sendJson(response, result.status === 0 ? 200 : 500, {
+            ok: result.status === 0,
+            status: result.status,
+            output: result.output.slice(-5000),
+          });
+        } catch (error) {
+          sendJson(response, 500, {
+            error: "galaxy runner failed",
+            detail: error instanceof Error ? error.message : "unknown error",
+          });
+        } finally {
+          isRunning = false;
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), hormuzAgentPlugin()],
+  plugins: [react(), hormuzAgentPlugin(), galaxyRunPlugin()],
 });

@@ -1,0 +1,415 @@
+[
+  {
+    "id": "brent-spot",
+    "label": "Brent 现货",
+    "unit": "USD/bbl",
+    "color": "#f0b84a",
+    "source": "FRED DCOILBRENTEU",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
+    "verifiedAt": "2026-05-01",
+    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:670be47ef3d7e684b62a11bf9bcb3c4ff8fd7076ff383879af3107267d4f0f0e",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 77.24
+      },
+      {
+        "date": "2026-03-09",
+        "value": 94.35
+      },
+      {
+        "date": "2026-03-16",
+        "value": 101.04
+      },
+      {
+        "date": "2026-03-23",
+        "value": 103.79
+      },
+      {
+        "date": "2026-03-30",
+        "value": 121.88
+      },
+      {
+        "date": "2026-04-07",
+        "value": 138.21
+      },
+      {
+        "date": "2026-04-13",
+        "value": 123.28
+      },
+      {
+        "date": "2026-04-20",
+        "value": 103.4
+      },
+      {
+        "date": "2026-04-27",
+        "value": 113.89
+      },
+      {
+        "date": "2026-05-01",
+        "value": 118.26
+      }
+    ]
+  },
+  {
+    "id": "wti-spot",
+    "label": "WTI 现货",
+    "unit": "USD/bbl",
+    "color": "#ff8743",
+    "source": "FRED DCOILWTICO",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/DCOILWTICO",
+    "verifiedAt": "2026-05-04",
+    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:54d057211926ab58038efe4607375b2d26a2169d0bc9e9de9c9e4d12039477be",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 71.13
+      },
+      {
+        "date": "2026-03-09",
+        "value": 94.65
+      },
+      {
+        "date": "2026-03-16",
+        "value": 93.39
+      },
+      {
+        "date": "2026-03-23",
+        "value": 89.33
+      },
+      {
+        "date": "2026-03-30",
+        "value": 104.69
+      },
+      {
+        "date": "2026-04-06",
+        "value": 114.01
+      },
+      {
+        "date": "2026-04-13",
+        "value": 100.72
+      },
+      {
+        "date": "2026-04-20",
+        "value": 91.06
+      },
+      {
+        "date": "2026-04-27",
+        "value": 99.89
+      },
+      {
+        "date": "2026-05-04",
+        "value": 109.76
+      }
+    ]
+  },
+  {
+    "id": "broad-usd",
+    "label": "Broad USD",
+    "unit": "index",
+    "color": "#8bd3c7",
+    "source": "FRED DTWEXBGS",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/DTWEXBGS",
+    "verifiedAt": "2026-05-08",
+    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:dc4701e26b653dc137af459843c9fe650bface21b08782ba8559f22753c4e2b2",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 118.667
+      },
+      {
+        "date": "2026-03-09",
+        "value": 119.5151
+      },
+      {
+        "date": "2026-03-16",
+        "value": 120.097
+      },
+      {
+        "date": "2026-03-23",
+        "value": 119.9371
+      },
+      {
+        "date": "2026-03-30",
+        "value": 121.2851
+      },
+      {
+        "date": "2026-04-06",
+        "value": 120.4302
+      },
+      {
+        "date": "2026-04-13",
+        "value": 118.9916
+      },
+      {
+        "date": "2026-04-20",
+        "value": 118.2374
+      },
+      {
+        "date": "2026-04-27",
+        "value": 118.5458
+      },
+      {
+        "date": "2026-05-04",
+        "value": 118.8264
+      },
+      {
+        "date": "2026-05-08",
+        "value": 118.0392
+      }
+    ]
+  },
+  {
+    "id": "usd-cny",
+    "label": "USD/CNY",
+    "unit": "CNY",
+    "color": "#d4a5ff",
+    "source": "FRED DEXCHUS",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/DEXCHUS",
+    "verifiedAt": "2026-05-08",
+    "caveat": "FRED 日频源的本地抽样序列；人民币即期序列存在发布滞后。 raw sha256:a72da95ea493a36803bf08d1c2bf16d2bff892386d4ee0f9567142ea70a84da3",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 6.8821
+      },
+      {
+        "date": "2026-03-09",
+        "value": 6.9066
+      },
+      {
+        "date": "2026-03-16",
+        "value": 6.8955
+      },
+      {
+        "date": "2026-03-23",
+        "value": 6.8807
+      },
+      {
+        "date": "2026-03-30",
+        "value": 6.9119
+      },
+      {
+        "date": "2026-04-06",
+        "value": 6.8778
+      },
+      {
+        "date": "2026-04-13",
+        "value": 6.8303
+      },
+      {
+        "date": "2026-04-20",
+        "value": 6.8172
+      },
+      {
+        "date": "2026-04-27",
+        "value": 6.8228
+      },
+      {
+        "date": "2026-05-04",
+        "value": 6.83
+      },
+      {
+        "date": "2026-05-08",
+        "value": 6.8005
+      }
+    ]
+  },
+  {
+    "id": "vix",
+    "label": "VIX",
+    "unit": "index",
+    "color": "#ff6b45",
+    "source": "FRED VIXCLS",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/VIXCLS",
+    "verifiedAt": "2026-05-08",
+    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:5c9f520ac850c36dab9b82b134b871b176ff506edca5cbc82e2bfedf1ca661da",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 21.44
+      },
+      {
+        "date": "2026-03-09",
+        "value": 25.5
+      },
+      {
+        "date": "2026-03-16",
+        "value": 23.51
+      },
+      {
+        "date": "2026-03-23",
+        "value": 26.15
+      },
+      {
+        "date": "2026-03-30",
+        "value": 30.61
+      },
+      {
+        "date": "2026-04-06",
+        "value": 24.17
+      },
+      {
+        "date": "2026-04-13",
+        "value": 19.12
+      },
+      {
+        "date": "2026-04-20",
+        "value": 18.87
+      },
+      {
+        "date": "2026-04-27",
+        "value": 18.02
+      },
+      {
+        "date": "2026-05-04",
+        "value": 18.29
+      },
+      {
+        "date": "2026-05-08",
+        "value": 17.19
+      }
+    ]
+  },
+  {
+    "id": "us10y",
+    "label": "美债 10Y（US10Y）",
+    "unit": "%",
+    "color": "#9fa8da",
+    "source": "FRED DGS10",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/DGS10",
+    "verifiedAt": "2026-05-08",
+    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:517176ef3c02dc6400893b16806937cffad04678b7fbe16d57a7f7469c7960e1",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 4.05
+      },
+      {
+        "date": "2026-03-09",
+        "value": 4.12
+      },
+      {
+        "date": "2026-03-16",
+        "value": 4.23
+      },
+      {
+        "date": "2026-03-23",
+        "value": 4.34
+      },
+      {
+        "date": "2026-03-30",
+        "value": 4.35
+      },
+      {
+        "date": "2026-04-06",
+        "value": 4.34
+      },
+      {
+        "date": "2026-04-13",
+        "value": 4.3
+      },
+      {
+        "date": "2026-04-20",
+        "value": 4.26
+      },
+      {
+        "date": "2026-04-27",
+        "value": 4.35
+      },
+      {
+        "date": "2026-05-04",
+        "value": 4.45
+      },
+      {
+        "date": "2026-05-08",
+        "value": 4.38
+      }
+    ]
+  },
+  {
+    "id": "sp500",
+    "label": "标普 500（S&P 500）",
+    "unit": "index",
+    "color": "#56b9ff",
+    "source": "FRED SP500",
+    "sourceId": "fred-market",
+    "sourceUrl": "https://fred.stlouisfed.org/series/SP500",
+    "verifiedAt": "2026-05-11",
+    "caveat": "FRED 日频源的本地抽样序列；不是完整逐日图。 raw sha256:a62d645ef7cf93d5844059b78ea42a0cb135e5c893a30fbe8444981faaa7915e",
+    "points": [
+      {
+        "date": "2026-03-02",
+        "value": 6881.62
+      },
+      {
+        "date": "2026-03-09",
+        "value": 6795.99
+      },
+      {
+        "date": "2026-03-16",
+        "value": 6699.38
+      },
+      {
+        "date": "2026-03-23",
+        "value": 6581
+      },
+      {
+        "date": "2026-03-30",
+        "value": 6343.72
+      },
+      {
+        "date": "2026-04-06",
+        "value": 6611.83
+      },
+      {
+        "date": "2026-04-13",
+        "value": 6886.24
+      },
+      {
+        "date": "2026-04-20",
+        "value": 7109.14
+      },
+      {
+        "date": "2026-04-27",
+        "value": 7173.91
+      },
+      {
+        "date": "2026-05-04",
+        "value": 7200.75
+      },
+      {
+        "date": "2026-05-11",
+        "value": 7412.84
+      }
+    ]
+  },
+  {
+    "id": "gold-pending",
+    "label": "Gold（pending）",
+    "unit": "pending",
+    "color": "#ffd166",
+    "source": "Gold source pending",
+    "sourceId": "gold-pending",
+    "caveat": "LBMA benchmark 数据有 licence 要求；未接入授权或稳定 daily source 前不展示 live 金价。",
+    "pending": true,
+    "points": []
+  },
+  {
+    "id": "usd-cnh-pending",
+    "label": "USD/CNH（pending）",
+    "unit": "pending",
+    "color": "#c7f9cc",
+    "source": "USD/CNH source pending",
+    "sourceId": "usdcnh-pending",
+    "caveat": "未接入稳定 daily provider 前只保留 schema，不渲染为 live market evidence。",
+    "pending": true,
+    "points": []
+  }
+]

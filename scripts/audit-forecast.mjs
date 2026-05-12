@@ -11,6 +11,9 @@
 //   7. ForecastCheckpoint has reusedState and deltaAttribution.
 //   8. PredictionRecords can be derived from the judgement update and checkpoint.
 //   9. TargetForecast.sourceIds contain SourceRegistry ids, not observation ids.
+//   10. Event ids and parentEventIds form a prior-event DAG.
+//   11. deltaAttribution references real evidence and covered mechanism tags.
+//   12. checkpoint_written event matches the latest ForecastCheckpoint.
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -40,6 +43,7 @@ const sourceIds = new Set(snapshot.sourceRegistry.map((source) => source.id));
 const observationIds = new Set(
   snapshot.canonicalSourceObservations.map((observation) => observation.observationId),
 );
+const eventById = new Map();
 
 const judgement = snapshot.canonicalAgentRunEvents.find(
   (e) => e.type === "judgement_updated",
@@ -57,17 +61,93 @@ if (!checkpoint) {
   process.exit(1);
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableJson(item)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// 10. eventId uniqueness + prior parentEventIds
+for (const event of snapshot.canonicalAgentRunEvents) {
+  if (!event.eventId) {
+    violations.push(`${event.type}: missing eventId`);
+    continue;
+  }
+  if (eventById.has(event.eventId)) {
+    violations.push(`${event.type}: duplicate eventId ${event.eventId}`);
+  }
+  eventById.set(event.eventId, event);
+}
+
+const seenEventIds = new Set();
+for (const event of snapshot.canonicalAgentRunEvents) {
+  for (const parentId of event.parentEventIds ?? []) {
+    if (parentId === event.eventId) {
+      violations.push(`${event.eventId}: parentEventIds contains self reference`);
+    } else if (!eventById.has(parentId)) {
+      violations.push(`${event.eventId}: parentEventId ${parentId} does not exist`);
+    } else if (!seenEventIds.has(parentId)) {
+      violations.push(`${event.eventId}: parentEventId ${parentId} is not a prior event`);
+    }
+  }
+  if (event.eventId) seenEventIds.add(event.eventId);
+}
+
 // 1. evidenceIds + mechanismTags + deltaAttribution present
 if (!Array.isArray(judgement.evidenceIds) || judgement.evidenceIds.length === 0) {
   violations.push("judgement_updated: missing evidenceIds");
+} else {
+  for (const evidenceId of judgement.evidenceIds) {
+    if (!evidenceById.has(evidenceId)) {
+      violations.push(
+        `judgement_updated: evidenceId ${evidenceId} is not a registered evidence claim`,
+      );
+    }
+  }
 }
 if (!Array.isArray(judgement.deltaAttribution) || judgement.deltaAttribution.length === 0) {
   violations.push("judgement_updated: missing deltaAttribution");
 }
 const mechanismUnion = new Set();
-for (const attribution of judgement.deltaAttribution ?? []) {
+for (const [idx, attribution] of (judgement.deltaAttribution ?? []).entries()) {
+  const label = `deltaAttribution[${idx}] ${String(attribution.target)}`;
+  if (
+    !Array.isArray(attribution.contributingEvidenceIds) ||
+    attribution.contributingEvidenceIds.length === 0
+  ) {
+    violations.push(`${label}: missing contributingEvidenceIds`);
+  }
+  if (
+    !Array.isArray(attribution.contributingMechanismTags) ||
+    attribution.contributingMechanismTags.length === 0
+  ) {
+    violations.push(`${label}: missing contributingMechanismTags`);
+  }
+
+  const evidenceMechanismTags = new Set();
+  for (const evidenceId of attribution.contributingEvidenceIds ?? []) {
+    const claim = evidenceById.get(evidenceId);
+    if (!claim) {
+      violations.push(`${label}: contributingEvidenceId ${evidenceId} does not exist`);
+      continue;
+    }
+    for (const tag of claim.mechanismTags ?? []) evidenceMechanismTags.add(tag);
+  }
+
   for (const tag of attribution.contributingMechanismTags ?? []) {
     mechanismUnion.add(tag);
+    if (!evidenceMechanismTags.has(tag)) {
+      violations.push(
+        `${label}: mechanism tag ${tag} is not covered by its contributing evidence`,
+      );
+    }
   }
 }
 if (mechanismUnion.size === 0) {
@@ -164,6 +244,24 @@ const cp = snapshot.canonicalForecastCheckpoints.at(-1);
 if (!cp?.reusedState) violations.push("ForecastCheckpoint: missing reusedState");
 if (!Array.isArray(cp?.deltaAttribution)) {
   violations.push("ForecastCheckpoint: missing deltaAttribution");
+}
+if (cp) {
+  if (checkpoint.checkpointId !== cp.checkpointId) {
+    violations.push(
+      `checkpoint_written: checkpointId ${checkpoint.checkpointId} does not match latest ForecastCheckpoint ${cp.checkpointId}`,
+    );
+  }
+  if (stableJson(checkpoint.nextWatch) !== stableJson(cp.nextWatch)) {
+    violations.push("checkpoint_written: nextWatch differs from latest ForecastCheckpoint");
+  }
+  if (stableJson(checkpoint.reusedState) !== stableJson(cp.reusedState)) {
+    violations.push("checkpoint_written: reusedState differs from latest ForecastCheckpoint");
+  }
+  if (stableJson(checkpoint.deltaAttribution) !== stableJson(cp.deltaAttribution)) {
+    violations.push(
+      "checkpoint_written: deltaAttribution differs from latest ForecastCheckpoint",
+    );
+  }
 }
 
 // 8: at least one PredictionRecord generated for this run
