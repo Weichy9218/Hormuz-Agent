@@ -75,22 +75,44 @@ const runtimeConfig: Record<"galaxy", {
 };
 
 const kindLabel: Record<GalaxyActionKind, string> = {
-  question: "question",
-  assistant_note: "agent note",
-  tool_call: "tool call",
-  tool_result: "tool result",
-  artifact_read: "artifact",
-  evidence_synthesis: "synthesis",
-  final_forecast: "forecast",
-  checkpoint: "checkpoint",
-  supervisor: "runtime",
+  question: "问题定义",
+  assistant_note: "Agent 思考",
+  tool_call: "工具调用",
+  tool_result: "工具返回",
+  artifact_read: "读取证据",
+  evidence_synthesis: "证据综合",
+  final_forecast: "最终预测",
+  checkpoint: "检查点",
+  supervisor: "运行时",
 };
 
-function questionText(projection: ForecastProjection) {
-  const question = projection.galaxyRun?.question.task_question;
-  if (!question) return "No forecast question artifact loaded.";
-  const quoted = question.match(/"""([\s\S]*?)"""/)?.[1];
-  return (quoted ?? question).trim().replace(/\s+/g, " ");
+const statusZh: Record<string, string> = {
+  running: "运行中",
+  completed: "已完成",
+  failed: "运行失败",
+  idle: "空闲",
+  success: "已完成",
+};
+
+const finalSourceZh = {
+  "current run": "当前运行",
+  "last completed": "上次完成",
+} as const;
+
+function displayStatus(s: string) { return statusZh[s] ?? s; }
+function displaySource(s: "current run" | "last completed") { return finalSourceZh[s]; }
+
+function questionSummary(projection: ForecastProjection) {
+  const q = projection.galaxyRun?.question;
+  if (!q) return "尚未加载预测问题。";
+  const meta = q.metadata;
+  if (meta?.question_kind === "brent_weekly_high") {
+    const win = typeof meta.resolution_window === "object" ? meta.resolution_window as { start_date?: string; end_date?: string } : null;
+    const dateRange = win ? `${win.start_date ?? ""} → ${win.end_date ?? ""}` : (meta.generated_for_date as string | undefined ?? "");
+    return `预测目标：${dateRange} 当周 Brent 原油最高日价，分辨率来源 FRED DCOILBRENTEU，单位 USD/bbl。`;
+  }
+  const quoted = q.task_question?.match(/"""([\s\S]*?)"""/)?.[1];
+  return (quoted ?? q.task_description ?? "").trim().replace(/\s+/g, " ").slice(0, 200);
 }
 
 function compactPath(path: string, keepSegments = 2) {
@@ -186,30 +208,29 @@ function GalaxyRunHeader({
   return (
     <section className="console-card galaxy-agent-hero">
       <div className="galaxy-agent-copy">
-        <span className="galaxy-kicker">预测 Agent 主界面</span>
-        <h1>预测决策查看器</h1>
-        <p>{questionText(projection)}</p>
+        <h1>预测 Agent 行为查看器</h1>
+        <p>{questionSummary(projection)}</p>
         <div className="galaxy-run-chips">
-          <span>状态 {status}</span>
+          <span className={`status-chip status-${liveStatus?.status ?? meta?.status ?? "idle"}`}>
+            {displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}
+          </span>
           {meta?.demo ? <span className="demo">[DEMO]</span> : null}
-          <span>pid {pid ?? "无"}</span>
-          <span>耗时 {elapsed != null ? `${elapsed}s` : "待定"}</span>
-          <span>{taskId}</span>
-          <span>运行时 {runtimeInfo.label}</span>
-          <span>预测 {final.prediction} · {finalSource}</span>
+          {elapsed != null && elapsed > 0 ? <span>耗时 {elapsed}s</span> : null}
+          {taskId ? <span title={taskId}>{taskId.slice(0, 36)}</span> : null}
+          <span className="prediction-chip">预测值 {final.prediction}</span>
         </div>
       </div>
       <div className="galaxy-agent-command">
-        <InfoTitle
-          title="运行控制"
-          subtitle={`galaxy-selfevolve · 启动 / 状态 / 追踪`}
-        />
+        <InfoTitle title="运行控制" subtitle="galaxy-selfevolve · 启动 / 状态 / 追踪" />
         <dl className="galaxy-run-kv">
-          <div><dt>运行时</dt><dd>{liveStatus?.runConfig ?? runtimeInfo.label}</dd></div>
           <div><dt>输出目录</dt><dd title={runDir}>{compactPath(runDir, 2)}</dd></div>
           <div><dt>最后更新</dt><dd>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "未知"}</dd></div>
+          <div><dt>来源</dt><dd>{displaySource(finalSource)}</dd></div>
         </dl>
-        <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
+        <details className="galaxy-command-detail">
+          <summary>查看执行命令</summary>
+          <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
+        </details>
         <div className="galaxy-run-actions">
           <button type="button" onClick={onRun} disabled={isRunning}>
             {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
@@ -241,7 +262,7 @@ function FinalForecastCard({
 
   return (
     <section className="console-card galaxy-final-card">
-      <InfoTitle title="最终预测" subtitle={`record_forecast 载荷 · ${finalSource}`} />
+      <InfoTitle title="最终预测" subtitle={`record_forecast 载荷 · ${displaySource(finalSource)}`} />
       <div className="galaxy-final-answer">
         <span>预测值</span>
         <strong>{final.prediction}</strong>
@@ -279,11 +300,14 @@ function ActionTimeline({
 }) {
   return (
     <section className="console-card galaxy-action-timeline">
-      <InfoTitle title="动作时间线" subtitle="events.jsonl → 脱敏动作追踪" />
+      <InfoTitle title="动作时间线" subtitle={`events.jsonl → 脱敏动作追踪（共 ${actions.length} 步）`} />
       <div className="galaxy-action-list">
         {actions.map((action) => (
           <button
-            className={selectedActionId === action.actionId ? "selected" : ""}
+            className={[
+              selectedActionId === action.actionId ? "selected" : "",
+              action.criticalPath ? "critical-path" : "",
+            ].filter(Boolean).join(" ")}
             key={action.actionId}
             onClick={() => onSelectAction(action.actionId)}
             type="button"
@@ -332,9 +356,9 @@ function ActionInspector({ action }: { action: GalaxyActionTraceItem | null }) {
       } else if (!copyWithFallback(rawPath)) {
         throw new Error("clipboard unavailable");
       }
-      setCopyMessage("Copied raw path");
+      setCopyMessage("已复制");
     } catch {
-      setCopyMessage(copyWithFallback(rawPath) ? "Copied raw path" : "Copy failed");
+      setCopyMessage(copyWithFallback(rawPath) ? "已复制" : "复制失败");
     }
   }
   return (
@@ -490,7 +514,7 @@ export function ForecastPage({
   const final = finalPayload(projection, actions, finalSource, runtimeLiveStatus?.runId);
   const showNumericForecast = isNumericForecastQuestion(projection.galaxyRun?.question, final.prediction);
 
-  const refreshGalaxyArtifact = useCallback(async (message = "Artifact refreshed.") => {
+  const refreshGalaxyArtifact = useCallback(async (message = "已加载最新 artifact。") => {
     const galaxyResponse = await fetch("/api/galaxy-hormuz/latest");
     if (!galaxyResponse.ok) {
       throw new Error(`latest artifact request failed: ${galaxyResponse.status}`);
@@ -550,12 +574,12 @@ export function ForecastPage({
       }
     }
     if (statusPayload.status === "completed") {
-      setGalaxyRunMessage(`${runtimeConfig.galaxy.label} completed; latest artifact now points to this run.`);
-      await refreshGalaxyArtifact(`${runtimeConfig.galaxy.label} completed; final forecast is from the current run.`);
+      setGalaxyRunMessage("galaxy 运行完成，artifact 已更新至当前运行。");
+      await refreshGalaxyArtifact("galaxy 运行完成，预测结果来自当前运行。");
     } else if (statusPayload.status === "failed") {
-      setGalaxyRunMessage(statusPayload.error ?? `${runtimeConfig.galaxy.label} failed; keeping the last valid trace.`);
+      setGalaxyRunMessage(statusPayload.error ?? "galaxy 运行失败，保留上次有效追踪。");
     } else {
-      setGalaxyRunMessage(`Live run ${statusPayload.runId} · ${statusPayload.elapsed}s · ${statusPayload.runDir}`);
+      setGalaxyRunMessage(`运行中 ${statusPayload.runId} · 已耗时 ${statusPayload.elapsed}s`);
     }
   }, [liveStatus?.runId, liveTrace?.actions, mergeTrace, refreshGalaxyArtifact]);
 
@@ -567,7 +591,7 @@ export function ForecastPage({
         await pollLiveRun(liveStatus.runId);
       } catch (error) {
         if (!cancelled) {
-          setGalaxyRunMessage(error instanceof Error ? error.message : "Live trace polling failed.");
+          setGalaxyRunMessage(error instanceof Error ? error.message : "追踪轮询失败。");
         }
       }
     };
@@ -583,7 +607,7 @@ export function ForecastPage({
 
   useEffect(() => {
     if (!latestCompletedArtifact) {
-      void refreshGalaxyArtifact("Loaded last completed galaxy artifact.");
+      void refreshGalaxyArtifact("已加载最近完成的 galaxy artifact。");
     }
   }, [latestCompletedArtifact, refreshGalaxyArtifact]);
 
@@ -591,13 +615,13 @@ export function ForecastPage({
     try {
       await refreshGalaxyArtifact();
     } catch (error) {
-      setGalaxyRunMessage(error instanceof Error ? error.message : "Artifact refresh failed.");
+      setGalaxyRunMessage(error instanceof Error ? error.message : "刷新失败。");
     }
   }
 
   async function handleRunGalaxy() {
     const config = runtimeConfig.galaxy;
-    setGalaxyRunMessage(`Starting ${config.label} runtime...`);
+    setGalaxyRunMessage("正在启动 galaxy 运行...");
     try {
       const response = await fetch(config.startPath, { method: "POST" });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -631,10 +655,10 @@ export function ForecastPage({
       setLiveArtifact(null);
       setLiveTrace(null);
       setSelectedActionId(null);
-      setGalaxyRunMessage(`Started ${status.runId}; waiting for main_agent.jsonl trace.`);
+      setGalaxyRunMessage(`已启动 ${status.runId}，等待 main_agent.jsonl 追踪数据。`);
       if (status.runId) await pollLiveRun(status.runId, true);
     } catch (error) {
-      setGalaxyRunMessage(error instanceof Error ? error.message : `${config.label} run failed.`);
+      setGalaxyRunMessage(error instanceof Error ? error.message : "galaxy 运行启动失败。");
     }
   }
 

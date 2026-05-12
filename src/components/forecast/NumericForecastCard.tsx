@@ -115,10 +115,11 @@ export function NumericForecastCard({
   const DirectionIcon = direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
   const payload = final.payload;
   const runtimeLabel = runtime === "galaxy" ? "真实 galaxy 运行" : "离线 Demo";
+  const finalSourceZh = finalSource === "current run" ? "当前运行" : "上次完成";
 
   return (
     <section className="console-card numeric-forecast-card">
-      <InfoTitle title="数值预测" subtitle={`${finalSource} · ${final.terminal}`} />
+      <InfoTitle title="数值预测" subtitle={`${finalSourceZh} · ${final.terminal}`} />
       <div className="numeric-forecast-answer">
         <span>Brent weekly high · USD/bbl · FRED DCOILBRENTEU</span>
         <em>{runtimeLabel}</em>

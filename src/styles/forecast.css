@@ -370,7 +370,105 @@
   }
 }
 
-/* Galaxy forecast-agent viewer ------------------------------------------------ */
+/* Chip variants in hero ---------------------------------------------------- */
+
+.forecast-page .galaxy-run-chips span.status-chip {
+  border-color: #d5e4f7;
+  color: #315b88;
+  background: #f0f7ff;
+}
+
+.forecast-page .galaxy-run-chips span.status-chip.status-running {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #eff6ff;
+  animation: forecast-pulse 1.6s ease-in-out infinite;
+}
+
+.forecast-page .galaxy-run-chips span.status-chip.status-completed,
+.forecast-page .galaxy-run-chips span.status-chip.status-success {
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.forecast-page .galaxy-run-chips span.status-chip.status-failed {
+  border-color: #fca5a5;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.forecast-page .galaxy-run-chips span.prediction-chip {
+  border-color: #fcd34d;
+  color: #92400e;
+  background: #fffbeb;
+  font-weight: 950;
+}
+
+@keyframes forecast-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* Collapsible command block ------------------------------------------------- */
+
+.forecast-page .galaxy-command-detail {
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.forecast-page .galaxy-command-detail summary {
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.forecast-page .galaxy-command-detail summary::-webkit-details-marker { display: none; }
+
+.forecast-page .galaxy-command-detail summary::before {
+  content: "▶ ";
+  font-size: 0.64rem;
+  opacity: 0.6;
+}
+
+.forecast-page .galaxy-command-detail[open] summary::before { content: "▼ "; }
+
+.forecast-page .galaxy-command-detail code {
+  display: block;
+  margin: 0 10px 10px;
+  padding: 10px;
+  border: 1px solid #d9e5f3;
+  border-radius: 7px;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Timeline critical-path highlight ----------------------------------------- */
+
+.forecast-page .galaxy-action-list button.critical-path {
+  border-color: #f4c56e;
+  background: linear-gradient(180deg, #fffdf7, #fffbeb);
+}
+
+.forecast-page .galaxy-action-list button.critical-path i {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.forecast-page .galaxy-action-list button.critical-path em {
+  color: #b45309;
+}
+
+
 .galaxy-agent-page {
   gap: 18px;
 }

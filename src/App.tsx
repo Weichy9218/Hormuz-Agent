@@ -4,7 +4,7 @@ import { AppHeader } from "./components/layout/AppHeader";
 import { sourceBoundaryFacts } from "./data";
 import { ForecastPage } from "./pages/ForecastPage";
 import { MarketPage } from "./pages/MarketPage";
-import { NewsTimelinePage } from "./pages/NewsTimelinePage";
+import { NewsPage } from "./pages/NewsPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { scenarioOrder } from "./state/forecastStore";
 import { projectOverviewState } from "./state/projections";
@@ -35,7 +35,7 @@ function App() {
 
       {activePage === "overview" ? <OverviewPage /> : null}
       {activePage === "market" ? <MarketPage /> : null}
-      {activePage === "news" ? <NewsTimelinePage /> : null}
+      {activePage === "news" ? <NewsPage /> : null}
       {activePage === "forecast" ? (
         <ForecastPage selectedTarget={selectedTarget} onSelectTarget={setSelectedTarget} />
       ) : null}
