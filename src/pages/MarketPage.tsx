@@ -207,7 +207,11 @@ const marketPageCss = `
   gap: 14px;
 }
 
-.market-m8-section.wide .market-m8-chart-card {
+.market-m8-section-grid .market-m8-chart-card {
+  grid-column: auto;
+}
+
+.market-m8-section.wide .market-m8-section-grid .market-m8-chart-card {
   grid-column: 1 / -1;
 }
 
@@ -325,6 +329,7 @@ const marketPageCss = `
 }
 
 .market-m8-marker {
+  fill: currentColor;
   stroke: #ffffff;
   stroke-width: 2;
 }
@@ -576,6 +581,10 @@ function toDayMs(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function daysBetween(laterMs: number, earlierMs: number) {
+  return Math.round((laterMs - earlierMs) / dayMs);
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "pending";
   return new Intl.DateTimeFormat("en", {
@@ -652,13 +661,17 @@ function linePath(
   points: MarketChartPoint[],
   xForDate: (date: string) => number,
   yForValue: (value: number) => number,
+  maxGapDays = 3,
 ) {
   if (points.length < 2) return "";
   return points
     .map((point, index) => {
       const x = xForDate(point.date);
       const y = yForValue(point.value);
-      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+      const previous = points[index - 1];
+      const command =
+        !previous || daysBetween(toDayMs(point.date), toDayMs(previous.date)) > maxGapDays ? "M" : "L";
+      return `${command}${x.toFixed(1)} ${y.toFixed(1)}`;
     })
     .join(" ");
 }
@@ -764,7 +777,8 @@ function LineChartSvg({
     padding.top + plotHeight - ((value - domain.min) / (domain.max - domain.min || 1)) * plotHeight;
   const bandStartMs = Math.max(structureStartMs, range.startMs);
   const showStructureBand = bandStartMs <= range.endMs;
-  const markerCap = showMarkers ? 80 : 12;
+  const shouldShowEveryMarker = Boolean(showMarkers);
+  const maxGapDays = shouldShowEveryMarker ? 45 : 3;
 
   return (
     <svg className="market-m8-chart-svg" viewBox={`0 0 ${width} ${height}`} role="img">
@@ -836,11 +850,10 @@ function LineChartSvg({
       })}
 
       {series.map((item) => {
-        const path = linePath(item.points, xForDate, yForValue);
-        const markers =
-          item.points.length <= markerCap
-            ? item.points
-            : [item.points[item.points.length - 1]].filter(Boolean);
+        const path = linePath(item.points, xForDate, yForValue, maxGapDays);
+        const markers = shouldShowEveryMarker
+          ? item.points
+          : [item.points[item.points.length - 1]].filter(Boolean);
         return (
           <g key={item.id}>
             {path ? (
@@ -856,8 +869,8 @@ function LineChartSvg({
                 cx={xForDate(point.date)}
                 cy={yForValue(point.value)}
                 key={`${item.id}-${point.date}`}
-                r={showMarkers ? 4 : 3.5}
-                style={{ fill: item.color }}
+                r={shouldShowEveryMarker ? 4 : 3}
+                style={{ color: item.color, fill: item.color }}
               >
                 <title>
                   {item.label}: {valueLabel(point.value)} on {point.date}

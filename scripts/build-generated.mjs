@@ -138,7 +138,9 @@ function newestIso(values) {
 }
 
 function numeric(value) {
-  const number = Number(value);
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  const number = Number(s);
   return Number.isFinite(number) ? number : null;
 }
 
