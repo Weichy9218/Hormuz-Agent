@@ -46,8 +46,8 @@ function Sparkline({
   prediction: number | null;
 }) {
   const width = 320;
-  const height = 128;
-  const padding = 18;
+  const height = 100;
+  const padding = 16;
   const values = points.map((point) => point.value);
   if (prediction != null) values.push(prediction);
   const minValue = Math.min(...values);
@@ -98,6 +98,7 @@ export function NumericForecastCard({
 }: NumericForecastCardProps) {
   const prediction = parseForecastNumber(final.prediction);
   const latest = brentSeries.points.at(-1) ?? null;
+  const earliest = brentSeries.points.at(0) ?? null;
   const window =
     typeof question?.metadata?.resolution_window === "object"
       ? question.metadata.resolution_window
@@ -116,15 +117,21 @@ export function NumericForecastCard({
   const payload = final.payload;
   const runtimeLabel = runtime === "galaxy" ? "真实 galaxy 运行" : "离线 Demo";
   const finalSourceZh = finalSource === "current run" ? "当前运行" : "上次完成";
+  const sparklineRange = earliest && latest ? `${earliest.date} → ${latest.date}` : "加载中";
+  const keyEvidenceItems = payload?.keyEvidenceItems?.length
+    ? payload.keyEvidenceItems
+    : ["等待 record_forecast 载荷"];
+  const counterEvidenceItems = payload?.counterEvidenceItems ?? [];
+  const openConcerns = payload?.openConcerns ?? [];
 
   return (
     <section className="console-card numeric-forecast-card">
       <InfoTitle title="数值预测" subtitle={`${finalSourceZh} · ${final.terminal}`} />
       <div className="numeric-forecast-answer">
-        <span>Brent weekly high · USD/bbl · FRED DCOILBRENTEU</span>
+        <span>Brent weekly high · USD/bbl · FRED DCOILBRENTEU（现货日价）</span>
         <em>{runtimeLabel}</em>
         <strong>{formatPrice(prediction)} <small>USD/bbl</small></strong>
-        <p>FRED DCOILBRENTEU · {window ? `${window.start_date} → ${window.end_date}` : "目标窗口待定"}</p>
+        <p>分辨率窗口 · {window ? `${window.start_date} → ${window.end_date}` : "目标窗口待定"}</p>
       </div>
       <div className="numeric-forecast-chart">
         <Sparkline points={brentSeries.points} prediction={prediction} />
@@ -147,20 +154,20 @@ export function NumericForecastCard({
         </div>
       </div>
       <div className="numeric-forecast-source">
-        <span><Target size={14} /> 目标序列 {brentSeries.seriesId}</span>
-        <span><Activity size={14} /> 数据获取 {brentSeries.retrievedAt || "待定"}</span>
+        <span><Target size={14} /> 图示范围 {sparklineRange}（{brentSeries.points.length} 日）</span>
+        <span><Activity size={14} /> FRED 抓取 {brentSeries.retrievedAt || "待定"}</span>
+        <span className="numeric-forecast-note">现货说明：DCOILBRENTEU 为 ICE Brent 现货日价，非期货；ICE M1 期货通常与现货差 ±$1–3/bbl。</span>
       </div>
-      <p>{payload?.rationale ?? final.action?.summary ?? "当前运行尚未记录数值预测。"}</p>
-      <div className="galaxy-final-lists">
+      <details className="galaxy-final-lists compact" open={false}>
+        <summary>证据列表 · {keyEvidenceItems.length + counterEvidenceItems.length + openConcerns.length} 条</summary>
         <strong>关键证据</strong>
-        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item) => (
-          <p key={item}>{item}</p>
-        ))}
-        {payload?.counterEvidenceItems?.length ? <strong>反向证据</strong> : null}
-        {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
-        {payload?.openConcerns?.length ? <strong>待观察风险</strong> : null}
-        {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
-      </div>
+        {keyEvidenceItems.map((item) => <p key={item}>{item}</p>)}
+        {counterEvidenceItems.length ? <strong>反向证据</strong> : null}
+        {counterEvidenceItems.map((item) => <p key={item}>{item}</p>)}
+        {openConcerns.length ? <strong>待观察风险</strong> : null}
+        {openConcerns.map((item) => <p key={item}>{item}</p>)}
+      </details>
+      <p className="numeric-forecast-rationale">{payload?.rationale ?? final.action?.summary ?? "当前运行尚未记录数值预测。"}</p>
     </section>
   );
 }

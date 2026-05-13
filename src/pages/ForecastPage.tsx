@@ -1,5 +1,5 @@
 // Forecast page focused on live galaxy-selfevolve run visualization.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   Clock3,
@@ -28,6 +28,23 @@ import type {
 
 type ForecastProjection = ReturnType<typeof projectForecastState>;
 type RunStatus = "idle" | "running" | "completed" | "failed";
+type QuestionPreset = "brent_weekly_high" | "custom";
+type SidePanelTab = "result" | "inspector";
+
+const customQuestionExamples = [
+  {
+    id: "gold-weekly-high",
+    label: "黄金本周最高价",
+    text:
+      "During the trading week containing 2026-05-13 (UTC+8), from 2026-05-13 through 2026-05-15 inclusive, what will be the highest daily gold spot price, in USD per troy ounce? Use a clearly named public resolution source, report one numeric value, and explain the source boundary.",
+  },
+  {
+    id: "hormuz-traffic-risk",
+    label: "Hormuz traffic risk",
+    text:
+      "By 2026-05-15 23:59 UTC, will public maritime reporting indicate a material disruption to Strait of Hormuz traffic? Answer yes/no, name the resolution sources, and separate direct traffic evidence from market context.",
+  },
+] as const;
 
 interface LiveRunStatus {
   runId: string;
@@ -102,7 +119,9 @@ const finalSourceZh = {
 function displayStatus(s: string) { return statusZh[s] ?? s; }
 function displaySource(s: "current run" | "last completed") { return finalSourceZh[s]; }
 
-function questionSummary(projection: ForecastProjection) {
+function questionSummary(projection: ForecastProjection, customQuestionText?: string) {
+  const customText = customQuestionText?.trim();
+  if (customText) return customText;
   const q = projection.galaxyRun?.question;
   if (!q) return "尚未加载预测问题。";
   const meta = q.metadata;
@@ -111,8 +130,36 @@ function questionSummary(projection: ForecastProjection) {
     const dateRange = win ? `${win.start_date ?? ""} → ${win.end_date ?? ""}` : (meta.generated_for_date as string | undefined ?? "");
     return `预测目标：${dateRange} 当周 Brent 原油最高日价，分辨率来源 FRED DCOILBRENTEU，单位 USD/bbl。`;
   }
+  if (meta?.question_kind === "custom") {
+    const desc = q.task_description ?? "";
+    const prefix = "Custom question: ";
+    return desc.startsWith(prefix) ? desc.slice(prefix.length).trim() : desc.trim();
+  }
   const quoted = q.task_question?.match(/"""([\s\S]*?)"""/)?.[1];
   return (quoted ?? q.task_description ?? "").trim().replace(/\s+/g, " ").slice(0, 200);
+}
+
+function inferCustomQuestionTopic(text: string) {
+  const lower = text.toLowerCase();
+  if (/\bgold\b|黄金|xau/.test(lower)) {
+    return {
+      title: "黄金周高预测",
+      unit: "USD/troy oz",
+      sourceBoundary: "需由 agent 在运行中明确 resolution source；本地未接 gold 实测序列。",
+    };
+  }
+  if (/hormuz|traffic|strait|transit|portwatch|通航|霍尔木兹/.test(lower)) {
+    return {
+      title: "Hormuz traffic 预测",
+      unit: "question-defined",
+      sourceBoundary: "需区分 PortWatch / official advisory / media context，不能把市场价格当作交通实测。",
+    };
+  }
+  return {
+    title: "自定义预测",
+    unit: "question-defined",
+    sourceBoundary: "自定义问题没有本地 grounding 卡；最终以 record_forecast 载荷和 Inspector 证据为准。",
+  };
 }
 
 function compactPath(path: string, keepSegments = 2) {
@@ -180,6 +227,10 @@ function GalaxyRunHeader({
   liveStatus,
   finalSource,
   runMessage,
+  questionPreset,
+  customQuestionText,
+  onQuestionPresetChange,
+  onCustomQuestionTextChange,
   onRun,
   onRefresh,
 }: {
@@ -188,6 +239,10 @@ function GalaxyRunHeader({
   liveStatus: LiveRunStatus | null;
   finalSource: "current run" | "last completed";
   runMessage: string;
+  questionPreset: QuestionPreset;
+  customQuestionText: string;
+  onQuestionPresetChange: (preset: QuestionPreset) => void;
+  onCustomQuestionTextChange: (text: string) => void;
   onRun: () => void;
   onRefresh: () => void;
 }) {
@@ -195,52 +250,144 @@ function GalaxyRunHeader({
   const meta = galaxy?.runMeta;
   const final = finalPayload(projection, actions, finalSource, liveStatus?.runId);
   const isRunning = liveStatus?.status === "running";
-  const runtimeInfo = runtimeConfig.galaxy;
-  const status = liveStatus?.status ?? meta?.status ?? "last completed";
-  const pid = liveStatus?.pid ?? null;
   const elapsed =
     liveStatus?.elapsed ?? (meta?.durationSeconds ? Math.round(meta.durationSeconds) : null);
   const runDir =
     liveStatus?.runDir ?? meta?.runDir ?? meta?.outputDir ?? "not loaded";
   const taskId = liveStatus?.taskId ?? meta?.taskId ?? projection.runId;
   const command = liveStatus?.command ?? meta?.command;
+  const isCustomPreset = questionPreset === "custom";
+  const customQuestionReady = customQuestionText.trim().length > 0;
+  const customTopic = inferCustomQuestionTopic(customQuestionText);
+  const canRun = !isRunning && (!isCustomPreset || customQuestionReady);
+  const runButtonLabel = isRunning
+    ? "运行中..."
+    : isCustomPreset
+      ? "运行自定义问题"
+      : "运行 Brent 预测";
+  const finalMetricLabel = finalSource === "current run" ? "当前预测" : "上次预测";
 
   return (
     <section className="console-card galaxy-agent-hero">
       <div className="galaxy-agent-copy">
+        <span className="galaxy-kicker">Forecast truth surface</span>
         <h1>预测 Agent 行为查看器</h1>
-        <p>{questionSummary(projection)}</p>
-        <div className="galaxy-run-chips">
-          <span className={`status-chip status-${liveStatus?.status ?? meta?.status ?? "idle"}`}>
-            {displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}
-          </span>
-          {meta?.demo ? <span className="demo">[DEMO]</span> : null}
-          {elapsed != null && elapsed > 0 ? <span>耗时 {elapsed}s</span> : null}
-          {taskId ? <span title={taskId}>{taskId.slice(0, 36)}</span> : null}
-          <span className="prediction-chip">预测值 {final.prediction}</span>
+        <p className="galaxy-agent-lede">
+          先锁定问题，再看 agent 如何搜证据、压缩证据链，并最终落到 record_forecast。
+        </p>
+        <div className="galaxy-question-config">
+          <div className="galaxy-question-config-head">
+            <span>问题设置</span>
+            <div className="galaxy-preset-toggle" role="group" aria-label="问题预设">
+              <button
+                type="button"
+                className={questionPreset === "brent_weekly_high" ? "selected" : ""}
+                onClick={() => onQuestionPresetChange("brent_weekly_high")}
+              >
+                Brent 周高
+              </button>
+              <button
+                type="button"
+                className={questionPreset === "custom" ? "selected" : ""}
+                onClick={() => onQuestionPresetChange("custom")}
+              >
+                自定义问题
+              </button>
+            </div>
+          </div>
+          {isCustomPreset ? (
+            <div className="galaxy-custom-question">
+              <label htmlFor="galaxy-custom-question">预测问题</label>
+              <div className="galaxy-question-examples" aria-label="自定义问题示例">
+                {customQuestionExamples.map((example) => (
+                  <button
+                    key={example.id}
+                    type="button"
+                    onClick={() => onCustomQuestionTextChange(example.text)}
+                  >
+                    {example.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                id="galaxy-custom-question"
+                className="galaxy-question-textarea"
+                value={customQuestionText}
+                onChange={(e) => onCustomQuestionTextChange(e.target.value)}
+                placeholder="输入一个可解析的预测问题，最好包含时间窗口、单位或 resolution source。"
+                rows={4}
+              />
+              <small>
+                空白时不会启动自定义 run；请写清楚目标和答案格式，agent 会补充 boxed-format instruction。
+              </small>
+              <p className="galaxy-question-current">
+                当前目标 · {customQuestionText.trim()
+                  ? `${customTopic.title} · ${questionSummary(projection, customQuestionText)}`
+                  : "尚未输入自定义预测问题。"}
+              </p>
+            </div>
+          ) : (
+            <div className="galaxy-question-preview">
+              <span>当前目标</span>
+              <p>{questionSummary(projection)}</p>
+            </div>
+          )}
         </div>
+        <dl className="galaxy-hero-metrics">
+          <div>
+            <dt>状态</dt>
+            <dd className={`status-chip status-${liveStatus?.status ?? meta?.status ?? "idle"}`}>
+              {displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}
+            </dd>
+          </div>
+          <div>
+            <dt>{finalMetricLabel}</dt>
+            <dd>{final.prediction}</dd>
+          </div>
+          <div>
+            <dt>Run</dt>
+            <dd title={taskId}>{taskId ? taskId.replace(/^hormuz-/, "") : "not loaded"}</dd>
+          </div>
+          <div>
+            <dt>耗时</dt>
+            <dd>{elapsed != null && elapsed > 0 ? `${elapsed}s` : "pending"}</dd>
+          </div>
+        </dl>
+        {meta?.demo ? <span className="galaxy-demo-note">当前 artifact 是 demo，不应作为真实 forecast truth。</span> : null}
       </div>
       <div className="galaxy-agent-command">
         <InfoTitle title="运行控制" subtitle="galaxy-selfevolve · 启动 / 状态 / 追踪" />
+        <div className="galaxy-run-status-card">
+          <span>{displaySource(finalSource)}</span>
+          <strong>{displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}</strong>
+          <small>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "未知更新时间"}</small>
+        </div>
         <dl className="galaxy-run-kv">
           <div><dt>输出目录</dt><dd title={runDir}>{compactPath(runDir, 2)}</dd></div>
-          <div><dt>最后更新</dt><dd>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "未知"}</dd></div>
-          <div><dt>来源</dt><dd>{displaySource(finalSource)}</dd></div>
+          <div><dt>Task</dt><dd title={taskId}>{taskId ?? "not loaded"}</dd></div>
         </dl>
         <details className="galaxy-command-detail">
           <summary>查看执行命令</summary>
           <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
         </details>
         <div className="galaxy-run-actions">
-          <button type="button" onClick={onRun} disabled={isRunning}>
+          <button type="button" onClick={onRun} disabled={!canRun} title={!canRun ? "请先输入自定义预测问题" : undefined}>
             {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
-            {isRunning ? "运行中..." : "运行 Galaxy"}
+            {runButtonLabel}
           </button>
           <button type="button" onClick={onRefresh}>
             <RefreshCw size={15} />
             刷新上次结果
           </button>
         </div>
+        {isCustomPreset ? (
+          <p className={`galaxy-run-hint ${customQuestionReady ? "ready" : ""}`}>
+            <FileText size={14} />
+            {customQuestionReady
+              ? "将以自定义问题启动新的 galaxy run；运行完成前右侧仍显示上次完成结果。"
+              : "输入自定义问题后才能启动；当前结果仍来自上次完成 run。"}
+          </p>
+        ) : null}
         {runMessage ? <p className="galaxy-run-message">{runMessage}</p> : null}
       </div>
     </section>
@@ -289,6 +436,55 @@ function FinalForecastCard({
   );
 }
 
+function CustomForecastCard({
+  projection,
+  actions,
+  finalSource,
+  customQuestionText,
+}: {
+  projection: ForecastProjection;
+  actions: GalaxyActionTraceItem[];
+  finalSource: "current run" | "last completed";
+  customQuestionText: string;
+}) {
+  const final = finalPayload(projection, actions, finalSource);
+  const payload = final.payload;
+  const topic = inferCustomQuestionTopic(customQuestionText);
+  const evidenceCount =
+    (payload?.keyEvidenceItems?.length ?? 0) +
+    (payload?.counterEvidenceItems?.length ?? 0) +
+    (payload?.openConcerns?.length ?? 0);
+
+  return (
+    <section className="console-card custom-forecast-card">
+      <InfoTitle title={topic.title} subtitle={`${displaySource(finalSource)} · custom question`} />
+      <div className="custom-forecast-answer">
+        <span>预测值</span>
+        <strong>{final.prediction}</strong>
+        <p>单位 {topic.unit} · 置信度 {final.confidence} · 终止原因 {final.terminal}</p>
+      </div>
+      <div className="custom-source-boundary">
+        <b>Source boundary</b>
+        <p>{topic.sourceBoundary}</p>
+      </div>
+      <details className="galaxy-final-lists compact">
+        <summary>record_forecast evidence · {evidenceCount || "pending"}</summary>
+        <strong>关键证据</strong>
+        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item) => (
+          <p key={item}>{item}</p>
+        ))}
+        {payload?.counterEvidenceItems?.length ? <strong>反向证据</strong> : null}
+        {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
+        {payload?.openConcerns?.length ? <strong>待观察风险</strong> : null}
+        {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
+      </details>
+      <p className="numeric-forecast-rationale">
+        {payload?.rationale ?? final.action?.summary ?? "自定义 run 尚未记录最终预测。运行完成后这里显示 record_forecast rationale。"}
+      </p>
+    </section>
+  );
+}
+
 function ActionTimeline({
   actions,
   selectedActionId,
@@ -296,8 +492,20 @@ function ActionTimeline({
 }: {
   actions: GalaxyActionTraceItem[];
   selectedActionId: string | null;
-  onSelectAction: (actionId: string) => void;
+  onSelectAction: (actionId: string | null) => void;
 }) {
+  const itemRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    if (!selectedActionId) return;
+    const node = itemRefs.current.get(selectedActionId);
+    if (!node) return;
+    const container = node.closest(".galaxy-action-list");
+    if (!(container instanceof HTMLElement)) return;
+    const targetTop =
+      node.offsetTop - Math.max(0, (container.clientHeight - node.clientHeight) / 2);
+    container.scrollTo({ top: targetTop, behavior: "smooth" });
+  }, [selectedActionId]);
+
   return (
     <section className="console-card galaxy-action-timeline">
       <InfoTitle title="动作时间线" subtitle={`events.jsonl → 脱敏动作追踪（共 ${actions.length} 步）`} />
@@ -310,6 +518,13 @@ function ActionTimeline({
             ].filter(Boolean).join(" ")}
             key={action.actionId}
             onClick={() => onSelectAction(action.actionId)}
+            ref={(node) => {
+              if (node) {
+                itemRefs.current.set(action.actionId, node);
+              } else {
+                itemRefs.current.delete(action.actionId);
+              }
+            }}
             type="button"
           >
             <i>{actionIcon(action.kind, action.toolName)}</i>
@@ -489,6 +704,9 @@ export function ForecastPage({
   const [liveStatus, setLiveStatus] = useState<LiveRunStatus | null>(null);
   const [galaxyRunMessage, setGalaxyRunMessage] = useState("");
   const [graphMode, setGraphMode] = useState<"summary" | "full">("summary");
+  const [questionPreset, setQuestionPreset] = useState<QuestionPreset>("brent_weekly_high");
+  const [customQuestionText, setCustomQuestionText] = useState("");
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>("result");
   const runtimeLiveStatus = liveStatus;
   const runtimeGalaxyArtifact = liveArtifact ?? latestCompletedArtifact ?? undefined;
   const projection = useMemo(
@@ -512,7 +730,12 @@ export function ForecastPage({
       ? "current run"
       : "last completed";
   const final = finalPayload(projection, actions, finalSource, runtimeLiveStatus?.runId);
-  const showNumericForecast = isNumericForecastQuestion(projection.galaxyRun?.question, final.prediction);
+  const showCustomForecast = questionPreset === "custom";
+  const showNumericForecast = !showCustomForecast && isNumericForecastQuestion(projection.galaxyRun?.question, final.prediction);
+  const handleSelectAction = useCallback((actionId: string | null) => {
+    setSelectedActionId(actionId);
+    if (actionId) setSidePanelTab("inspector");
+  }, []);
 
   const refreshGalaxyArtifact = useCallback(async (message = "已加载最新 artifact。") => {
     const galaxyResponse = await fetch("/api/galaxy-hormuz/latest");
@@ -623,7 +846,15 @@ export function ForecastPage({
     const config = runtimeConfig.galaxy;
     setGalaxyRunMessage("正在启动 galaxy 运行...");
     try {
-      const response = await fetch(config.startPath, { method: "POST" });
+      const body: Record<string, string> = {};
+      if (questionPreset === "custom" && customQuestionText.trim()) {
+        body.questionText = customQuestionText.trim();
+      }
+      const response = await fetch(config.startPath, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
       const payload = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
         runId?: string;
@@ -670,6 +901,10 @@ export function ForecastPage({
         liveStatus={runtimeLiveStatus}
         finalSource={finalSource}
         runMessage={galaxyRunMessage}
+        questionPreset={questionPreset}
+        customQuestionText={customQuestionText}
+        onQuestionPresetChange={setQuestionPreset}
+        onCustomQuestionTextChange={setCustomQuestionText}
         onRun={handleRunGalaxy}
         onRefresh={handleRefreshGalaxyArtifact}
       />
@@ -683,31 +918,61 @@ export function ForecastPage({
             onSetMode={setGraphMode}
             traceKey={traceKey}
             selectedActionId={selectedActionId}
-            onSelectAction={setSelectedActionId}
+            onSelectAction={handleSelectAction}
           />
           <ActionTimeline
             actions={actions}
             selectedActionId={selectedActionId}
-            onSelectAction={setSelectedActionId}
+            onSelectAction={handleSelectAction}
           />
         </main>
         <aside className="galaxy-agent-side">
-          {showNumericForecast ? (
-            <NumericForecastCard
-              question={projection.galaxyRun?.question}
-              final={final}
-              brentSeries={brentDailySeries}
-              finalSource={finalSource}
-              runtime="galaxy"
-            />
+          <div className="galaxy-side-tabs" role="tablist" aria-label="右侧面板">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sidePanelTab === "result"}
+              className={sidePanelTab === "result" ? "selected" : ""}
+              onClick={() => setSidePanelTab("result")}
+            >
+              Result
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sidePanelTab === "inspector"}
+              className={sidePanelTab === "inspector" ? "selected" : ""}
+              onClick={() => setSidePanelTab("inspector")}
+            >
+              Inspector
+            </button>
+          </div>
+          {sidePanelTab === "result" ? (
+            showNumericForecast ? (
+              <NumericForecastCard
+                question={projection.galaxyRun?.question}
+                final={final}
+                brentSeries={brentDailySeries}
+                finalSource={finalSource}
+                runtime="galaxy"
+              />
+            ) : showCustomForecast ? (
+              <CustomForecastCard
+                projection={projection}
+                actions={actions}
+                finalSource={finalSource}
+                customQuestionText={customQuestionText}
+              />
+            ) : (
+              <FinalForecastCard
+                projection={projection}
+                actions={actions}
+                finalSource={finalSource}
+              />
+            )
           ) : (
-            <FinalForecastCard
-              projection={projection}
-              actions={actions}
-              finalSource={finalSource}
-            />
+            <ActionInspector action={selectedAction} />
           )}
-          <ActionInspector action={selectedAction} />
         </aside>
       </section>
     </section>

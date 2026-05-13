@@ -34,10 +34,12 @@ import type {
   ForecastAgentGraphNode,
 } from "../../types/forecastAgent";
 
-type GalaxyLane = NonNullable<GalaxyActionTraceItem["lane"]>;
 type GraphMode = "summary" | "full";
 type GraphNodeInput = ForecastAgentGraphNode;
 type GraphEdgeInput = ForecastAgentGraphEdge;
+const STORY_NODE_LIMIT = 15;
+const NODE_WIDTH = 242;
+const NODE_HEIGHT = 126;
 
 interface GalaxyNodeData extends Record<string, unknown> {
   kind: GalaxyActionKind;
@@ -51,39 +53,7 @@ interface GalaxyNodeData extends Record<string, unknown> {
   lane?: string;
 }
 
-const laneOrder: GalaxyLane[] = [
-  "question",
-  "agent_turn",
-  "search_batch",
-  "read_artifacts",
-  "evidence_synthesis",
-  "forecast",
-  "checkpoint",
-];
-
-const laneLabel: Record<GalaxyLane, string> = {
-  question: "问题定义",
-  agent_turn: "Agent 思考",
-  search_batch: "检索批次",
-  read_artifacts: "读取证据",
-  evidence_synthesis: "证据综合",
-  forecast: "预测记录",
-  checkpoint: "检查点",
-};
-
-const forecastAgentLaneOrder = [
-  "question",
-  "source",
-  "search",
-  "read",
-  "evidence",
-  "mechanism",
-  "judgement",
-  "forecast",
-  "checkpoint",
-] as const;
-
-const forecastAgentLaneLabel: Record<(typeof forecastAgentLaneOrder)[number], string> = {
+const forecastAgentLaneLabel: Record<ForecastAgentGraphNode["lane"], string> = {
   question: "问题",
   source: "数据边界",
   search: "检索",
@@ -137,10 +107,17 @@ function iconFor(kind: GalaxyActionKind, toolName?: string) {
 
 function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
   const Icon = iconFor(data.kind, data.toolName);
+  const tooltip = [
+    data.title,
+    data.summary,
+    data.criticalPath ? `Critical path: ${data.criticalReason ?? "record_forecast support"}` : "",
+  ].filter(Boolean).join("\n\n");
   return (
     <article
       className={`galaxy-action-node ${actionTone(data.kind)} ${data.status} ${data.criticalPath ? "critical-path" : ""} ${data.selected ? "selected" : ""}`}
+      aria-label={tooltip}
       tabIndex={0}
+      title={tooltip}
     >
       <Handle className="graph-handle" type="target" position={Position.Left} />
       <span>
@@ -193,16 +170,24 @@ function addActionId(ids: Set<string>, actionId?: string) {
   if (actionId) ids.add(actionId);
 }
 
-function addSourcePair(
-  ids: Set<string>,
+function sourcePairIds(
   action: GalaxyActionTraceItem,
   allById: Map<string, GalaxyActionTraceItem>,
 ) {
-  addActionId(ids, action.actionId);
+  const ids: string[] = [];
   for (const parentId of action.parentActionIds ?? []) {
     const parent = allById.get(parentId);
-    if (parent?.kind === "tool_call") addActionId(ids, parent.actionId);
+    if (parent?.kind === "tool_call") ids.push(parent.actionId);
   }
+  ids.push(action.actionId);
+  return [...new Set(ids)];
+}
+
+function addIfRoom(ids: Set<string>, nextIds: string[], limit = STORY_NODE_LIMIT) {
+  const missing = nextIds.filter((id) => !ids.has(id));
+  if (ids.size + missing.length > limit) return false;
+  for (const id of missing) ids.add(id);
+  return true;
 }
 
 function keyEvidenceActions(actions: GalaxyActionTraceItem[]) {
@@ -241,44 +226,41 @@ function keyEvidenceActions(actions: GalaxyActionTraceItem[]) {
   return selected;
 }
 
-function storyActionIds(actions: GalaxyActionTraceItem[]) {
+function storyActionIds(actions: GalaxyActionTraceItem[], selectedActionId?: string | null) {
   const allById = actionById(actions);
   const ids = new Set<string>();
-  for (const action of actions) {
-    if (action.kind === "question" || action.criticalPath) addActionId(ids, action.actionId);
-  }
+  addActionId(ids, actions.find((action) => action.kind === "question")?.actionId);
+  addActionId(ids, selectedActionId ?? undefined);
 
   const openingTurn =
     actions.find((action) => /question audit|plan|audit/i.test(action.summary) && action.kind === "assistant_note") ??
     actions.find((action) => action.kind === "assistant_note" || action.kind === "evidence_synthesis");
   addActionId(ids, openingTurn?.actionId);
 
-  if (![...ids].some((id) => {
-    const action = allById.get(id);
-    return action?.kind === "tool_result" || action?.kind === "artifact_read";
-  })) {
-    for (const action of keyEvidenceActions(actions)) {
-      addSourcePair(ids, action, allById);
-    }
-  }
-
   const finalSynthesis = [...actions].reverse().find((action) => action.kind === "evidence_synthesis");
   addActionId(ids, finalSynthesis?.actionId);
 
-  const forecastActions = actions.filter((action) => action.kind === "final_forecast");
+  const forecastActions = actions.filter(
+    (action) => action.kind === "final_forecast" || action.toolName === "record_forecast",
+  );
   for (const action of forecastActions) {
     addActionId(ids, action.actionId);
   }
 
-  for (const action of actions) {
-    if (action.kind === "checkpoint") addActionId(ids, action.actionId);
+  const checkpoint = [...actions].reverse().find((action) => action.kind === "checkpoint");
+  addActionId(ids, checkpoint?.actionId);
+
+  for (const action of keyEvidenceActions(actions)) {
+    if (ids.size >= STORY_NODE_LIMIT) break;
+    const pairIds = sourcePairIds(action, allById);
+    if (!addIfRoom(ids, pairIds)) addIfRoom(ids, [action.actionId]);
   }
   return ids;
 }
 
-function visibleActions(actions: GalaxyActionTraceItem[], mode: "summary" | "full") {
+function visibleActions(actions: GalaxyActionTraceItem[], mode: "summary" | "full", selectedActionId?: string | null) {
   if (mode === "full") return actions;
-  const ids = storyActionIds(actions);
+  const ids = storyActionIds(actions, selectedActionId);
   return actions.filter((action) => ids.has(action.actionId));
 }
 
@@ -350,7 +332,7 @@ function dagreLayout(
     marginy: 32,
   });
   for (const node of graph.nodes) {
-    dagreGraph.setNode(node.id, { width: 242, height: 126 });
+    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
   }
   for (const edge of graph.edges) {
     dagreGraph.setEdge(edge.source, edge.target);
@@ -365,8 +347,8 @@ function dagreLayout(
       id: node.id,
       type: "galaxyAction",
       position: {
-        x: (layout?.x ?? 0) - 121,
-        y: (layout?.y ?? 0) - 63,
+        x: (layout?.x ?? 0) - NODE_WIDTH / 2,
+        y: (layout?.y ?? 0) - NODE_HEIGHT / 2,
       },
       data: {
         kind,
@@ -391,13 +373,18 @@ function dagreLayout(
       animated: edge.label === "returns" || edge.label === "records" || edge.label === "persists",
       label: edge.label,
       className: `galaxy-action-edge ${edge.criticalPath ? "critical-path" : ""} ${targetAction?.kind ?? edge.label}`,
+      labelShowBg: true,
+      labelBgPadding: [6, 3] as [number, number],
+      labelBgBorderRadius: 6,
+      labelBgStyle: { fill: "#ffffff", fillOpacity: 0.94 },
+      labelStyle: { fill: "#475569", fontSize: 11, fontWeight: 800 },
     };
   });
   return { nodes, edges };
 }
 
-function graphFromActions(actions: GalaxyActionTraceItem[], mode: GraphMode) {
-  const visible = visibleActions(actions, mode);
+function graphFromActions(actions: GalaxyActionTraceItem[], mode: GraphMode, selectedActionId?: string | null) {
+  const visible = visibleActions(actions, mode, selectedActionId);
   const included = new Set(visible.map((action) => action.actionId));
   const allById = actionById(actions);
   const nodes: GraphNodeInput[] = visible.map((action) => ({
@@ -490,6 +477,33 @@ function FlowViewportFitter({ fitKey, hasNodes }: { fitKey: string; hasNodes: bo
   return null;
 }
 
+function FlowSelectedNodeFocuser({
+  selectedActionId,
+  nodes,
+}: {
+  selectedActionId: string | null;
+  nodes: Node<GalaxyNodeData>[];
+}) {
+  const reactFlow = useReactFlow();
+  useEffect(() => {
+    if (!selectedActionId) return;
+    const node = nodes.find((item) => item.id === selectedActionId);
+    if (!node) return;
+    const frame = window.requestAnimationFrame(() => {
+      void reactFlow.setCenter(
+        node.position.x + NODE_WIDTH / 2,
+        node.position.y + NODE_HEIGHT / 2,
+        {
+          duration: 220,
+          zoom: Math.max(reactFlow.getZoom(), 0.72),
+        },
+      );
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [nodes, reactFlow, selectedActionId]);
+  return null;
+}
+
 export function GalaxyActionGraph({
   actions,
   graph,
@@ -508,8 +522,8 @@ export function GalaxyActionGraph({
   onSelectAction: (actionId: string | null) => void;
 }) {
   const displayGraph = useMemo(
-    () => (mode === "full" && graph ? graph : graphFromActions(actions, mode)),
-    [actions, graph, mode],
+    () => (mode === "full" && graph ? graph : graphFromActions(actions, mode, selectedActionId)),
+    [actions, graph, mode, selectedActionId],
   );
   const laid = useMemo(
     () => dagreLayout(displayGraph, selectedActionId, actions),
@@ -517,12 +531,18 @@ export function GalaxyActionGraph({
   );
   const stableLayout = useStableNodePositions(laid, `${traceKey}:${mode}`);
   const graphShell = useElementSizeReady<HTMLDivElement>();
-  const laneStrip = mode === "full" && graph
-    ? forecastAgentLaneOrder.map((lane) => <span key={lane}>{forecastAgentLaneLabel[lane]}</span>)
-    : laneOrder.map((lane) => <span key={lane}>{laneLabel[lane]}</span>);
+  const graphLegend = [
+    { key: "question", label: "问题", tone: "question" },
+    { key: "tool", label: "工具调用", tone: "tool" },
+    { key: "result", label: "证据返回", tone: "result" },
+    { key: "synthesis", label: "证据综合", tone: "synthesis" },
+    { key: "final", label: "最终预测", tone: "final" },
+    { key: "checkpoint", label: "检查点", tone: "checkpoint" },
+    { key: "critical", label: "关键路径", tone: "critical" },
+  ];
   const criticalCount = stableLayout.nodes.filter((n) => (n.data as GalaxyNodeData).criticalPath).length;
   const graphCaption = mode === "summary"
-    ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 橙色节点为直接支撑最终预测的证据链`
+    ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 琥珀边框表示直接支撑最终预测`
     : `完整审计 · ${stableLayout.nodes.length} 个动作 · ${stableLayout.edges.length} 条依赖边 · 其中 ${criticalCount} 个关键路径节点`;
 
   return (
@@ -548,8 +568,10 @@ export function GalaxyActionGraph({
           ))}
         </div>
       </div>
-      <div className="galaxy-lane-strip" aria-label="Galaxy graph lanes">
-        {laneStrip}
+      <div className="galaxy-lane-strip galaxy-graph-legend" aria-label="Galaxy graph node legend">
+        {graphLegend.map((item) => (
+          <span className={`legend-${item.tone}`} key={item.key}>{item.label}</span>
+        ))}
       </div>
       <div className="galaxy-action-graph-shell" ref={graphShell.ref}>
         {stableLayout.nodes.length > 0 && graphShell.ready ? (
@@ -569,15 +591,18 @@ export function GalaxyActionGraph({
             onPaneClick={() => onSelectAction(null)}
           >
             <FlowViewportFitter fitKey={`${traceKey}:${mode}`} hasNodes={stableLayout.nodes.length > 0} />
+            <FlowSelectedNodeFocuser selectedActionId={selectedActionId} nodes={stableLayout.nodes} />
             <Background color="rgba(120, 153, 180, 0.22)" gap={24} />
             <Controls showInteractive={false} />
-            <MiniMap
-              pannable
-              zoomable
-              nodeColor={nodeColor}
-              nodeStrokeWidth={3}
-              maskColor="rgba(15, 23, 42, 0.55)"
-            />
+            {mode === "full" ? (
+              <MiniMap
+                pannable
+                zoomable
+                nodeColor={nodeColor}
+                nodeStrokeWidth={3}
+                maskColor="rgba(15, 23, 42, 0.55)"
+              />
+            ) : null}
           </ReactFlow>
         ) : (
           <div className="evidence-graph-empty">
