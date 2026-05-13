@@ -133,12 +133,25 @@ const statusZh: Record<string, string> = {
 
 const finalSourceZh = {
   "current run": "当前运行",
-  "last completed": "上次完成",
+  "last completed": "最近完成",
   history: "历史记录",
 } as const;
 
 function displayStatus(s: string) { return statusZh[s] ?? s; }
 function displaySource(s: FinalSource) { return finalSourceZh[s]; }
+function hasRecordedForecast(final: ReturnType<typeof finalPayload>) {
+  return final.prediction !== "pending" && final.terminal !== "pending";
+}
+
+function displayRunOutcome(status: string, final: ReturnType<typeof finalPayload>) {
+  if (status === "failed" && hasRecordedForecast(final)) return "预测已记录 · 运行失败";
+  return displayStatus(status);
+}
+
+function runOutcomeClass(status: string, final: ReturnType<typeof finalPayload>) {
+  if (status === "failed" && hasRecordedForecast(final)) return "failed-recorded";
+  return status;
+}
 
 function displayCriticalReason(action: GalaxyActionTraceItem) {
   const text = String(action.criticalReason ?? "");
@@ -317,6 +330,83 @@ function finalPayload(
   };
 }
 
+function textForDiscipline(action: GalaxyActionTraceItem) {
+  return [
+    action.title,
+    action.summary,
+    action.query,
+    action.argsSummary,
+    action.rawPreview?.text.slice(0, 1600),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function sourceDisciplineItems(
+  question: GalaxyQuestionRow | null,
+  actions: GalaxyActionTraceItem[],
+  final: ReturnType<typeof finalPayload>,
+) {
+  const questionYear =
+    question?.metadata?.generated_for_date?.slice(0, 4) ??
+    dateFromTaskId(question?.task_id)?.slice(0, 4) ??
+    localDateText().slice(0, 4);
+  const fredActions = actions.filter((action) => /FRED|DCOILBRENTEU/i.test(textForDiscipline(action)));
+  const fredAnchorEvidence = fredActions.find((action) =>
+    action.kind === "final_forecast" ||
+    action.kind === "artifact_read" ||
+    action.kind === "evidence_synthesis" ||
+    ((action.kind === "tool_result" || action.kind === "tool_call") &&
+      action.toolName !== "search_web" &&
+      /fred\.stlouisfed\.org|eia\.gov|DCOILBRENTEU/i.test(textForDiscipline(action))),
+  );
+  const fredReadCall = fredActions.find((action) => action.kind === "tool_call" && action.toolName !== "search_web");
+  const fredQuery = fredReadCall ?? fredActions.find((action) => action.kind === "tool_call");
+  const proxyActions = actions.filter((action) => {
+    const text = textForDiscipline(action);
+    return /ICE|future|futures|news|analyst|TradingEconomics|countryeconomy|spot price today|market/i.test(text) &&
+      !/FRED|DCOILBRENTEU/i.test(text);
+  });
+  const wrongYearQueries = actions.filter((action) => {
+    if (action.kind !== "tool_call") return false;
+    const years = action.query?.match(/\b20\d{2}\b/g) ?? [];
+    return years.some((year) => year !== questionYear);
+  });
+  const proxyBeforeAnchor = proxyActions.length > 0 && !fredAnchorEvidence;
+  return [
+    {
+      id: "fred-anchor",
+      label: "FRED resolution anchor",
+      status: fredAnchorEvidence ? "good" : fredReadCall ? "pending" : "pending",
+      value: fredAnchorEvidence ? "已读到 resolution source" : fredReadCall ? "正在读取 FRED/EIA" : fredQuery ? "已开始检索 FRED" : "等待 FRED anchor",
+      detail: fredAnchorEvidence?.summary ?? fredReadCall?.summary ?? fredQuery?.query ?? "应先确认 DCOILBRENTEU 最新发布观察值与 release lag。",
+    },
+    {
+      id: "proxy-context",
+      label: "Proxy context boundary",
+      status: proxyBeforeAnchor ? "warn" : proxyActions.length ? "good" : "pending",
+      value: proxyActions.length ? `${proxyActions.length} 条 proxy 行为` : "尚未读取 proxy",
+      detail: proxyBeforeAnchor
+        ? "proxy 已出现，但 FRED anchor 尚未落地；reviewer 需盯住 source boundary。"
+        : "ICE futures / news / analyst 只能解释 risk premium，不能替代 FRED observation。",
+    },
+    {
+      id: "date-discipline",
+      label: "Date discipline",
+      status: wrongYearQueries.length ? "warn" : actions.length > 1 ? "good" : "pending",
+      value: wrongYearQueries.length ? `发现 ${wrongYearQueries.length} 条年份漂移 query` : `目标年份 ${questionYear}`,
+      detail: wrongYearQueries[0]?.query ?? "搜索和推理应保持在当前题目年份，避免把旧年份数据误作当前市场。",
+    },
+    {
+      id: "forecast-readiness",
+      label: "record_forecast readiness",
+      status: final.action ? "good" : "pending",
+      value: final.action ? final.prediction : "pending",
+      detail: final.action?.summary ?? "写入 record_forecast 前，viewer 保持当前预测为 pending。",
+    },
+  ] as const;
+}
+
 function actionIcon(kind: GalaxyActionKind, toolName?: string) {
   if (kind === "question") return <FileText size={15} />;
   if (kind === "tool_call" && toolName === "search_web") return <Search size={15} />;
@@ -413,8 +503,13 @@ function GalaxyRunHeader({
       ? "运行自定义问题"
       : "运行 Brent 预测";
   const finalMetricLabel =
-    finalSource === "current run" ? "当前预测" : finalSource === "history" ? "历史预测" : "上次预测";
+    finalSource === "current run" ? "当前预测" : finalSource === "history" ? "历史预测" : "最新预测";
   const selectedHistoryRun = historyRuns.find((run) => run.runId === selectedHistoryRunId);
+  const disciplineItems = sourceDisciplineItems(activeQuestion, actions, final);
+  const rawStatus = liveStatus?.status ?? meta?.status ?? "idle";
+  const statusLabel = displayRunOutcome(rawStatus, final);
+  const statusClass = runOutcomeClass(rawStatus, final);
+  const failedWithRecordedForecast = rawStatus === "failed" && hasRecordedForecast(final);
 
   return (
     <section className="console-card galaxy-agent-hero">
@@ -491,8 +586,8 @@ function GalaxyRunHeader({
         <dl className="galaxy-hero-metrics">
           <div>
             <dt>状态</dt>
-            <dd className={`status-chip status-${liveStatus?.status ?? meta?.status ?? "idle"}`}>
-              {displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}
+            <dd className={`status-chip status-${statusClass}`}>
+              {statusLabel}
             </dd>
           </div>
           <div>
@@ -508,13 +603,31 @@ function GalaxyRunHeader({
             <dd>{elapsed != null && elapsed > 0 ? `${elapsed}s` : "pending"}</dd>
           </div>
         </dl>
+        <div className="galaxy-discipline-panel" aria-label="Source discipline">
+          <div className="galaxy-discipline-head">
+            <span>Source discipline</span>
+            <strong>FRED anchor → proxy context → record_forecast</strong>
+          </div>
+          <div className="galaxy-discipline-grid">
+            {disciplineItems.map((item) => (
+              <div className={`galaxy-discipline-item ${item.status}`} key={item.id}>
+                <i>
+                  {item.status === "good" ? <CheckCircle2 size={14} /> : item.status === "warn" ? <ShieldAlert size={14} /> : <Clock3 size={14} />}
+                </i>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </div>
+            ))}
+          </div>
+        </div>
         {meta?.demo ? <span className="galaxy-demo-note">当前 artifact 是 demo，不应作为真实 forecast truth。</span> : null}
       </div>
       <div className="galaxy-agent-command">
         <InfoTitle title="运行控制" subtitle="galaxy-selfevolve · 启动 / 状态 / 追踪" />
         <div className="galaxy-run-status-card">
           <span>{displaySource(finalSource)}</span>
-          <strong>{displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}</strong>
+          <strong>{statusLabel}</strong>
           <small>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "未知更新时间"}</small>
         </div>
         <dl className="galaxy-run-kv">
@@ -532,7 +645,7 @@ function GalaxyRunHeader({
           </button>
           <button type="button" onClick={onRefresh}>
             <RefreshCw size={15} />
-            刷新上次结果
+            刷新最新结果
           </button>
         </div>
         <div className="galaxy-history-picker">
@@ -563,8 +676,8 @@ function GalaxyRunHeader({
             {isRunning
               ? "当前 live run 使用自定义问题；运行完成前预测值保持 pending。"
               : customQuestionReady
-              ? "将以自定义问题启动新的 galaxy run；运行完成前右侧仍显示上次完成结果。"
-              : "输入自定义问题后才能启动；当前结果仍来自上次完成 run。"}
+              ? "将以自定义问题启动新的 galaxy run；运行完成前右侧仍显示最近完成结果。"
+              : "输入自定义问题后才能启动；当前结果仍来自最近完成 run。"}
           </p>
         ) : null}
         {isRunning ? (
@@ -572,6 +685,12 @@ function GalaxyRunHeader({
             <RefreshCw size={14} className="spin-icon" />
             当前 live run 尚未写入 record_forecast 时，预测值保持 pending；viewer 不会用历史 artifact 冒充当前结果。
             {lastAction ? ` 最新动作：${lastAction.title}` : ""}
+          </p>
+        ) : null}
+        {failedWithRecordedForecast ? (
+          <p className="galaxy-run-hint warning">
+            <ShieldAlert size={14} />
+            record_forecast 已写入，但 galaxy wrapper 没有完整完成 summary/export，因此保留 failed 状态。
           </p>
         ) : null}
         {runMessage ? <p className="galaxy-run-message">{runMessage}</p> : null}
@@ -899,7 +1018,7 @@ export function ForecastPage({
   const [liveTrace, setLiveTrace] = useState<GalaxyActionTrace | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveRunStatus | null>(null);
   const [galaxyRunMessage, setGalaxyRunMessage] = useState("");
-  const [graphMode, setGraphMode] = useState<"summary" | "full">("summary");
+  const [graphMode, setGraphMode] = useState<"summary" | "critical" | "full">("summary");
   const [questionPreset, setQuestionPreset] = useState<QuestionPreset>(
     () => (sessionStorage.getItem("galaxyQuestionPreset") as QuestionPreset | null) ?? "brent_weekly_high",
   );
@@ -1094,6 +1213,36 @@ export function ForecastPage({
       window.clearInterval(interval);
     };
   }, [liveStatus?.runId, liveStatus?.status, pollLiveRun]);
+
+  useEffect(() => {
+    if (liveStatus?.status === "running") return;
+    let cancelled = false;
+    const reconnect = async () => {
+      try {
+        const res = await fetch("/api/galaxy-hormuz/run/status");
+        if (!res.ok) return;
+        const status = (await res.json()) as LiveRunStatus;
+        if (cancelled || status.status !== "running" || !status.runId) return;
+        setLiveArtifact(null);
+        setLiveTrace(null);
+        setSelectedHistoryRunId("");
+        setSelectedActionId(null);
+        setLiveStatus(status);
+        setGalaxyRunMessage(`自动接入运行中的 galaxy run · ${status.runId.slice(0, 48)}`);
+        await pollLiveRun(status.runId, true);
+      } catch {
+        // A missed reconnect should not disturb the latest completed artifact.
+      }
+    };
+    void reconnect();
+    const interval = window.setInterval(() => {
+      void reconnect();
+    }, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [liveStatus?.status, pollLiveRun]);
 
   useEffect(() => {
     if (!latestCompletedArtifact) {

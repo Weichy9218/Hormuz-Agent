@@ -46,12 +46,14 @@ function storyActionIdsForAudit(actions) {
 }
 
 function parseFinalPrediction(artifact, recordForecast) {
-  return Number.parseFloat(String(
+  const text = String(
     artifact.runMeta?.finalPrediction ??
     recordForecast?.forecastPayload?.prediction ??
     artifact.finalForecast?.prediction ??
     "",
-  ).replace(/[^\d.-]/g, ""));
+  );
+  const match = text.match(/-?\d+(?:\.\d+)?/);
+  return match ? Number.parseFloat(match[0]) : Number.NaN;
 }
 
 if (questionRows.length !== 1) {

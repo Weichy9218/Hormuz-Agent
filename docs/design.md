@@ -355,26 +355,45 @@ Forecast 页 pipeline (online, on demand)
 **核心数据流**：
 
 ```text
-GalaxyActionTraceItem[]   (来自 ForecastPage poll)
-  → visibleActions(mode)  (story 模式取 ≤15 关键节点；full 模式取全部)
-  → dagreLayout()         (dagre LR 自动布局，nodesep=44，ranksep=96)
-  → Node<GalaxyNodeData>[]  + Edge[]
+GalaxyActionTraceItem[]  (来自 ForecastPage 2s 增量 poll)
+  → visibleActions(mode)
+      summary:  storyActionIds() 取 ≤7 启发式关键节点
+      critical: actions.filter(a => a.criticalPath)  约 27 节点
+      full:     全部 ~110 节点
+  → graphFromActions()  重建 ForecastAgentGraphNode[] + edges（visibleParent 桥接隐藏节点）
+  → dagreLayout()       dagre LR 自动布局
+      summary/critical: nodesep=24, ranksep=62, 节点 236×124px
+      full:             nodesep=44, ranksep=96, 节点 218×118px
+  → useStableNodePositions()  缓存坐标，增量追加不跳动
   → <ReactFlow nodeTypes={{ galaxyAction: GalaxyActionNode }} />
 ```
 
-**节点类型**：唯一自定义节点类型 `galaxyAction`，对应 `GalaxyActionNode` 组件。每个节点通过 `actionTone(kind, toolName)` 决定 CSS tone class（question / tool / result / synthesis / calculation / delegation / final / checkpoint / note），影响边框颜色和背景渐变。
+**三视图模式**（`GraphMode = "summary" | "critical" | "full"`）：
 
-**布局**：Dagre `rankdir: "LR"`，节点固定尺寸 242×126px。`useStableNodePositions` hook 缓存 dagre 输出坐标，仅在模式切换时重排；避免增量追加节点时跳动。
+| 视图 | 用途 | MiniMap |
+| --- | --- | --- |
+| 故事路径 | 启发式 7 节点，覆盖推理骨架 | 隐藏 |
+| 关键路径 | galaxy 算法标注的推理链（~27 节点），最适合分析"凭什么落到这个数字" | 显示 |
+| 完整审计 | 全部 action，适合 debug | 显示 |
 
-**Story vs Full 模式**：
-- **Story**（`STORY_NODE_LIMIT = 15`）：`storyActionIds()` 选取 question、开头推理 turn、最终综合、所有 final_forecast / checkpoint、以及最多 5 条主题化 key evidence（通过正则匹配 FRED/UKMTO/MARAD/Reuters 等关键词）；`addIfRoom` 约束证据 source pair 不超过总上限。
-- **Full**：全部 action，通常 ~100 节点。
+**节点类型 `galaxyAction`** → `GalaxyActionNode`：
 
-**Critical path**：`criticalPath: true` 节点加 `critical-path` CSS class；`criticalReason` 由 `displayCriticalReason()` 翻译成中文标签（"最终预测" / "证据检索" / "证据综合"等），作为节点内 `<em>` 徽标展示。CSS 级联确保 critical-path 橙色 glow 不覆盖节点 border-top 的类型颜色。
+- `actionTone(kind, toolName)` → CSS class（question/tool/result/synthesis/calculation/delegation/final/checkpoint）影响 border-top 颜色 + 背景渐变
+- `criticalPath` 节点：amber glow + `<em>` 中文原因徽标（`displayCriticalReason()` 翻译）
+- CSS 级联确保 critical-path glow 不覆盖 border-top 类型颜色
+- `final_forecast` 节点额外显示 `<code class="galaxy-node-prediction">` boxed answer
+- `title` attribute：完整 HTML tooltip（title + summary + critical reason + boxedAnswer）
 
-**边标签**：edge label 默认 `opacity: 0`，`:hover` 时淡入显示；critical-path edge 始终显示（stroke: amber，stroke-width: 3）。
+**边**：
 
-**交互**：`FlowViewportFitter` 自定义 hook 在模式切换后触发 `fitView`；节点 `title` attribute 提供完整 tooltip（title + summary + critical reason）；点击节点通过 `onNodeClick` 回调更新 `ForecastPage` 的 `selectedActionId`，联动右侧 Inspector。
+- 标签中文（调用/返回/记录/存储/继续），默认 `opacity: 0`，hover 淡入
+- critical-path 边始终显示（amber stroke，width 3）
+
+**交互联动**（双向，均已实现）：
+
+- 时间线 button click → `onSelectAction(id)` → `FlowSelectedNodeFocuser.setCenter()`
+- DAG node click → `onSelectAction(id)` → `ActionTimeline useEffect` → `container.scrollTo()`
+- 模式切换 → `FlowViewportFitter` 触发 `fitView()`
 
 ## 9. Source Freshness 状态
 

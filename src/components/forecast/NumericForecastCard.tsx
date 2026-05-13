@@ -116,7 +116,7 @@ export function NumericForecastCard({
   const DirectionIcon = direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
   const payload = final.payload;
   const runtimeLabel = runtime === "galaxy" ? "真实 galaxy 运行" : "离线 Demo";
-  const finalSourceZh = finalSource === "current run" ? "当前运行" : finalSource === "history" ? "历史记录" : "上次完成";
+  const finalSourceZh = finalSource === "current run" ? "当前运行" : finalSource === "history" ? "历史记录" : "最近完成";
   const sparklineRange = earliest && latest ? `${earliest.date} → ${latest.date}` : "加载中";
   const keyEvidenceItems = payload?.keyEvidenceItems?.length
     ? payload.keyEvidenceItems

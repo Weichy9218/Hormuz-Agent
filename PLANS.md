@@ -1,9 +1,6 @@
-# Forecast Agent Live Viewer Plan
+# Forecast Agent Live Viewer — 实现状态（2026-05-13）
 
-Last updated: 2026-05-13 (rev 5)
-
-只优化 Forecast / Galaxy visualization。Overview / Market / News 是背景页，
-本计划不改它们。
+只优化 Forecast / Galaxy visualization。Overview / Market / News 是背景页，本计划不改它们。
 
 ## Objective
 
@@ -15,156 +12,124 @@ Last updated: 2026-05-13 (rev 5)
 
 ---
 
-## 已完成项（rev 4 核查 2026-05-13）
+## 当前实现状态（代码即文档）
 
-| 计划项 | 完成时间 | 证据 |
+### 数据流
+
+```
+galaxy main_agent.jsonl
+  ↓ buildActionTrace() [scripts/run-galaxy-hormuz.mjs]
+  → GalaxyActionTraceItem[] + ForecastAgentGraphNode[] + ForecastAgentGraphEdge[]
+  → run-artifact.json → data/galaxy/latest-run.json
+
+ForecastPage (2s 增量 poll → /api/galaxy-hormuz/run/trace)
+  mergeTrace() 按 afterIndex 增量追加 actions
+  ↓
+GalaxyActionGraph + ActionTimeline + NumericForecastCard + ActionInspector
+```
+
+### 运行入口
+
+| 操作 | 路径 |
+|---|---|
+| 启动 dev server | `npm run dev -- --port 5173` |
+| 浏览器 Run 按钮 | POST `/api/galaxy-hormuz/run/start` → spawn `run-galaxy-hormuz.mjs --execute` |
+| 默认 LLM | GLM5.1（`apihy_glm51`，见 `scripts/run-galaxy-hormuz.mjs` + `hormuz_test.yaml`） |
+| 问题预设 | Brent 周高（`brent-weekly-high`）或自定义 textarea |
+| 问题文件 | `data/galaxy/hormuz-daily-question.jsonl` |
+
+### GalaxyActionGraph 三视图
+
+| 视图 | 节点数 | 选取逻辑 |
 |---|---|---|
-| Run 按钮接真 galaxy `.venv` | rev1 | `ForecastPage.tsx` `/api/galaxy-hormuz/run/start` |
-| `actionTrace.graph` (nodes/edges/criticalPath) | rev1 | `run-galaxy-hormuz.mjs`，109 actions / 25 critical |
-| dagre 自动布局 + 位置缓存 | rev1 | `useStableNodePositions`；`fitView` 仅切换时触发 |
-| `rawPreview` 字段 | rev1 | 所有 tool_call / tool_result / final_forecast |
-| 增量 polling `afterIndex=N` + merge | rev1 | `mergeTrace` in `ForecastPage.tsx` |
-| Critical path 标注（`criticalPath / criticalReason`） | rev1 | graph nodes 里标 criticalPath，orange 高亮 |
-| Story path 按 critical path 精简 | rev1 | ~25 关键 actions；record_forecast 恒保留 |
-| `NumericForecastCard` 组件 | rev1 | `src/components/forecast/NumericForecastCard.tsx` |
-| Brent sparkline + delta + evidence | rev1 | `projectBrentDailySeries(30)` 已接 |
-| Inspector: critical path 徽标 + reason | rev1 | `ForecastPage.tsx` Inspector 渲染 |
-| Inspector: Copy raw path + view full | rev1 | footer 按钮已实现 |
-| `audit:galaxy` 红线 | rev1 | `audit-galaxy.mjs` 覆盖 numeric/rawPreview 检查 |
-| Task A：删除 local runtime toggle | rev2 | `ForecastPage.tsx` 只剩 galaxy 路径 |
-| Task B：demo artifact（`build-demo-artifact.mjs`） | rev2 | `data/galaxy/latest-run.json` demo=true |
-| Task B：$66.20 硬编码 bug 修复 | rev2 | 改为 `FRED latest × 1.01`，约 $119.44 |
-| Task C：真实 galaxy LLM Brent run | rev2 | 无 demo 标记，finalPrediction 可 parseFloat，audit 通过 |
-| **UI Round 1**：Chinese 标签全局化 | rev3 | `NumericForecastCard`、`GalaxyActionGraph` lane labels |
-| **UI Round 1**：Story path 清晰度 | rev3 | 图标题加 critical 数 / 总节点数 / 橙色说明 |
-| **UI Round 1**：GraphMode tab 移入 graph card | rev3 | `GalaxyActionGraph` 内 replay-command-row |
-| **UI Round 1**：status chip 着色 + prediction chip | rev3 | running=蓝色脉冲，completed=绿，failed=红，prediction=琥珀 |
-| **UI Round 1**：collapsible command block | rev3 | `<details>` 折叠执行命令 |
-| **UI Round 1**：timeline 步数标注 + critical-path 高亮 | rev3 | 标题 `共 N 步`；orange border 高亮关键步 |
-| **UI Round 2**：右侧 side panel 拓宽 360→400px | rev3 | `forecast.css` |
-| **UI Round 2**：graph 高度 560→600px | rev3 | `forecast.css` |
-| **通用问题支持**：preset toggle + 自定义 textarea | rev3 | `ForecastPage.tsx` 新增 questionPreset state |
-| **通用问题支持**：vite 后端写 custom JSONL | rev3 | `vite.config.ts` startRun(questionText?) |
-| **通用问题支持**：mjs 支持 `--question-kind custom` | rev3 | `run-galaxy-hormuz.mjs` custom branch |
-| **UI Round 3**：timeline max-height 560→820px | rev4 | `forecast.css` |
-| **UI Round 3**：lane strip auto-fill（7/9 列自适应） | rev4 | `forecast.css` repeat(auto-fill, ...) |
-| **UI Round 3**：sparkline 显示实际日期范围 | rev4 | `NumericForecastCard.tsx`，显示起止日 + 天数 |
-| **UI Round 3**：现货 vs 期货说明（黄色注释栏） | rev4 | DCOILBRENTEU 为现货，期货差 ±$1–3/bbl |
-| **默认模型换 GLM5.1** | rev5 | `vite.config.ts` gpt-5.4→glm-4-flash；`run-galaxy-hormuz.mjs` codex_sub2api→apihy_glm51；`hormuz_test.yaml` 同步 |
-| **导航后运行任务断连修复** | rev5 | mount-only useEffect 重连 `/api/galaxy-hormuz/run/status`；sessionStorage 保持 questionPreset + customQuestionText |
-| **节点卡片 HTML tooltip** | rev5 | `GalaxyActionGraph.tsx` `title={tooltip}` attribute，拼接 title + summary + criticalReason |
-| **边标签 hover-only 显示** | rev5 | `forecast.css` `.galaxy-action-edge .react-flow__edge-textwrapper { opacity: 0 }` → hover opacity: 1 |
-| **critical-path 节点保留类型 border-top 颜色** | rev5 | CSS 级联：`.critical-path` border-color 被后置的各 tone 类 border-top-color 覆盖 |
-| **Story mode 节点上限** | rev5 | `STORY_NODE_LIMIT = 15`；`addIfRoom` 约束证据对；anchor 节点（question/forecast/checkpoint）恒保留 |
-| **toolChipLabel 子 Agent 名称** | rev5 | `GalaxyActionGraph.tsx` toolChipLabel() 识别 sub_agent_factor / sub_agent_access / Python |
+| 故事路径（summary） | ≤7 | `storyActionIds()`：question + 开场推理 + 最终综合 + forecast/checkpoint + 主题化证据对 |
+| 关键路径（critical） | ~27（本 run） | 仅 `action.criticalPath === true` 的节点，即 galaxy 算法标注的推理链路 |
+| 完整审计（full） | 110（本 run） | 全部 actions |
 
-### 关键数据说明（2026-05-13 核查）
+布局：dagre LR，summary/critical 模式 nodesep=24/ranksep=62，full 模式 nodesep=44/ranksep=96。  
+节点位置由 `useStableNodePositions` 缓存，增量追加不跳动。
+
+### 节点卡片（GalaxyActionNode）
+
+- `actionTone(kind, toolName)` 决定 border-top 颜色 + 背景渐变（question/tool/result/synthesis/calculation/delegation/final/checkpoint）
+- `criticalPath` 节点：amber glow + `<em>` 中文原因徽标（由 `displayCriticalReason()` 翻译）
+- `title` attribute：完整 HTML tooltip（title + summary + critical reason + boxedAnswer）
+- `final_forecast` 节点：显示 `<code class="galaxy-node-prediction">` 展示 boxed answer 数字
+
+### 边
+
+- 边标签中文：调用 / 返回 / 记录 / 存储 / 继续
+- 默认 `opacity: 0`，hover 淡入；critical-path 边始终显示（amber stroke, width 3）
+- Critical-path 边双端同为 critical 时才标记为 critical
+
+### 双向联动（已实现）
+
+- 时间线 button click → `onSelectAction(id)` → `FlowSelectedNodeFocuser.setCenter()`
+- DAG node click → `onSelectAction(id)` → `ActionTimeline useEffect` → `container.scrollTo()`
+
+### NumericForecastCard
+
+- sparkline：最近 30 个 FRED DCOILBRENTEU 交易日，显示实际日期范围
+- 现货说明：DCOILBRENTEU 为 ICE Brent 现货日价，非期货；ICE M1 期货通常差 ±$1–3/bbl
+- 证据列表（关键/反向/待观察）默认折叠在 `<details>`
+
+### 导航状态持久化
+
+- `questionPreset` + `customQuestionText` → `sessionStorage`（跨页面导航保留）
+- mount-only `useEffect` 重连：回到 Forecast 页时 poll `/api/galaxy-hormuz/run/status`，若仍 running 则恢复 live 状态
+
+### Brent 问题描述修复
+
+- Brent 预设选中时，"当前目标"显示固定的 Brent 描述，不从 stale artifact 的 `question` 字段读取
+- 条件：`artifactQuestionKind === "brent_weekly_high"` 才读 artifact，否则用 hardcoded 描述
+
+---
+
+## 关键数据说明
 
 | 项目 | 内容 |
 |---|---|
 | sparkline 数据源 | `data/normalized/market/fred_series.csv`，FRED DCOILBRENTEU |
-| sparkline 覆盖日期 | 最近 30 个交易日，约 2026-03-21 → 2026-05-01 |
+| sparkline 覆盖日期 | 最近 30 个交易日（约 6 周） |
 | FRED 抓取时间 | 2026-05-12T13:26:25Z |
 | 数值类型 | **现货**日价（ICE Brent spot），非期货 |
 | 期货差值 | ICE M1 期货通常 ±$1–3/bbl；backwardation 时期货低于现货 |
-| 分辨率标准 | 题目明确锁定 FRED DCOILBRENTEU 现货，现有 agent 框架正确 |
+| 分辨率标准 | 题目明确锁定 FRED DCOILBRENTEU 现货，agent 框架正确 |
+| 最近一次真实 run | 2026-05-13，GLM5.1，预测 **109.50 USD/bbl**，110 actions，27 critical path |
 
 ---
 
-## 待优化问题清单（供 Codex 参考，按优先顺序）
+## 待优化问题清单
 
-### Issue 1 · Agent 行为图视觉设计优化（P1，用户明确提出）
+### Issue 1 · Agent 行为图剩余优化（P2）
 
-**现状**：节点排布和视觉分层基本可用，但有以下不足：
+- [ ] **lane strip 与节点位置不对齐**：dagre X 坐标与 lane 不严格对应，lane strip 有误导性，考虑移除或改为纯图例
+- [ ] **minimap 噪声**（full 模式）：110 节点 minimap 可辨识度低，考虑在 critical 模式也关掉
 
-- [x] **节点卡片信息密度**：title 截断时无 tooltip；summary 3 行 clamp 导致关键信息丢失
-- [x] **边标签可读性差**：`returns / calls / records / continues` 字体太小，边和标签颜色混淆
-- [x] **节点类型色彩区分不足**：tool_call（蓝）和 tool_result（绿）在 critical path 下全被橙色覆盖，失去类型辨识
-- [ ] **lane strip 与节点位置不对齐**：lane strip 是 label 行，但实际 dagre X 坐标与 lane 不严格对应，容易产生误导
-- [ ] **minimap 噪声**：minimap 在节点多时难以辨认，可考虑只在 Full mode 显示
-- [x] **Story mode 节点数仍偏多（26 个）**：应进一步精简到 12–15 个，强调"推理链"而非"所有高亮步骤"
+### Issue 2 · NumericForecastCard 布局（P2，部分完成）
 
-**建议方向**：
-- 节点卡片 title 加 `title` attribute（HTML tooltip）
-- 边标签改为只在 hover edge 时显示（用 CSS `opacity: 0` → hover `opacity: 1`）
-- Critical path 节点用橙色 border-top 但保留类型底色（tool/result/synthesis 各自颜色）
-- Story mode：storyActionIds 逻辑收紧，目标 ≤ 15 节点
+- [x] 证据折叠到 `<details>`，默认折叠
+- [x] sparkline 高度 100px
+- [ ] 或将 NumericForecastCard 和 ActionInspector 改为 tab 切换
 
----
+### Issue 3 · Inspector "open raw" 增强（P2）
 
-### Issue 2 · NumericForecastCard 布局过长（P1，用户明确提出）
+- [ ] `View full preview` 按钮：展开完整 `rawPreview.text`（目前 1200 字符截断，`showFullRaw` toggle 已有）
 
-**现状**：右侧 400px 面板中 NumericForecastCard 占据大量垂直空间，
-导致 ActionInspector 被推到很下方，需要大量滚动。
+### Issue 4 · Replay 最小版（P3，未启动）
 
-- [ ] 将"关键证据 / 反向证据 / 待观察风险"部分改为可折叠 `<details>`，默认折叠
-- [ ] sparkline 高度从 128px 适当减小至 100px（已经包含了 3 行 metrics，整体太高）
-- [ ] 或将 NumericForecastCard 和 ActionInspector 改为 tab 切换，而非垂直堆叠
-
----
-
-### Issue 3 · 动作时间线与主图联动体验（P1）
-
-**现状**：时间线和 DAG 图可以互相 highlight，但：
-
-- [ ] 时间线选中某节点时，DAG 图没有自动 `fitView` 跳转到该节点
-- [ ] DAG 图点击节点时，时间线不会滚动到对应 item（特别是在 story mode 下，时间线 index 不连续）
-- [ ] 建议：选中 actionId 时，timeline 对应 item `scrollIntoView()`；DAG 图 `panTo` 该节点
-
----
-
-### Issue 4 · 自定义问题运行后 UI 状态更新（P2）
-
-**现状**：自定义问题运行完成后，右侧显示的是 `FinalForecastCard`（通用卡），
-但顶部问题描述区域还显示旧 artifact 的 brent_weekly_high 问题文字（`questionSummary` 读 artifact 中的 question）。
-
-- [ ] 自定义 run 完成后，问题摘要行应显示用户实际输入的 `customQuestionText`，而非 artifact 解析结果
-- [ ] 建议：`questionSummary` 在 `questionPreset === "custom"` 时优先返回 `customQuestionText`
-
----
-
-### Issue 5 · Task D · Inspector "open raw" 增强（P2）
-
-- [ ] `View full preview` 按钮：展开完整 `rawPreview.text`（目前 1200 字符截断）
-- [ ] 已在 P0.5 中部分做，`showFullRaw` toggle 已存在，需确认边界行为
-
----
-
-### Issue 6 · Task E · Replay 最小版（P3，未启动）
-
-- [ ] view mode：`Story | Full | Replay` 三 tab
+- [ ] 三 tab：`故事路径 | 关键路径 | 完整审计 | Replay`
 - [ ] `replayIndex: number` state，slider 控制显示 `action.index <= replayIndex` 的节点
-- [ ] 未到节点 `opacity: 0.25`，已到正常显示
-- [ ] 落点到 `record_forecast` 节点，触发 `fitView({ duration: 220 })`
-- [ ] NumericCard 在 replayIndex 未到 record_forecast 时显示 `pending`
+- [ ] 落点到 `record_forecast` 时 `fitView`
 
----
+### Issue 5 · Sub-agent 节点折叠（P3，未启动）
 
-### Issue 7 · Task F · Sub-agent 节点折叠（P3，未启动）
+- [ ] Full 模式识别 `sub_agent_*` 连续区间，收成 `subagent_group` 单节点
+- [ ] 目标：Full 模式从 110 个节点降到 ~30 个可读节点
 
-- [ ] `buildActionTrace` 里识别 `sub_agent_*` enter/exit 连续区间，收成 `subagent_group` action
-- [ ] Full 模式折叠成单节点，Inspector 展开内部 action list
-- [ ] 目标：Full 模式从 109 个 action 降到 ~30 个可读节点
+### Issue 6 · SSE 推流（P4，放最后）
 
----
-
-### Issue 8 · Task G · SSE 推流（P4，放最后）
-
-触发条件：Issue 3 做完、轮询卡顿仍明显才考虑。
-
-- [ ] `GET /api/galaxy-hormuz/run/events?runId=...&after=N` SSE endpoint
-- [ ] `fs.watch(main_agent.jsonl)` + 逐行 parse push
-- [ ] `EventSource` + `lastEventId` 重连
-
----
-
-## 不变量
-
-- 真实 galaxy run 是唯一 forecast truth。demo artifact 必须显式标 `runMeta.demo: true`。
-- 不伪造实测数据、citation、sourceHash。
-- 不在 rawPreview 里暴露 system prompt / chain-of-thought。
-- 不重复安装 galaxy 环境；复用 `.venv`。
-- React Flow 节点 id 必须 stable；新事件增量追加，旧 position 不重排。
+触发条件：轮询卡顿明显才考虑。
 
 ---
 
@@ -186,7 +151,6 @@ data/galaxy/latest-run.json
 npm run lint
 npm run build
 npm run audit:galaxy
-npm run audit:ui
 ```
 
 Browser smoke（当前基准）：
@@ -194,11 +158,13 @@ Browser smoke（当前基准）：
 ```bash
 npm run dev
 # → /forecast
-# Brent 周高模式：显示 NumericForecastCard + sparkline（日期范围标注）+ 现货说明
-# Story mode：26 个关键节点 / 109 个全节点，橙色标 critical path
-# Full mode：109 个节点，lane strip 9 列自适应
-# 自定义模式：切换到"自定义问题"，输入问题文本，"运行 Galaxy" 按钮激活
-# Inspector：点击任意节点 → 显示 critical path 状态 + rawPreview
+# Brent 周高模式：当前目标显示 Brent 描述（不受 stale artifact 影响）
+# NumericForecastCard：sparkline 日期范围 + 现货说明
+# 故事路径：7 个关键节点
+# 关键路径：~27 个 critical-path 节点，record_forecast 节点显示 boxed answer
+# 完整审计：110 个节点，MiniMap 可见
+# Inspector：点击节点 → critical path 状态 + rawPreview
+# 时间线：点击 → DAG pan；DAG 点击 → 时间线 scroll
 ```
 
 ## Principle

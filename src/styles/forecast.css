@@ -510,10 +510,10 @@
 
 .forecast-page .galaxy-agent-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.42fr) minmax(340px, 0.58fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 360px);
+  gap: 16px;
   align-items: stretch;
-  padding: 20px;
+  padding: 18px;
   border-color: #c4d7ef;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 255, 0.92)),
@@ -542,7 +542,7 @@
 .forecast-page .galaxy-agent-copy h1 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-size: 2.45rem;
   line-height: 1.05;
   letter-spacing: 0;
   text-wrap: balance;
@@ -594,10 +594,125 @@
   font-weight: 950;
 }
 
+.forecast-page .galaxy-discipline-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 0;
+  padding: 12px;
+  border: 1px solid #d5e4f7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.forecast-page .galaxy-discipline-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.forecast-page .galaxy-discipline-head span {
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.forecast-page .galaxy-discipline-head strong {
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.forecast-page .galaxy-discipline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.forecast-page .galaxy-discipline-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 3px 7px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 10px;
+  border: 1px solid #d8e6f7;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.forecast-page .galaxy-discipline-item i {
+  display: inline-flex;
+  grid-row: 1 / 3;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  color: #315b88;
+  background: #eef6ff;
+}
+
+.forecast-page .galaxy-discipline-item span {
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 950;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.forecast-page .galaxy-discipline-item strong {
+  color: #0f172a;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.forecast-page .galaxy-discipline-item small {
+  grid-column: 1 / -1;
+  color: #475569;
+  font-size: 0.72rem;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.forecast-page .galaxy-discipline-item.good {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.forecast-page .galaxy-discipline-item.good i {
+  color: #047857;
+  background: #dcfce7;
+}
+
+.forecast-page .galaxy-discipline-item.warn {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.forecast-page .galaxy-discipline-item.warn i {
+  color: #b45309;
+  background: #fef3c7;
+}
+
 .forecast-page .galaxy-agent-command {
   display: grid;
   gap: 12px;
   align-content: start;
+  height: 100%;
   padding: 16px;
   border: 1px solid rgba(194, 213, 236, 0.92);
   border-radius: 8px;
@@ -720,16 +835,18 @@
 
 .forecast-page .galaxy-hero-metrics {
   display: grid;
-  grid-template-columns: minmax(110px, 0.7fr) minmax(170px, 1fr) minmax(210px, 1.3fr) minmax(90px, 0.55fr);
-  gap: 9px;
+  grid-template-columns: minmax(170px, 0.75fr) minmax(220px, 1fr) minmax(280px, 1.35fr) minmax(120px, 0.6fr);
+  gap: 12px;
   margin: 2px 0 0;
 }
 
 .forecast-page .galaxy-hero-metrics div {
   display: grid;
+  align-content: center;
   gap: 5px;
   min-width: 0;
-  padding: 11px 12px;
+  min-height: 78px;
+  padding: 12px 14px;
   border: 1px solid #d7e5f7;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.78);
@@ -765,8 +882,38 @@
   width: fit-content;
   min-height: 24px;
   padding: 0 8px;
+  border: 1px solid #d5e4f7;
   border-radius: 999px;
+  background: #f8fbff;
   font-size: 0.76rem;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.forecast-page .status-chip.status-running {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.forecast-page .status-chip.status-completed,
+.forecast-page .status-chip.status-success {
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.forecast-page .status-chip.status-failed {
+  border-color: #fca5a5;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.forecast-page .status-chip.status-failed-recorded {
+  border-color: #fcd34d;
+  color: #92400e;
+  background: #fffbeb;
 }
 
 .forecast-page .galaxy-demo-note {
@@ -782,8 +929,8 @@
 
 .forecast-page .galaxy-agent-workbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 400px);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 360px);
+  gap: 16px;
   align-items: start;
 }
 
@@ -878,7 +1025,7 @@
 
 .forecast-page .galaxy-action-graph-shell {
   overflow: hidden;
-  height: 620px;
+  height: 520px;
   border: 1px solid #d8e6f7;
   border-radius: 8px;
   background:
@@ -1001,7 +1148,7 @@
   display: grid;
   gap: 7px;
   width: 218px;
-  min-height: 112px;
+  min-height: 118px;
   padding: 12px;
   border: 1px solid #bcd4f2;
   border-top: 4px solid #93c5fd;
@@ -1105,6 +1252,20 @@
   line-height: 1.25;
 }
 
+.forecast-page .galaxy-action-node .galaxy-node-prediction {
+  display: block;
+  padding: 4px 8px;
+  border: 1.5px solid #f59e0b;
+  border-radius: 6px;
+  color: #78350f;
+  background: #fffbeb;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
 .forecast-page .galaxy-action-node p {
   display: -webkit-box;
   overflow: hidden;
@@ -1113,6 +1274,23 @@
   font-size: 0.76rem;
   line-height: 1.35;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.forecast-page .galaxy-flow-summary .galaxy-action-node {
+  gap: 8px;
+  width: 236px;
+  min-height: 124px;
+  padding: 12px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+}
+
+.forecast-page .galaxy-flow-summary .galaxy-action-node strong {
+  font-size: 0.9rem;
+}
+
+.forecast-page .galaxy-flow-summary .galaxy-action-node p {
+  font-size: 0.77rem;
   -webkit-line-clamp: 3;
 }
 
@@ -1814,6 +1992,10 @@
   .forecast-page .galaxy-hero-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .forecast-page .galaxy-discipline-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 780px) {
@@ -1835,7 +2017,15 @@
     padding: 16px;
   }
 
+  .forecast-page .galaxy-agent-copy h1 {
+    font-size: 2rem;
+  }
+
   .forecast-page .galaxy-hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .forecast-page .galaxy-discipline-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1846,7 +2036,7 @@
 .forecast-page .galaxy-question-config {
   display: grid;
   gap: 10px;
-  max-width: 860px;
+  max-width: none;
   padding: 12px;
   border: 1px solid #d7e5f7;
   border-radius: 8px;
@@ -1856,7 +2046,7 @@
 .forecast-page .galaxy-question-config-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px 12px;
   align-items: center;
   justify-content: space-between;
 }
@@ -1878,7 +2068,7 @@
 .forecast-page .galaxy-question-config p,
 .forecast-page .galaxy-question-preview > p,
 .forecast-page .galaxy-question-current {
-  max-width: 980px;
+  max-width: none;
   margin: 0;
   color: #334155;
   font-size: 0.95rem;
@@ -2027,4 +2217,11 @@
   border-style: solid;
   color: #0f766e;
   background: #f0fdfa;
+}
+
+.forecast-page .galaxy-run-hint.warning {
+  border-style: solid;
+  border-color: #fcd34d;
+  color: #92400e;
+  background: #fffbeb;
 }

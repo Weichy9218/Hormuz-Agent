@@ -160,6 +160,13 @@ export function buildQuestion(dateText, questionKind = defaultQuestionKind) {
         `\"\"\"\n\n` +
         `Resolve this by taking the maximum released FRED DCOILBRENTEU daily observation whose observation date falls inside that window. ` +
         `Ignore weekends or holidays with no released observation.\n\n` +
+        `Source discipline:\n` +
+        `1. Treat FRED DCOILBRENTEU as the only resolution series.\n` +
+        `2. First identify the latest released FRED observation date/value and the likely release lag for ${dateText} through ${targetDate}.\n` +
+        `3. Use ICE Brent futures, news quotes, countryeconomy/TradingEconomics, analyst forecasts, and maritime risk only as proxy context; never cite them as resolved DCOILBRENTEU observations.\n` +
+        `4. In the final rationale, separate the latest FRED anchor, proxy market context, and uncertainty from unreleased FRED observations.\n\n` +
+        `5. Do not substitute another calendar year in searches or reasoning. If a search needs a year, use ${dateText.slice(0, 4)}; otherwise search for current/latest data without a year.\n\n` +
+        `Search budget discipline: after you have one FRED/EIA anchor and at most three proxy context sources, stop searching and forecast. Do not keep looking for additional analyst commentary unless it changes the numeric range.\n\n` +
         `Your goal is to make a numeric prediction.\n\n` +
         `IMPORTANT: Your final answer MUST end with this exact format:\n` +
         `\\boxed{number}\n\n` +
@@ -168,8 +175,10 @@ export function buildQuestion(dateText, questionKind = defaultQuestionKind) {
       task_description:
         `Scope: This is the Hormuz case-room numeric market question generated for ${dateText} (UTC+8). ` +
         `Resolution source is FRED series DCOILBRENTEU; the target is the highest daily Brent crude oil spot price from ${dateText} through ${targetDate}. ` +
-        `Hormuz maritime/news evidence may inform risk premium, but the resolved target is numeric Brent price, not a scenario label. ` +
+        `Hormuz maritime/news evidence and non-FRED market quotes may inform risk premium, but they are proxy context only. ` +
+        `The resolved target is the FRED DCOILBRENTEU observation value, not a scenario label, futures quote, or third-party spot estimate. ` +
         `Market data is evidence input only and must be clearly separated from unresolved maritime-flow claims. ` +
+        `Proxy market data must be clearly separated from unresolved maritime-flow claims and unreleased FRED observations. ` +
         `The answer must be one numeric USD/bbl value rounded to two decimals.`,
       metadata: {
         case_id: "hormuz",
@@ -1007,6 +1016,13 @@ function fallbackPrediction(question) {
   return isBrentWeeklyHighQuestion(question) ? "pending" : "B";
 }
 
+function recordForecastPayloadFromTrace(actionTrace) {
+  return [...(actionTrace?.actions ?? [])]
+    .reverse()
+    .find((action) => action.toolName === "record_forecast" && action.forecastPayload)
+    ?.forecastPayload;
+}
+
 function sourceObservationId(prefix, dateText) {
   return `obs-galaxy-${prefix}-${dateText}`;
 }
@@ -1040,7 +1056,8 @@ function buildPreviousState() {
 function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedAt, status, summaryRecord, finalize, note, stats, actionTrace, command, error }) {
   const runArtifactPath = resolve(outputDir, "run-artifact.json");
   const forecastedAt = summaryRecord?.ended_at ?? new Date().toISOString();
-  const prediction = summaryRecord?.prediction || finalize?.prediction || fallbackPrediction(question);
+  const recordedForecast = recordForecastPayloadFromTrace(actionTrace);
+  const prediction = summaryRecord?.prediction || finalize?.prediction || recordedForecast?.prediction || fallbackPrediction(question);
   const predictedScenario = scenarioFromPrediction(prediction);
   const brentWeeklyHigh = isBrentWeeklyHighQuestion(question);
   const sourceObservations = [
@@ -1234,7 +1251,7 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       questionPath: relative(root, questionPath),
       command,
       finalPrediction: prediction,
-      confidence: confidence(summaryRecord?.confidence || finalize?.confidence),
+      confidence: confidence(summaryRecord?.confidence || finalize?.confidence || recordedForecast?.confidence),
       durationSeconds: summaryRecord?.duration_seconds,
       terminalReason: stats?.terminal_reason,
       metrics: summaryRecord?.metrics || stats || {},
@@ -1338,6 +1355,15 @@ async function main() {
     finalize,
     stats,
   });
+  const existingArtifact = await readJsonIfExists(resolve(outputDir, "run-artifact.json"));
+  const hasRecordedForecast = actionTrace.actions?.some((action) => action.toolName === "record_forecast");
+  if (args.traceOnly && !summaryRecord && (existingArtifact?.runMeta?.status === "success" || existingArtifact?.runMeta?.status === "failed")) {
+    status = existingArtifact.runMeta.status;
+    error = existingArtifact.runMeta.error || error;
+  } else if (args.traceOnly && !summaryRecord && hasRecordedForecast && status === "adapter_only") {
+    status = "failed";
+    error = error || "galaxy command exit status unavailable, but record_forecast was present in main_agent.jsonl";
+  }
 
   const artifact = buildArtifact({
     question,

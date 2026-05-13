@@ -35,13 +35,17 @@ import type {
   ForecastAgentGraphNode,
 } from "../../types/forecastAgent";
 
-type GraphMode = "summary" | "full";
+type GraphMode = "summary" | "critical" | "full";
 type GraphNodeInput = ForecastAgentGraphNode;
 type GraphEdgeInput = ForecastAgentGraphEdge;
 type GraphStage = "question" | "evidence" | "decision";
-const STORY_NODE_LIMIT = 15;
+const STORY_NODE_LIMIT = 7;
 const NODE_WIDTH = 242;
 const NODE_HEIGHT = 126;
+const SUMMARY_NODE_WIDTH = 236;
+const SUMMARY_NODE_HEIGHT = 124;
+const FULL_NODE_WIDTH = 218;
+const FULL_NODE_HEIGHT = 118;
 
 interface GalaxyNodeData extends Record<string, unknown> {
   kind: GalaxyActionKind;
@@ -53,6 +57,7 @@ interface GalaxyNodeData extends Record<string, unknown> {
   criticalReason?: string;
   toolName?: string;
   lane?: string;
+  boxedAnswer?: string;
 }
 
 const forecastAgentLaneLabel: Record<ForecastAgentGraphNode["lane"], string> = {
@@ -157,6 +162,7 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
     data.title,
     data.summary,
     data.criticalPath ? `Critical path: ${criticalReason}` : "",
+    data.boxedAnswer ? `预测值: ${data.boxedAnswer}` : "",
   ].filter(Boolean).join("\n\n");
   return (
     <article
@@ -172,6 +178,7 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
       </span>
       <strong>{data.title}</strong>
       {data.criticalPath ? <em>{criticalReason}</em> : null}
+      {data.boxedAnswer ? <code className="galaxy-node-prediction">{data.boxedAnswer}</code> : null}
       <p>{data.summary}</p>
       <Handle className="graph-handle" type="source" position={Position.Right} />
     </article>
@@ -216,19 +223,6 @@ function addActionId(ids: Set<string>, actionId?: string) {
   if (actionId) ids.add(actionId);
 }
 
-function sourcePairIds(
-  action: GalaxyActionTraceItem,
-  allById: Map<string, GalaxyActionTraceItem>,
-) {
-  const ids: string[] = [];
-  for (const parentId of action.parentActionIds ?? []) {
-    const parent = allById.get(parentId);
-    if (parent?.kind === "tool_call") ids.push(parent.actionId);
-  }
-  ids.push(action.actionId);
-  return [...new Set(ids)];
-}
-
 function addIfRoom(ids: Set<string>, nextIds: string[], limit = STORY_NODE_LIMIT) {
   const missing = nextIds.filter((id) => !ids.has(id));
   if (ids.size + missing.length > limit) return false;
@@ -262,50 +256,42 @@ function keyEvidenceActions(actions: GalaxyActionTraceItem[]) {
     }
   }
 
-  if (selected.length >= 4) return selected.slice(0, 5);
+  if (selected.length >= 2) return selected.slice(0, 2);
   for (const action of [...candidates].reverse()) {
     if (selectedIds.has(action.actionId)) continue;
     selected.push(action);
     selectedIds.add(action.actionId);
-    if (selected.length >= 5) break;
+    if (selected.length >= 2) break;
   }
   return selected;
 }
 
 function storyActionIds(actions: GalaxyActionTraceItem[], selectedActionId?: string | null) {
-  const allById = actionById(actions);
   const ids = new Set<string>();
   addActionId(ids, actions.find((action) => action.kind === "question")?.actionId);
   addActionId(ids, selectedActionId ?? undefined);
 
-  const openingTurn =
-    actions.find((action) => /question audit|plan|audit/i.test(action.summary) && action.kind === "assistant_note") ??
-    actions.find((action) => action.kind === "assistant_note" || action.kind === "evidence_synthesis");
-  addActionId(ids, openingTurn?.actionId);
-
   const finalSynthesis = [...actions].reverse().find((action) => action.kind === "evidence_synthesis");
   addActionId(ids, finalSynthesis?.actionId);
 
-  const forecastActions = actions.filter(
-    (action) => action.kind === "final_forecast" || action.toolName === "record_forecast",
-  );
-  for (const action of forecastActions) {
-    addActionId(ids, action.actionId);
-  }
+  const forecastAction =
+    [...actions].reverse().find((action) => action.kind === "final_forecast") ??
+    [...actions].reverse().find((action) => action.toolName === "record_forecast");
+  addActionId(ids, forecastAction?.actionId);
 
   const checkpoint = [...actions].reverse().find((action) => action.kind === "checkpoint");
-  addActionId(ids, checkpoint?.actionId);
+  if (ids.size < STORY_NODE_LIMIT) addActionId(ids, checkpoint?.actionId);
 
   for (const action of keyEvidenceActions(actions)) {
     if (ids.size >= STORY_NODE_LIMIT) break;
-    const pairIds = sourcePairIds(action, allById);
-    if (!addIfRoom(ids, pairIds)) addIfRoom(ids, [action.actionId]);
+    addIfRoom(ids, [action.actionId]);
   }
   return ids;
 }
 
-function visibleActions(actions: GalaxyActionTraceItem[], mode: "summary" | "full", selectedActionId?: string | null) {
+function visibleActions(actions: GalaxyActionTraceItem[], mode: GraphMode, selectedActionId?: string | null) {
   if (mode === "full") return actions;
+  if (mode === "critical") return actions.filter((action) => action.criticalPath);
   const ids = storyActionIds(actions, selectedActionId);
   return actions.filter((action) => ids.has(action.actionId));
 }
@@ -365,20 +351,24 @@ function dagreLayout(
   graph: { nodes: GraphNodeInput[]; edges: GraphEdgeInput[] },
   selectedActionId: string | null,
   actions: GalaxyActionTraceItem[],
+  mode: GraphMode,
 ) {
   const actionsById = actionById(actions);
+  const isSummaryLike = mode === "summary" || mode === "critical";
+  const nodeWidth = isSummaryLike ? SUMMARY_NODE_WIDTH : FULL_NODE_WIDTH;
+  const nodeHeight = isSummaryLike ? SUMMARY_NODE_HEIGHT : FULL_NODE_HEIGHT;
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({
     rankdir: "LR",
     align: "UL",
-    nodesep: 44,
-    ranksep: 96,
-    marginx: 34,
-    marginy: 32,
+    nodesep: isSummaryLike ? 24 : 44,
+    ranksep: isSummaryLike ? 62 : 96,
+    marginx: isSummaryLike ? 12 : 34,
+    marginy: isSummaryLike ? 18 : 32,
   });
   for (const node of graph.nodes) {
-    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
   }
   for (const edge of graph.edges) {
     dagreGraph.setEdge(edge.source, edge.target);
@@ -393,8 +383,8 @@ function dagreLayout(
       id: node.id,
       type: "galaxyAction",
       position: {
-        x: (layout?.x ?? 0) - NODE_WIDTH / 2,
-        y: (layout?.y ?? 0) - NODE_HEIGHT / 2,
+        x: (layout?.x ?? 0) - nodeWidth / 2,
+        y: (layout?.y ?? 0) - nodeHeight / 2,
       },
       data: {
         kind,
@@ -406,18 +396,25 @@ function dagreLayout(
         criticalReason: displayCriticalReason(node.data.criticalReason ?? action?.criticalReason, { kind }),
         toolName: node.data.toolName ?? action?.toolName,
         lane: nodeLaneLabel(node),
+        boxedAnswer: action?.rawPreview?.boxedAnswer ?? (action?.forecastPayload?.prediction ? String(action.forecastPayload.prediction) : undefined),
       },
     };
   });
   const edges: Edge[] = graph.edges.map((edge) => {
     const targetAction = actionsById.get(edge.target);
+    const labelZh = edge.label === "returns" ? "返回"
+      : edge.label === "calls" ? "调用"
+      : edge.label === "records" ? "记录"
+      : edge.label === "persists" ? "存储"
+      : edge.label === "continues" ? "继续"
+      : edge.label;
     return {
       id: edge.id,
       source: edge.source,
       target: edge.target,
       type: edge.label === "returns" ? "step" : "smoothstep",
       animated: edge.label === "returns" || edge.label === "records" || edge.label === "persists",
-      label: edge.label,
+      label: labelZh,
       className: `galaxy-action-edge ${edge.criticalPath ? "critical-path" : ""} ${targetAction?.kind ?? edge.label}`,
       labelShowBg: true,
       labelBgPadding: [6, 3] as [number, number],
@@ -470,14 +467,14 @@ function graphFromActions(actions: GalaxyActionTraceItem[], mode: GraphMode, sel
         criticalPath: Boolean(action.criticalPath && allById.get(parent)?.criticalPath),
         label:
           action.kind === "tool_result" || action.kind === "artifact_read"
-            ? "returns"
+            ? "返回"
             : action.kind === "tool_call"
-              ? "calls"
+              ? "调用"
               : action.kind === "final_forecast"
-                ? "records"
+                ? "记录"
                 : action.kind === "checkpoint"
-                  ? "persists"
-                  : "continues",
+                  ? "存储"
+                  : "继续",
       });
     }
   }
@@ -516,7 +513,8 @@ function FlowViewportFitter({ fitKey, hasNodes }: { fitKey: string; hasNodes: bo
   useEffect(() => {
     if (!hasNodes) return;
     const frame = window.requestAnimationFrame(() => {
-      void reactFlow.fitView({ padding: 0.14, duration: 220 });
+      const isSummary = fitKey.includes(":summary");
+      void reactFlow.fitView({ padding: isSummary ? 0.06 : 0.14, duration: 220 });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [fitKey, hasNodes, reactFlow]);
@@ -536,9 +534,11 @@ function FlowSelectedNodeFocuser({
     const node = nodes.find((item) => item.id === selectedActionId);
     if (!node) return;
     const frame = window.requestAnimationFrame(() => {
+      const nodeWidth = node.measured?.width ?? NODE_WIDTH;
+      const nodeHeight = node.measured?.height ?? NODE_HEIGHT;
       void reactFlow.setCenter(
-        node.position.x + NODE_WIDTH / 2,
-        node.position.y + NODE_HEIGHT / 2,
+        node.position.x + nodeWidth / 2,
+        node.position.y + nodeHeight / 2,
         {
           duration: 220,
           zoom: Math.max(reactFlow.getZoom(), 0.72),
@@ -572,8 +572,8 @@ export function GalaxyActionGraph({
     [actions, graph, mode, selectedActionId],
   );
   const laid = useMemo(
-    () => dagreLayout(displayGraph, selectedActionId, actions),
-    [actions, displayGraph, selectedActionId],
+    () => dagreLayout(displayGraph, selectedActionId, actions, mode),
+    [actions, displayGraph, mode, selectedActionId],
   );
   const stableLayout = useStableNodePositions(laid, `${traceKey}:${mode}`);
   const graphShell = useElementSizeReady<HTMLDivElement>();
@@ -598,7 +598,9 @@ export function GalaxyActionGraph({
   );
   const graphCaption = mode === "summary"
     ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 读法：问题 → 证据锚点 → 最终预测`
-    : `完整审计 · ${stableLayout.nodes.length} 个动作 · ${stableLayout.edges.length} 条依赖边 · 其中 ${criticalCount} 个关键路径节点`;
+    : mode === "critical"
+      ? `关键路径 · ${stableLayout.nodes.length} 个 critical-path 节点 · galaxy 算法标注推理链路`
+      : `完整审计 · ${stableLayout.nodes.length} 个动作 · ${stableLayout.edges.length} 条依赖边 · 其中 ${criticalCount} 个关键路径节点`;
 
   return (
     <section className="console-card galaxy-action-graph-card">
@@ -609,7 +611,7 @@ export function GalaxyActionGraph({
           <p>{graphCaption}</p>
         </div>
         <div className="replay-command-row" role="tablist" aria-label="视图模式">
-          {(["summary", "full"] as const).map((m) => (
+          {(["summary", "critical", "full"] as const).map((m) => (
             <button
               key={m}
               role="tab"
@@ -618,7 +620,7 @@ export function GalaxyActionGraph({
               className={mode === m ? "selected" : ""}
               onClick={() => onSetMode(m)}
             >
-              {m === "summary" ? "故事路径" : "完整审计"}
+              {m === "summary" ? "故事路径" : m === "critical" ? "关键路径" : "完整审计"}
             </button>
           ))}
         </div>
@@ -648,13 +650,14 @@ export function GalaxyActionGraph({
       <div className="galaxy-action-graph-shell" ref={graphShell.ref}>
         {stableLayout.nodes.length > 0 && graphShell.ready ? (
           <ReactFlow
+            className={mode === "summary" ? "galaxy-flow-summary" : "galaxy-flow-full"}
             nodes={stableLayout.nodes}
             edges={stableLayout.edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.14 }}
-            minZoom={0.38}
-            maxZoom={1.3}
+            fitViewOptions={{ padding: mode === "full" ? 0.14 : 0.08 }}
+            minZoom={mode === "full" ? 0.38 : 0.32}
+            maxZoom={mode === "full" ? 1.3 : 1.45}
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable
@@ -666,7 +669,7 @@ export function GalaxyActionGraph({
             <FlowSelectedNodeFocuser selectedActionId={selectedActionId} nodes={stableLayout.nodes} />
             <Background color="rgba(120, 153, 180, 0.22)" gap={24} />
             <Controls showInteractive={false} />
-            {mode === "full" ? (
+            {mode !== "summary" ? (
               <MiniMap
                 pannable
                 zoomable

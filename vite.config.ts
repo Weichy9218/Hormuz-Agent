@@ -2,7 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import process from "node:process";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -75,6 +75,22 @@ interface ForecastAgentRunRecord {
   command: string[];
   outputTail: string;
   error?: string;
+}
+
+interface GalaxyTraceBuilderModule {
+  buildActionTrace: (input: {
+    taskDir: string;
+    question: Record<string, unknown>;
+    summaryRecord?: Record<string, unknown>;
+    finalize?: Record<string, unknown>;
+    stats?: Record<string, unknown>;
+    includeTerminal?: boolean;
+  }) => Promise<ActionTraceLike>;
+}
+
+interface ForecastAgentRunnerModule {
+  buildTrace: (runDir: string) => Promise<unknown>;
+  buildCompletedArtifact: (runDir: string) => Promise<unknown>;
 }
 
 function parseEnvFile(filePath: string) {
@@ -397,6 +413,14 @@ function buildRunId(date: string, startedAt: string, taskId: string) {
   return `${date}-${stamp}__${taskId}`;
 }
 
+function taskIdFromRunId(runId: string, date: string, questionKind: string) {
+  const runIdParts = runId.split("__");
+  const encodedTaskId = runIdParts[runIdParts.length - 1];
+  return encodedTaskId && encodedTaskId.startsWith("hormuz-")
+    ? encodedTaskId
+    : buildTaskId(date, questionKind);
+}
+
 function tailText(text: string, maxLength = 5000) {
   return text.length > maxLength ? text.slice(-maxLength) : text;
 }
@@ -418,6 +442,20 @@ function readJsonIfExists(filePath: string) {
   } catch {
     return null;
   }
+}
+
+function parseCliOption(command: string, option: string) {
+  const match = command.match(new RegExp(`--${option}\\s+([^\\s]+)`));
+  return match?.[1];
+}
+
+function fileTimestamp(filePath: string) {
+  if (!fs.existsSync(filePath)) return null;
+  return fs.statSync(filePath).mtime.toISOString();
+}
+
+function fileMtimeMs(filePath: string) {
+  return fs.existsSync(filePath) ? fs.statSync(filePath).mtimeMs : 0;
 }
 
 function summarizeQuestionText(question: unknown) {
@@ -446,6 +484,21 @@ function findGalaxyRunArtifacts() {
   return artifacts;
 }
 
+function findGalaxyRunOutputDir(runId: string) {
+  const stack = [GALAXY_RUNS_ROOT];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || !fs.existsSync(current)) continue;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (!entry.isDirectory()) continue;
+      if (entry.name === runId) return fullPath;
+      stack.push(fullPath);
+    }
+  }
+  return null;
+}
+
 function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
   return findGalaxyRunArtifacts()
     .map((artifactPath) => {
@@ -454,12 +507,14 @@ function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
       if (!meta?.runId || !meta?.taskId) return null;
       const question = artifact?.question as Record<string, unknown> | undefined;
       const metadata = question?.metadata as Record<string, unknown> | undefined;
+      const status = String(meta.status || "unknown");
+      if (status !== "success" && status !== "failed") return null;
       return {
         runId: String(meta.runId),
         taskId: String(meta.taskId),
         questionKind: String(metadata?.question_kind || "unknown"),
         questionTitle: summarizeQuestionText(question),
-        status: String(meta.status || "unknown"),
+        status,
         finalPrediction: String(meta.finalPrediction || ""),
         completedAt: String(meta.completedAt || meta.forecastedAt || meta.generatedAt || ""),
         durationSeconds: typeof meta.durationSeconds === "number" ? meta.durationSeconds : null,
@@ -471,14 +526,44 @@ function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
     .sort((a, b) => Date.parse(b.completedAt || "0") - Date.parse(a.completedAt || "0"));
 }
 
+function galaxyArtifactSortTime(artifact: Record<string, unknown>) {
+  const meta = artifact.runMeta as Record<string, unknown> | undefined;
+  const timestamp = String(
+    meta?.completedAt || meta?.forecastedAt || meta?.generatedAt || meta?.startedAt || "",
+  );
+  const parsed = Date.parse(timestamp);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isTerminalGalaxyArtifact(artifact: Record<string, unknown>) {
+  const meta = artifact.runMeta as Record<string, unknown> | undefined;
+  return meta?.status === "success" || meta?.status === "failed";
+}
+
+function latestGalaxyArtifact() {
+  const latestPointerPath = path.resolve(process.cwd(), "data/galaxy/latest-run.json");
+  const candidates = [
+    ...findGalaxyRunArtifacts().map((artifactPath) => readJsonIfExists(artifactPath)),
+    readJsonIfExists(latestPointerPath),
+  ].filter((artifact): artifact is Record<string, unknown> => Boolean(artifact?.runMeta));
+  const terminalCandidates = candidates.filter(isTerminalGalaxyArtifact);
+  const rankedCandidates = terminalCandidates.length > 0 ? terminalCandidates : candidates;
+
+  return rankedCandidates.sort((a, b) => galaxyArtifactSortTime(b) - galaxyArtifactSortTime(a))[0] ?? null;
+}
+
+let cachedForecastRunnerModule:
+  | { mtimeMs: number; module: ForecastAgentRunnerModule }
+  | null = null;
 async function importForecastAgentRunner() {
   const scriptPath = path.resolve(process.cwd(), "scripts/forecast-agent/runner.mjs");
+  const mtimeMs = fileMtimeMs(scriptPath);
+  if (cachedForecastRunnerModule?.mtimeMs === mtimeMs) return cachedForecastRunnerModule.module;
   const scriptUrl = pathToFileURL(scriptPath);
-  scriptUrl.searchParams.set("mtime", String(Date.now()));
-  return (await import(scriptUrl.href)) as {
-    buildTrace: (runDir: string) => Promise<unknown>;
-    buildCompletedArtifact: (runDir: string) => Promise<unknown>;
-  };
+  scriptUrl.searchParams.set("mtime", String(mtimeMs));
+  const module = (await import(scriptUrl.href)) as ForecastAgentRunnerModule;
+  cachedForecastRunnerModule = { mtimeMs, module };
+  return module;
 }
 
 function recordStatus(record: GalaxyRunRecord) {
@@ -521,17 +606,31 @@ function runByRequest(
 ) {
   const url = new URL(request.url || "", "http://localhost");
   const runId = url.searchParams.get("runId") || "";
-  if (runId) return runs.get(runId);
+  if (runId) {
+    const existing = runs.get(runId);
+    if (existing) return existing;
+    const recovered = recoverRunningGalaxyRecord();
+    if (recovered?.runId === runId) {
+      runs.set(recovered.runId, recovered);
+      return recovered;
+    }
+    return undefined;
+  }
   let latest: GalaxyRunRecord | undefined;
   runs.forEach((record) => {
     latest = record;
   });
   if (latest) return latest;
+  const recovered = recoverRunningGalaxyRecord();
+  if (recovered) {
+    runs.set(recovered.runId, recovered);
+    return recovered;
+  }
   return latestGalaxyRecordFromArtifact();
 }
 
 function latestGalaxyRecordFromArtifact(): GalaxyRunRecord | undefined {
-  const artifact = readJsonIfExists(path.resolve(process.cwd(), "data/galaxy/latest-run.json"));
+  const artifact = latestGalaxyArtifact();
   const meta = artifact?.runMeta as Record<string, unknown> | undefined;
   if (!meta?.runId || !meta?.taskId || !meta?.outputDir || !meta?.runDir) return undefined;
   const startedAt = String(meta.startedAt || meta.generatedAt || meta.forecastedAt || new Date().toISOString());
@@ -554,20 +653,89 @@ function latestGalaxyRecordFromArtifact(): GalaxyRunRecord | undefined {
   };
 }
 
-async function liveActionTrace(record: GalaxyRunRecord) {
-  const scriptPath = path.resolve(process.cwd(), "scripts/run-galaxy-hormuz.mjs");
-  const scriptUrl = pathToFileURL(scriptPath);
-  scriptUrl.searchParams.set("mtime", String(Date.now()));
-  const mod = (await import(scriptUrl.href)) as {
-    buildActionTrace: (input: {
-      taskDir: string;
-      question: Record<string, unknown>;
-      summaryRecord?: Record<string, unknown>;
-      finalize?: Record<string, unknown>;
-      stats?: Record<string, unknown>;
-      includeTerminal?: boolean;
-    }) => Promise<ActionTraceLike>;
+function recoverRunningGalaxyRecord(): GalaxyRunRecord | undefined {
+  let processList = "";
+  try {
+    processList = execFileSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" });
+  } catch {
+    return undefined;
+  }
+  const lines = processList
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) =>
+      line.includes("scripts/run-galaxy-hormuz.mjs") &&
+      line.includes("--execute") &&
+      line.includes("--run-id"),
+    );
+  const latest = lines[lines.length - 1];
+  if (!latest) return undefined;
+  const match = latest.match(/^(\d+)\s+(.+)$/);
+  if (!match) return undefined;
+  const pid = Number(match[1]);
+  const commandText = match[2];
+  const runId = parseCliOption(commandText, "run-id");
+  const date = parseCliOption(commandText, "date") ?? shanghaiDate();
+  if (!runId) return undefined;
+  const outputDir = findGalaxyRunOutputDir(runId) ?? parseCliOption(commandText, "output-dir");
+  const startedAt = parseCliOption(commandText, "started-at") ?? fileTimestamp(outputDir ?? "") ?? new Date().toISOString();
+  const runConfig = parseCliOption(commandText, "run-config") ?? "hormuz_test.yaml";
+  const questionKind = parseCliOption(commandText, "question-kind") ?? GALAXY_DEFAULT_QUESTION_KIND;
+  if (!outputDir) return undefined;
+  const taskId = taskIdFromRunId(runId, date, questionKind);
+  const runDir = path.join(outputDir, taskId);
+  const resolvedOutputDir = path.resolve(process.cwd(), outputDir);
+  const resolvedRunDir = path.resolve(process.cwd(), runDir);
+  const recoveredCommand = [
+    "node",
+    "scripts/run-galaxy-hormuz.mjs",
+    "--execute",
+    "--date",
+    date,
+    "--run-id",
+    runId,
+    "--started-at",
+    startedAt,
+    "--output-dir",
+    resolvedOutputDir,
+    "--run-config",
+    runConfig,
+    "--question-kind",
+    questionKind,
+  ];
+  return {
+    runId,
+    taskId,
+    pid: Number.isFinite(pid) ? pid : null,
+    startedAt,
+    lastUpdatedAt: fileTimestamp(path.join(runDir, "main_agent.jsonl")) ?? startedAt,
+    outputDir: resolvedOutputDir,
+    runDir: resolvedRunDir,
+    date,
+    runConfig,
+    status: "running",
+    exitCode: null,
+    command: recoveredCommand,
+    outputTail: "",
   };
+}
+
+let cachedGalaxyTraceModule:
+  | { mtimeMs: number; module: GalaxyTraceBuilderModule }
+  | null = null;
+async function importGalaxyTraceModule() {
+  const scriptPath = path.resolve(process.cwd(), "scripts/run-galaxy-hormuz.mjs");
+  const mtimeMs = fileMtimeMs(scriptPath);
+  if (cachedGalaxyTraceModule?.mtimeMs === mtimeMs) return cachedGalaxyTraceModule.module;
+  const scriptUrl = pathToFileURL(scriptPath);
+  scriptUrl.searchParams.set("mtime", String(mtimeMs));
+  const module = (await import(scriptUrl.href)) as GalaxyTraceBuilderModule;
+  cachedGalaxyTraceModule = { mtimeMs, module };
+  return module;
+}
+
+async function liveActionTrace(record: GalaxyRunRecord) {
+  const mod = await importGalaxyTraceModule();
   const questionPath = path.resolve(process.cwd(), "data/galaxy/hormuz-daily-question.jsonl");
   const question = readJsonIfExists(questionPath) || {
     task_id: record.taskId,
@@ -744,8 +912,12 @@ function galaxyRunPlugin() {
           return;
         }
         try {
-          const text = await fs.promises.readFile("data/galaxy/latest-run.json", "utf8");
-          sendJson(response, 200, JSON.parse(text));
+          const artifact = latestGalaxyArtifact();
+          if (!artifact) {
+            sendJson(response, 404, { error: "latest galaxy artifact not found" });
+            return;
+          }
+          sendJson(response, 200, artifact);
         } catch (error) {
           sendJson(response, 404, {
             error: "latest galaxy artifact not found",
@@ -853,22 +1025,23 @@ function galaxyRunPlugin() {
           const afterParam = url.searchParams.get("afterIndex");
           const afterIndex = afterParam == null ? null : Number(afterParam);
           const actionTrace = await liveActionTrace(record);
+          const currentStatus = recordStatus(record).status;
           const tracePayload =
             Number.isFinite(afterIndex) && afterIndex != null
               ? sliceActionTrace(actionTrace, afterIndex)
               : actionTrace;
           sendJson(response, 200, {
             runId: record.runId,
-            status: recordStatus(record).status,
+            status: currentStatus,
             pid: record.pid,
             elapsed: elapsedSeconds(record.startedAt),
             lastUpdatedAt: record.lastUpdatedAt,
             runDir: record.runDir,
             outputDir: record.outputDir,
             trace: tracePayload,
-            artifact:
-              readJsonIfExists(path.join(record.outputDir, "run-artifact.json")) ||
-              null,
+            artifact: currentStatus !== "running"
+              ? readJsonIfExists(path.join(record.outputDir, "run-artifact.json"))
+              : null,
           });
         } catch (error) {
           sendJson(response, 500, {
