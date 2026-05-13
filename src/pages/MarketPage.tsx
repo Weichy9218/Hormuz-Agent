@@ -481,13 +481,6 @@ const marketPageCss = `
   opacity: 0.12;
 }
 
-.market-m8-structure-label {
-  fill: #b45309;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
 .market-m8-missing-line {
   stroke: #b91c1c;
   stroke-width: 1.25;
@@ -1013,8 +1006,9 @@ function LineChartSvg({
       {regimes.map((overlay) => (
         <g key={overlay.id}>
           <title>
-            {overlay.label}: {formatDate(new Date(overlay.startMs).toISOString())}
-            {overlay.end_at ? ` - ${formatDate(new Date(overlay.endMs).toISOString())}` : " onward"}。{overlay.caveat}
+            有来源事件窗口：{formatDate(new Date(overlay.startMs).toISOString())}
+            {overlay.end_at ? ` - ${formatDate(new Date(overlay.endMs).toISOString())}` : " 起"}。来自 curated timeline，
+            仅作市场背景的视觉标记，不表示概率或预测。
           </title>
           <rect
             className="market-m8-structure-band"
@@ -1023,14 +1017,6 @@ function LineChartSvg({
             x={xForMs(overlay.startMs)}
             y={padding.top}
           />
-          <text
-            className="market-m8-structure-label"
-            textAnchor="end"
-            x={Math.min(xForMs(overlay.endMs) - 6, width - padding.right - 8)}
-            y={padding.top + 17}
-          >
-            {overlay.label}
-          </text>
         </g>
       ))}
 
@@ -1178,6 +1164,7 @@ function MarketLineChart({
   const hasData = series.some((item) => item.points.length > 0);
   const latest = lastPoint(first.points);
   const latestChange = !traffic && first.points.length > 1 ? changeFor(first.points) : "";
+  const regimeCount = regimes?.length ?? 0;
   const valueLabel = (value: number) => {
     if (isTrafficUnit(first.unit)) return formatNumber(value, 0);
     if (first.unit === "%") return `${formatNumber(value, 2)}%`;
@@ -1200,6 +1187,7 @@ function MarketLineChart({
             <LineChartIcon size={14} />&nbsp;{range.label}
           </span>
           <span className="market-m8-pill">{events.length} 条事件标注</span>
+          {regimeCount > 0 ? <span className="market-m8-pill">{regimeCount} 条有来源事件窗口</span> : null}
           <span className="market-m8-pill">
             {latest ? formatSeriesValue(first, latest.value) : traffic ? "单位：日通过船次" : "无数据"}
             {latestChange ? ` · ${latestChange}` : ""}
@@ -1413,7 +1401,7 @@ function MarketControls({
         <p>
           生成时间 {formatDateTime(bundle.built_at)} · 数据截至 {formatDateTime(bundle.data_as_of)} · {bundle.series.length} 条
           原始序列 · {bundle.series.filter((series) => !isHiddenMarketSeries(series)).length} 条展示序列 ·{" "}
-          {bundle.event_overlays.length} 条事件标注 · {bundle.regime_overlays?.length ?? 0} 条 source-backed regime overlay
+          {bundle.event_overlays.length} 条事件标注 · {bundle.regime_overlays?.length ?? 0} 条有来源事件窗口
         </p>
       </div>
       <div className="market-m8-control-actions">
