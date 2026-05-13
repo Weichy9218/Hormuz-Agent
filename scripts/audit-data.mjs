@@ -12,6 +12,7 @@ const dataUrl = new URL("../src/data.ts", import.meta.url);
 const sourceRegistryUrl = new URL("../src/data/sourceRegistry.ts", import.meta.url);
 const canonicalStoreUrl = new URL("../src/state/canonicalStore.ts", import.meta.url);
 const normalizedFredUrl = new URL("../data/normalized/market/fred_series.csv", import.meta.url);
+const fredMissingFixtureUrl = new URL("../data/fixtures/fred-missing-values.json", import.meta.url);
 const generatedMarketUrl = new URL("../data/generated/market_series.json", import.meta.url);
 const generatedMarketChartUrl = new URL("../data/generated/market_chart.json", import.meta.url);
 const generatedNewsTimelineUrl = new URL("../data/generated/news_timeline.json", import.meta.url);
@@ -24,6 +25,24 @@ const evidenceClaimsUrl = new URL("../data/evidence/evidence_claims.jsonl", impo
 const canonicalInputsUrl = new URL("../data/generated/canonical_inputs.json", import.meta.url);
 const rawFredDir = resolve(root, "data/raw/fred");
 const rawHashCache = new Map();
+
+const activeMarketChartRanges = {
+  brent: { min: 1, max: 250 },
+  wti: { min: 1, max: 250 },
+  vix: { min: 1, max: 100 },
+  broad_usd: { min: 50, max: 200 },
+  us10y: { min: 0.1, max: 20 },
+  sp500: { min: 100, max: 20000 },
+  nasdaq: { min: 100, max: 50000 },
+  us_cpi: { min: 100, max: 1000 },
+  gold: { min: 100, max: 10000 },
+  portwatch_daily_transit_calls_all: { min: 0, max: 500 },
+  portwatch_7d_avg_transit_calls_all: { min: 0, max: 500 },
+  portwatch_daily_transit_calls_tanker: { min: 0, max: 500 },
+  portwatch_daily_transit_calls_container: { min: 0, max: 500 },
+  portwatch_daily_transit_calls_dry_bulk: { min: 0, max: 500 },
+  portwatch_daily_transit_calls_other: { min: 0, max: 500 },
+};
 
 const fredSeries = {
   DCOILBRENTEU: { label: "Brent spot", target: "brent" },
@@ -137,6 +156,17 @@ function parseFredCsvText(text) {
   );
 }
 
+function parseFredCsvTextPreserveEmpty(text) {
+  const [headerLine, ...lines] = text.trimEnd().split(/\r?\n/);
+  const headers = parseCsvLine(headerLine);
+  return lines
+    .filter((line) => line.trim())
+    .map((line) => {
+      const values = parseCsvLine(line);
+      return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
+    });
+}
+
 async function readLatestRawFredCsv(seriesId) {
   const files = (await readdir(resolve(rawFredDir, seriesId)))
     .filter((file) => file.endsWith(".csv"))
@@ -171,6 +201,13 @@ async function assertRawHash(record, label) {
   }
 }
 
+function numericStrict(value) {
+  const s = String(value ?? "").trim();
+  if (!s || s === "." || s === "-" || /^nan$/i.test(s)) return null;
+  const number = Number(s);
+  return Number.isFinite(number) ? number : null;
+}
+
 function extractSourceIds(file) {
   return [...file.matchAll(/(?:id:|"id":)\s*"([^"]+)"/g)].map((match) => match[1]);
 }
@@ -190,6 +227,9 @@ async function auditFredArtifacts(normalizedRows, generatedMarketSeries) {
   for (const row of normalizedRows) {
     const config = fredSeries[row.series_id];
     if (!config) continue;
+    if (numericStrict(row.value) == null && row.value !== "") {
+      throw new Error(`${row.series_id} ${row.date}: unsupported missing token ${JSON.stringify(row.value)}`);
+    }
     if (row.source_id !== "fred-market") {
       throw new Error(`${row.series_id} ${row.date}: source_id must be fred-market`);
     }
@@ -215,6 +255,21 @@ async function auditFredArtifacts(normalizedRows, generatedMarketSeries) {
       throw new Error(`${seriesId}: no raw CSV snapshot in data/raw/fred/${seriesId}`);
     }
 
+    const retrievedAt = rows.find((row) => row.retrieved_at)?.retrieved_at;
+    if (retrievedAt) {
+      const rawPath = resolve(rawFredDir, seriesId, `${retrievedAt.replace(/[:.]/g, "-")}.csv`);
+      const rawRows = parseFredCsvTextPreserveEmpty(await readFile(rawPath, "utf8"));
+      const rawValueKey = seriesId;
+      for (const rawRow of rawRows) {
+        const rawValue = rawRow[rawValueKey] ?? rawRow.value ?? "";
+        const rawDate = rawRow.observation_date ?? rawRow.DATE;
+        const normalized = rows.find((row) => row.date === rawDate);
+        if (numericStrict(rawValue) == null && normalized && String(normalized.value ?? "").trim() !== "" && Number(normalized.value) === 0) {
+          throw new Error(`${seriesId} ${normalized.date}: FRED missing raw value must not normalize to 0.`);
+        }
+      }
+    }
+
     const generated = generatedMarketSeries.find((series) => series.source === `FRED ${seriesId}`);
     if (!generated?.points?.length) {
       throw new Error(`${seriesId}: generated market_series.json has no display points`);
@@ -234,6 +289,30 @@ async function auditFredArtifacts(normalizedRows, generatedMarketSeries) {
     const upstreamValue = upstream.get(latest.date);
     if (!upstreamValue) throw new Error(`${seriesId}: upstream missing latest generated date ${latest.date}`);
     assertAlmostEqual(upstreamValue, latest.value, `${config.label} latest ${latest.date}`);
+  }
+
+  const cpiRows = rowsBySeries.get("CPIAUCSL") ?? [];
+  const cpiMissing = cpiRows.find((row) => row.date === "2025-10-01");
+  if (!cpiMissing || cpiMissing.value !== "") {
+    throw new Error("CPIAUCSL 2025-10-01 fixture must remain an official empty value in normalized FRED rows.");
+  }
+}
+
+function auditFredMissingFixture(fixture) {
+  if (!Array.isArray(fixture?.missing_tokens) || fixture.missing_tokens.length === 0) {
+    throw new Error("fred-missing-values fixture must define missing_tokens.");
+  }
+  for (const token of fixture.missing_tokens) {
+    const value = Object.hasOwn(token, "raw") ? token.raw : undefined;
+    if (numericStrict(value) !== null) {
+      throw new Error(`fred-missing-values: ${token.label ?? JSON.stringify(value)} must parse as null.`);
+    }
+  }
+  for (const token of fixture.valid_tokens ?? []) {
+    const parsed = numericStrict(token.raw);
+    if (parsed !== token.expected) {
+      throw new Error(`fred-missing-values: ${token.raw} expected ${token.expected}, got ${parsed}.`);
+    }
   }
 }
 
@@ -567,7 +646,30 @@ async function auditGeneratedMarketChart(bundle) {
     throw new Error("market_chart.json must expose a series array.");
   }
 
+  const allowedSurfaces = new Set(["market_chart", "overview_snapshot", "coverage_only", "hidden"]);
+  const seriesByTarget = new Map(bundle.series.map((series) => [series.target, series]));
+  const usdCny = seriesByTarget.get("usd_cny");
+  if (!usdCny || usdCny.surface !== "hidden" || usdCny.coverage_visible !== false || usdCny.status !== "active") {
+    throw new Error("USD/CNY must remain as hidden active lineage, not a visible Market series.");
+  }
+  const usdCnh = seriesByTarget.get("usd_cnh");
+  if (!usdCnh || usdCnh.surface !== "hidden" || usdCnh.coverage_visible !== false || usdCnh.status !== "pending_source") {
+    throw new Error("USD/CNH must remain hidden pending lineage until a valid offshore source is connected.");
+  }
+
   for (const series of bundle.series) {
+    if (!allowedSurfaces.has(series.surface)) {
+      throw new Error(`${series.id ?? series.target}: invalid surface ${series.surface}`);
+    }
+    if (typeof series.coverage_visible !== "boolean") {
+      throw new Error(`${series.id ?? series.target}: coverage_visible must be boolean.`);
+    }
+    if (series.surface === "hidden" && series.coverage_visible !== false) {
+      throw new Error(`${series.id ?? series.target}: hidden series cannot be coverage_visible.`);
+    }
+    if (series.surface === "hidden" && series.target !== "usd_cny" && ((series.points?.length ?? 0) > 0 || series.status === "active")) {
+      throw new Error(`${series.id ?? series.target}: hidden non-lineage series cannot be active or carry points.`);
+    }
     if (series.evidenceEligible !== false) {
       throw new Error(`${series.id ?? series.target}: market_chart series evidenceEligible must be false.`);
     }
@@ -577,6 +679,40 @@ async function auditGeneratedMarketChart(bundle) {
     ) {
       throw new Error(`${series.id ?? series.target}: pending market_chart series must not contain values or points.`);
     }
+    if (series.status === "pending_source" && series.coverage_visible === true && series.surface !== "coverage_only") {
+      throw new Error(`${series.id ?? series.target}: pending_source coverage visibility must be explicit coverage_only.`);
+    }
+
+    if (series.status === "active") {
+      for (const field of [
+        "source_id",
+        "provider_id",
+        "license_status",
+        "retrieved_at",
+        "source_url",
+        "raw_path",
+        "source_hash",
+        "caveat",
+      ]) {
+        if (!series[field]) throw new Error(`${series.id ?? series.target}: active market_chart row missing ${field}`);
+      }
+      await assertRawHash(series, `${series.id ?? series.target}:market_chart`);
+
+      const range = activeMarketChartRanges[series.target];
+      if (range) {
+        for (const point of series.points ?? []) {
+          if (!Number.isFinite(Number(point.value))) {
+            throw new Error(`${series.id}:${point.date}: point value must be finite.`);
+          }
+          if (point.value < range.min || point.value > range.max) {
+            throw new Error(
+              `${series.id}:${point.date}: value ${point.value} outside sanity range ${range.min}..${range.max}.`,
+            );
+          }
+        }
+      }
+    }
+
     if (series.baseline_points && series.baseline_points.length > 0) {
       if (series.group !== "traffic" || series.source_id !== "imf-portwatch-hormuz") {
         throw new Error(
@@ -589,6 +725,40 @@ async function auditGeneratedMarketChart(bundle) {
         );
       }
       await assertRawHash(series, `${series.id ?? series.target}:market_chart`);
+      const meta = series.baseline_metadata;
+      if (!meta || meta.baseline_method !== "same_calendar_window") {
+        throw new Error(`${series.id ?? series.target}: traffic baseline_points require same_calendar_window metadata.`);
+      }
+      for (const field of [
+        "baseline_window_days",
+        "baseline_lookback_years",
+        "baseline_n_obs",
+        "baseline_mean",
+        "baseline_std",
+        "latest_z_score",
+      ]) {
+        if (meta[field] === undefined) {
+          throw new Error(`${series.id ?? series.target}: baseline_metadata missing ${field}.`);
+        }
+      }
+      if (meta.baseline_window_days !== 31 || meta.baseline_lookback_years !== 1) {
+        throw new Error(`${series.id ?? series.target}: unexpected traffic baseline window metadata.`);
+      }
+      if (!Number.isFinite(Number(meta.baseline_n_obs)) || meta.baseline_n_obs <= 0) {
+        throw new Error(`${series.id ?? series.target}: baseline_n_obs must be positive.`);
+      }
+    }
+
+    if (series.target === "us_cpi") {
+      const cpiMissing = series.missing_points ?? [];
+      if (cpiMissing.length !== 1 || cpiMissing[0].date !== "2025-10-01" || cpiMissing[0].reason !== "official_missing") {
+        throw new Error("us-cpi: must expose exactly the official 2025-10-01 missing marker.");
+      }
+      if ((series.points ?? []).some((point) => point.date === "2025-10-01")) {
+        throw new Error("us-cpi: 2025-10-01 official missing value must not appear in points.");
+      }
+    } else if ((series.missing_points?.length ?? 0) > 0) {
+      throw new Error(`${series.id}: missing_points are only expected on sparse FRED CPI for this bundle.`);
     }
 
     if (series.status === "active" && series.target === "gold") {
@@ -604,10 +774,29 @@ async function auditGeneratedMarketChart(bundle) {
       if ((series.points?.length ?? 0) < 200) {
         throw new Error(`${series.id}: Stooq Gold history must expose at least 200 daily points.`);
       }
+      if (
+        series.provider_symbol !== "xauusd" ||
+        series.field_used !== "Close" ||
+        series.proxy_for !== "gold_spot_usd_per_oz" ||
+        !Array.isArray(series.not_equivalent_to) ||
+        !series.not_equivalent_to.includes("LBMA Gold Price") ||
+        !series.not_equivalent_to.includes("COMEX futures continuous contract")
+      ) {
+        throw new Error(`${series.id}: Gold proxy lineage fields are incomplete.`);
+      }
       if (!/Stooq XAU\/USD daily OHLC/i.test(series.caveat ?? "") || !/not an LBMA benchmark/i.test(series.caveat ?? "")) {
         throw new Error(`${series.id}: Gold caveat must state Stooq XAU/USD daily OHLC and not an LBMA benchmark.`);
       }
       await assertRawHash(series, `${series.id}:market_chart`);
+    }
+  }
+
+  for (const overlay of bundle.regime_overlays ?? []) {
+    for (const field of ["id", "label", "start_at", "source_event_id", "source_url", "caveat"]) {
+      if (!overlay[field]) throw new Error(`regime_overlays: ${overlay.id ?? "overlay"} missing ${field}`);
+    }
+    if (/forecast|scenario|pricingPattern/i.test(overlay.caveat)) {
+      throw new Error(`${overlay.id}: regime overlay caveat must not introduce forecast/scenario interpretation.`);
     }
   }
 }
@@ -648,6 +837,7 @@ const dataFile = await readFile(dataUrl, "utf8");
 const sourceRegistryFile = await readFile(sourceRegistryUrl, "utf8");
 const canonicalStoreFile = await readFile(canonicalStoreUrl, "utf8");
 const normalizedRows = parseCsv(await readFile(normalizedFredUrl, "utf8"));
+const fredMissingFixture = JSON.parse(await readFile(fredMissingFixtureUrl, "utf8"));
 const generatedMarketSeries = JSON.parse(await readFile(generatedMarketUrl, "utf8"));
 const generatedMarketChart = JSON.parse(await readFile(generatedMarketChartUrl, "utf8"));
 const generatedNewsTimeline = JSON.parse(await readFile(generatedNewsTimelineUrl, "utf8"));
@@ -660,6 +850,7 @@ const evidenceClaims = parseJsonl(await readFile(evidenceClaimsUrl, "utf8"));
 const canonicalInputs = JSON.parse(await readFile(canonicalInputsUrl, "utf8"));
 
 await auditFredArtifacts(normalizedRows, generatedMarketSeries);
+auditFredMissingFixture(fredMissingFixture);
 auditBaseline(baselineFacts);
 auditSourceRegistry(sourceRegistry);
 await auditAdvisories(advisoryRecords);

@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-05-13T04:12:23.284Z",
+  "built_at": "2026-05-13T04:32:39.379Z",
   "data_as_of": "2026-05-13T04:09:50.720Z",
   "baseline": [
     {
@@ -240,7 +240,7 @@
       "value": null,
       "unit": "USD/oz",
       "source_id": "gold-pending",
-      "retrieved_at": "2026-05-13T04:12:23.284Z",
+      "retrieved_at": "2026-05-13T04:32:39.379Z",
       "status": "pending_source",
       "caveat": "Pending stable daily source."
     },
@@ -250,7 +250,7 @@
       "value": null,
       "unit": "CNH per USD",
       "source_id": "usdcnh-pending",
-      "retrieved_at": "2026-05-13T04:12:23.284Z",
+      "retrieved_at": "2026-05-13T04:32:39.379Z",
       "status": "pending_source",
       "caveat": "Pending offshore CNH source."
     }

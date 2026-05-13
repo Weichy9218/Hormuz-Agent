@@ -17,7 +17,6 @@ import type {
 
 const bundle = data as MarketChartBundle;
 const dayMs = 24 * 60 * 60 * 1000;
-const structureStartMs = toDayMs("2026-02-28");
 
 const rangeOptions = [
   { key: "7d", label: "7d", days: 7 },
@@ -29,6 +28,7 @@ const rangeOptions = [
 type RangeKey = (typeof rangeOptions)[number]["key"];
 type MarketSeriesItem = MarketChartBundle["series"][number];
 type MarketOverlay = MarketChartBundle["event_overlays"][number];
+type MarketRegimeOverlay = NonNullable<MarketChartBundle["regime_overlays"]>[number];
 
 type WindowRange = {
   key: RangeKey;
@@ -50,6 +50,11 @@ type ChartSeries = {
   band?: Array<{ date: string; lower: number; upper: number }>;
   dashed?: boolean;
   caveat: string;
+};
+
+type VisibleRegimeOverlay = MarketRegimeOverlay & {
+  startMs: number;
+  endMs: number;
 };
 
 type MarketSection = {
@@ -817,6 +822,22 @@ function overlayOffsets(events: MarketOverlay[]) {
   });
 }
 
+function visibleRegimeOverlays(overlays: MarketRegimeOverlay[] | undefined, range: WindowRange): VisibleRegimeOverlay[] {
+  return (overlays ?? [])
+    .map((overlay) => {
+      const startMs = toDayMs(overlay.start_at);
+      const endMs = overlay.end_at ? toDayMs(overlay.end_at) : range.endMs;
+      return { ...overlay, startMs, endMs };
+    })
+    .filter((overlay) => Number.isFinite(overlay.startMs) && Number.isFinite(overlay.endMs))
+    .filter((overlay) => overlay.endMs >= range.startMs && overlay.startMs <= range.endMs)
+    .map((overlay) => ({
+      ...overlay,
+      startMs: Math.max(overlay.startMs, range.startMs),
+      endMs: Math.min(overlay.endMs, range.endMs),
+    }));
+}
+
 function changeFor(points: MarketChartPoint[]) {
   if (points.length < 2) return "no range";
   const first = points[0].value;
@@ -832,7 +853,7 @@ function getSeries(id: string) {
 }
 
 function isHiddenMarketSeries(series: MarketSeriesItem) {
-  return series.id === "usd-cny" || series.id === "usd-cnh-pending" || series.target === "usd_cny" || series.target === "usd_cnh";
+  return series.surface === "hidden" || series.coverage_visible === false;
 }
 
 function chartSeriesFrom(series: MarketSeriesItem, range: WindowRange): ChartSeries {
@@ -895,6 +916,7 @@ function ChartLegend({ series }: { series: ChartSeries[] }) {
 function LineChartSvg({
   series,
   events,
+  regimes,
   range,
   valueLabel,
   clampMinZero,
@@ -903,6 +925,7 @@ function LineChartSvg({
 }: {
   series: ChartSeries[];
   events: MarketOverlay[];
+  regimes: VisibleRegimeOverlay[];
   range: WindowRange;
   valueLabel: (value: number) => string;
   clampMinZero?: boolean;
@@ -925,32 +948,34 @@ function LineChartSvg({
   const xForDate = (date: string) => xForMs(toDayMs(date));
   const yForValue = (value: number) =>
     padding.top + plotHeight - ((value - domain.min) / (domain.max - domain.min || 1)) * plotHeight;
-  const bandStartMs = Math.max(structureStartMs, range.startMs);
-  const showStructureBand = bandStartMs <= range.endMs;
   const shouldShowEveryMarker = Boolean(showMarkers);
   const maxGapDays = shouldShowEveryMarker ? 45 : 3;
 
   return (
     <svg className="market-m8-chart-svg" viewBox={`0 0 ${width} ${height}`} role="img">
-      {showStructureBand ? (
-        <>
+      {regimes.map((overlay) => (
+        <g key={overlay.id}>
+          <title>
+            {overlay.label}: {formatDate(new Date(overlay.startMs).toISOString())}
+            {overlay.end_at ? ` - ${formatDate(new Date(overlay.endMs).toISOString())}` : " onward"}。{overlay.caveat}
+          </title>
           <rect
             className="market-m8-structure-band"
             height={plotHeight}
-            width={Math.max(xForMs(range.endMs) - xForMs(bandStartMs), 0)}
-            x={xForMs(bandStartMs)}
+            width={Math.max(xForMs(overlay.endMs) - xForMs(overlay.startMs), 0)}
+            x={xForMs(overlay.startMs)}
             y={padding.top}
           />
           <text
             className="market-m8-structure-label"
             textAnchor="end"
-            x={width - padding.right - 8}
+            x={Math.min(xForMs(overlay.endMs) - 6, width - padding.right - 8)}
             y={padding.top + 17}
           >
-            封锁架构
+            {overlay.label}
           </text>
-        </>
-      ) : null}
+        </g>
+      ))}
 
       {yTicks.map((tick) => {
         const y = yForValue(tick);
@@ -1078,6 +1103,7 @@ function LineChartSvg({
 function MarketLineChart({
   series,
   events,
+  regimes,
   range,
   traffic,
   note,
@@ -1085,6 +1111,7 @@ function MarketLineChart({
 }: {
   series: ChartSeries[];
   events: MarketOverlay[];
+  regimes?: VisibleRegimeOverlay[];
   range: WindowRange;
   traffic?: boolean;
   note?: string;
@@ -1128,6 +1155,7 @@ function MarketLineChart({
           clampMinZero={traffic}
           dense={!traffic}
           events={events}
+          regimes={regimes ?? []}
           range={range}
           series={series}
           showMarkers={showMarkers}
@@ -1145,16 +1173,18 @@ function MarketLineChart({
 function MarketSectionCharts({
   section,
   events,
+  regimes,
   range,
 }: {
   section: MarketSection;
   events: MarketOverlay[];
+  regimes: VisibleRegimeOverlay[];
   range: WindowRange;
 }) {
   const rows = section.ids
     .map(getSeries)
     .filter((series): series is MarketSeriesItem => Boolean(series))
-    .filter((series) => series.status === "active");
+    .filter((series) => series.status === "active" && series.surface === "market_chart");
 
   return (
     <section className={`console-card market-m8-section${section.wide ? " wide" : ""}`}>
@@ -1171,6 +1201,7 @@ function MarketSectionCharts({
             key={series.id}
             note={series.caveat}
             range={range}
+            regimes={regimes}
             series={[chartSeriesFrom(series, range)]}
             showMarkers={series.id === "us-cpi"}
           />
@@ -1279,7 +1310,7 @@ function MarketControls({
         <p>
           生成时间 {formatDateTime(bundle.built_at)} · 数据截至 {formatDateTime(bundle.data_as_of)} · {bundle.series.length} 条
           原始序列 · {bundle.series.filter((series) => !isHiddenMarketSeries(series)).length} 条展示序列 ·{" "}
-          {bundle.event_overlays.length} 条事件标注
+          {bundle.event_overlays.length} 条事件标注 · {bundle.regime_overlays?.length ?? 0} 条 source-backed regime overlay
         </p>
       </div>
       <div className="market-m8-control-actions">
@@ -1316,7 +1347,7 @@ export function MarketPage() {
   const [showEvents, setShowEvents] = useState(true);
   const range = useMemo(() => makeRange(rangeKey), [rangeKey]);
 
-  const { trafficChartSeries, visibleEvents, trafficCaveat } = useMemo(() => {
+  const { trafficChartSeries, visibleEvents, visibleRegimes, trafficCaveat } = useMemo(() => {
     const trafficRows = bundle.series.filter((item) => item.group === "traffic");
     const dailyTraffic =
       trafficRows.find((item) => item.target === "portwatch_daily_transit_calls_all") ??
@@ -1367,10 +1398,12 @@ export function MarketPage() {
     const overlays = showEvents
       ? bundle.event_overlays.filter((event) => inRange(event.event_at, range))
       : [];
+    const regimes = visibleRegimeOverlays(bundle.regime_overlays, range);
 
     return {
       trafficChartSeries: [...smoothedTrafficSeries, ...rollingSeries, ...baselineSeries],
       visibleEvents: overlays,
+      visibleRegimes: regimes,
       trafficCaveat:
         dailyTraffic?.caveat ??
         "PortWatch 通行量 caveat 待确认：AIS/GNSS 船舶信号可能受干扰、伪装、关闭 AIS 或事后修订影响。",
@@ -1394,6 +1427,7 @@ export function MarketPage() {
         events={visibleEvents}
         note={`AIS/GNSS 注意事项：${trafficCaveat}`}
         range={range}
+        regimes={visibleRegimes}
         series={trafficChartSeries}
         traffic
       />
@@ -1403,6 +1437,7 @@ export function MarketPage() {
           events={visibleEvents}
           key={section.title}
           range={range}
+          regimes={visibleRegimes}
           section={section}
         />
       ))}

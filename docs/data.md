@@ -514,11 +514,28 @@ interface MarketChartBundle {
     source_id: string;
     provider_id?: string;
     license_status: "open" | "restricted" | "pending" | "unknown";
+    source_url?: string | null;
     retrieved_at?: string;
     raw_path?: string | null;
     source_hash?: `sha256:${string}` | null;
+    surface: "market_chart" | "overview_snapshot" | "coverage_only" | "hidden";
+    coverage_visible: boolean;
+    reason_hidden?: string;
+    provider_symbol?: string;                         // Stooq Gold: "xauusd"
+    field_used?: string;                              // Stooq Gold: "Close"
+    proxy_for?: string;                               // Stooq Gold: "gold_spot_usd_per_oz"
+    not_equivalent_to?: string[];                     // e.g. LBMA benchmark / COMEX futures
     points: Array<{ date: string; value: number }>;            // active 才有；Gold spot 使用 Stooq daily Close
     baseline_points?: Array<{ date: string; value: number }>;  // traffic 专用：1y 同期均值曲线
+    baseline_metadata?: {
+      baseline_method: "same_calendar_window";
+      baseline_window_days: number;
+      baseline_lookback_years: number;
+      baseline_n_obs: number;
+      baseline_mean: number | null;
+      baseline_std: number | null;
+      latest_z_score: number | null;
+    };
     missing_points?: Array<{ date: string; reason: string }>;  // sparse macro/FRED 官方空值；不插值、不连线
     caveat: string;
     evidenceEligible: false;            // 强制 false
@@ -530,10 +547,21 @@ interface MarketChartBundle {
     severity_hint: TimelineEvent["severity_hint"];
     related_market_targets: TimelineEvent["related_market_targets"];
   }>;
+  regime_overlays?: Array<{
+    id: string;
+    label: string;
+    start_at: string;
+    end_at: string | null;
+    source_event_id: string;
+    source_url: string;
+    caveat: string;
+  }>;
 }
 ```
 
 `traffic` 组建议至少一条 series：`{ target: "portwatch_daily_transit_calls_all", group: "traffic", points: <daily>, baseline_points: <1y same-window avg> }`。如有 vessel-type 拆分，新增 `tanker / lng / container` 同组兄弟 series。
+
+Market visibility 是数据契约，不靠 UI 猜测：`surface="market_chart"` 进入图表与 coverage；`coverage_only` 只进入 coverage table；`hidden` 只保留 source lineage / audit，不进入图表或 coverage。`usd_cny` 必须保留为 hidden active lineage；`usd_cnh` 在有效 offshore provider 接入前必须是 hidden pending lineage。
 
 ### 4.12 旧 schema 的归属
 

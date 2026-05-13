@@ -137,7 +137,6 @@ function relevanceScore(article, domain, sourceQuery) {
     .join(" ")
     .toLowerCase();
   const queryText = String(sourceQuery ?? "").toLowerCase();
-  const text = `${articleText} ${queryText}`;
   const articleHasCoreSignal =
     /\bhormuz\b|\bstrait of hormuz\b|\bgulf of oman\b|\bpersian gulf\b|\bbandar abbas\b|\bkhasab\b|\birgc\b|\brevolutionary guard\b|\bus navy\b|\bcentcom\b|\btanker\b|\bvessel\b|\bshipping\b|\bblockade\b|\bclosed\b|\breopened\b|\bbunker fuel\b|\bais\b|\bgnss\b/.test(
       articleText,

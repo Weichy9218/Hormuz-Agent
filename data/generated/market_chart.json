@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-05-13T04:12:23.284Z",
+  "built_at": "2026-05-13T04:32:39.379Z",
   "data_as_of": "2026-05-13T04:09:50.720Z",
   "series": [
     {
@@ -20110,9 +20110,21 @@
           "value": 107.29
         }
       ],
+      "baseline_metadata": {
+        "baseline_method": "same_calendar_window",
+        "baseline_window_days": 31,
+        "baseline_lookback_years": 1,
+        "baseline_n_obs": 31,
+        "baseline_mean": 107.29,
+        "baseline_std": 10.24,
+        "latest_z_score": -10.09
+      },
+      "surface": "market_chart",
+      "coverage_visible": true,
       "source_id": "imf-portwatch-hormuz",
       "provider_id": "imf-portwatch",
       "license_status": "open",
+      "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
       "retrieved_at": "2026-05-13T01:37:59.886Z",
       "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
       "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
@@ -30877,9 +30889,12 @@
           "value": 1.57
         }
       ],
+      "surface": "market_chart",
+      "coverage_visible": true,
       "source_id": "imf-portwatch-hormuz",
       "provider_id": "imf-portwatch",
       "license_status": "open",
+      "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
       "retrieved_at": "2026-05-13T01:37:59.886Z",
       "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
       "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
@@ -30897,6 +30912,7 @@
       "source_id": "imf-portwatch-hormuz",
       "provider_id": "imf-portwatch",
       "license_status": "open",
+      "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
       "retrieved_at": "2026-05-13T01:37:59.886Z",
       "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
       "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
@@ -41651,7 +41667,9 @@
         }
       ],
       "caveat": "PortWatch chokepoint6 霍尔木兹海峡油轮通行量，与总通行量同源；AIS/GNSS 局限同样适用。覆盖期 2019-01-01 至 2026-05-10",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "coverage_only",
+      "coverage_visible": true
     },
     {
       "id": "portwatch-daily-transit-calls-container",
@@ -41664,6 +41682,7 @@
       "source_id": "imf-portwatch-hormuz",
       "provider_id": "imf-portwatch",
       "license_status": "open",
+      "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
       "retrieved_at": "2026-05-13T01:37:59.886Z",
       "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
       "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
@@ -52418,7 +52437,9 @@
         }
       ],
       "caveat": "PortWatch chokepoint6 霍尔木兹海峡集装箱船通行量，与总通行量同源；AIS/GNSS 局限同样适用。覆盖期 2019-01-01 至 2026-05-10",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "coverage_only",
+      "coverage_visible": true
     },
     {
       "id": "portwatch-daily-transit-calls-dry_bulk",
@@ -52431,6 +52452,7 @@
       "source_id": "imf-portwatch-hormuz",
       "provider_id": "imf-portwatch",
       "license_status": "open",
+      "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
       "retrieved_at": "2026-05-13T01:37:59.886Z",
       "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
       "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
@@ -63185,7 +63207,9 @@
         }
       ],
       "caveat": "PortWatch chokepoint6 霍尔木兹海峡干散货船通行量，与总通行量同源；AIS/GNSS 局限同样适用。覆盖期 2019-01-01 至 2026-05-10",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "coverage_only",
+      "coverage_visible": true
     },
     {
       "id": "portwatch-daily-transit-calls-other",
@@ -63198,6 +63222,7 @@
       "source_id": "imf-portwatch-hormuz",
       "provider_id": "imf-portwatch",
       "license_status": "open",
+      "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
       "retrieved_at": "2026-05-13T01:37:59.886Z",
       "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
       "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
@@ -73952,7 +73977,9 @@
         }
       ],
       "caveat": "PortWatch chokepoint6 霍尔木兹海峡其他货船通行量，与总通行量同源；AIS/GNSS 局限同样适用。覆盖期 2019-01-01 至 2026-05-10",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "coverage_only",
+      "coverage_visible": true
     },
     {
       "id": "us-cpi",
@@ -73965,6 +73992,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/CPIAUCSL",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/CPIAUCSL/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:9a7e339d081595bbf916bab9ebb50949d3c0bc78b0cb2dea64d6c9d4c7e357a4",
@@ -74013,11 +74041,13 @@
       "missing_points": [
         {
           "date": "2025-10-01",
-          "reason": "FRED CPIAUCSL 本地 CSV 快照在该 observation date 为空值。"
+          "reason": "official_missing"
         }
       ],
       "caveat": "FRED CPIAUCSL：美国城市消费者全项目 CPI 指数，单位为 Index 1982-1984=100、季节调整、月度发布。它不是同比通胀率百分比；通胀率需要用指数的百分比变化计算。 当前快照含官方空值：2025-10-01；图上标记缺值，不插值、不连线。",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
     },
     {
       "id": "brent-spot",
@@ -74030,6 +74060,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/DCOILBRENTEU/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:1df0daa282ded7da3de1a57f2c3342d37864298c83bd929e4482f2f6dc2ca03c",
@@ -75028,7 +75059,9 @@
         }
       ],
       "caveat": "Brent spot proxy from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
     },
     {
       "id": "wti-spot",
@@ -75041,6 +75074,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/DCOILWTICO/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:b7a2ba30a6ec327e2963fb2117fc76ae478c287d5c4ca182e33233c7eff49599",
@@ -76023,7 +76057,1028 @@
         }
       ],
       "caveat": "WTI spot proxy from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
+    },
+    {
+      "id": "usd-cny",
+      "target": "usd_cny",
+      "label": "USD/CNY",
+      "group": "safe_haven_fx",
+      "color": "#9333ea",
+      "unit": "CNY per USD",
+      "status": "active",
+      "source_id": "fred-market",
+      "provider_id": "fred",
+      "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DEXCHUS",
+      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "raw_path": "data/raw/fred/DEXCHUS/2026-05-12T13-26-25-090Z.csv",
+      "source_hash": "sha256:7f6a891233cc13cb8008394721c87949830ea16afadecf8b1f00fdb84ae42e94",
+      "points": [
+        {
+          "date": "2025-05-12",
+          "value": 7.2018
+        },
+        {
+          "date": "2025-05-13",
+          "value": 7.2057
+        },
+        {
+          "date": "2025-05-14",
+          "value": 7.208
+        },
+        {
+          "date": "2025-05-15",
+          "value": 7.2067
+        },
+        {
+          "date": "2025-05-16",
+          "value": 7.209
+        },
+        {
+          "date": "2025-05-19",
+          "value": 7.2144
+        },
+        {
+          "date": "2025-05-20",
+          "value": 7.2194
+        },
+        {
+          "date": "2025-05-21",
+          "value": 7.2019
+        },
+        {
+          "date": "2025-05-22",
+          "value": 7.2037
+        },
+        {
+          "date": "2025-05-23",
+          "value": 7.1798
+        },
+        {
+          "date": "2025-05-27",
+          "value": 7.195
+        },
+        {
+          "date": "2025-05-28",
+          "value": 7.1941
+        },
+        {
+          "date": "2025-05-29",
+          "value": 7.1855
+        },
+        {
+          "date": "2025-05-30",
+          "value": 7.1991
+        },
+        {
+          "date": "2025-06-02",
+          "value": 7.1975
+        },
+        {
+          "date": "2025-06-03",
+          "value": 7.1872
+        },
+        {
+          "date": "2025-06-04",
+          "value": 7.1844
+        },
+        {
+          "date": "2025-06-05",
+          "value": 7.175
+        },
+        {
+          "date": "2025-06-06",
+          "value": 7.1886
+        },
+        {
+          "date": "2025-06-09",
+          "value": 7.1802
+        },
+        {
+          "date": "2025-06-10",
+          "value": 7.187
+        },
+        {
+          "date": "2025-06-11",
+          "value": 7.1928
+        },
+        {
+          "date": "2025-06-12",
+          "value": 7.1726
+        },
+        {
+          "date": "2025-06-13",
+          "value": 7.181
+        },
+        {
+          "date": "2025-06-16",
+          "value": 7.179
+        },
+        {
+          "date": "2025-06-17",
+          "value": 7.1845
+        },
+        {
+          "date": "2025-06-18",
+          "value": 7.1888
+        },
+        {
+          "date": "2025-06-20",
+          "value": 7.1785
+        },
+        {
+          "date": "2025-06-23",
+          "value": 7.179
+        },
+        {
+          "date": "2025-06-24",
+          "value": 7.1713
+        },
+        {
+          "date": "2025-06-25",
+          "value": 7.1764
+        },
+        {
+          "date": "2025-06-26",
+          "value": 7.1675
+        },
+        {
+          "date": "2025-06-27",
+          "value": 7.1721
+        },
+        {
+          "date": "2025-06-30",
+          "value": 7.1636
+        },
+        {
+          "date": "2025-07-01",
+          "value": 7.1647
+        },
+        {
+          "date": "2025-07-02",
+          "value": 7.1649
+        },
+        {
+          "date": "2025-07-03",
+          "value": 7.1684
+        },
+        {
+          "date": "2025-07-07",
+          "value": 7.1744
+        },
+        {
+          "date": "2025-07-08",
+          "value": 7.1738
+        },
+        {
+          "date": "2025-07-09",
+          "value": 7.18
+        },
+        {
+          "date": "2025-07-10",
+          "value": 7.1748
+        },
+        {
+          "date": "2025-07-11",
+          "value": 7.1681
+        },
+        {
+          "date": "2025-07-14",
+          "value": 7.167
+        },
+        {
+          "date": "2025-07-15",
+          "value": 7.1729
+        },
+        {
+          "date": "2025-07-16",
+          "value": 7.1791
+        },
+        {
+          "date": "2025-07-17",
+          "value": 7.1832
+        },
+        {
+          "date": "2025-07-18",
+          "value": 7.1776
+        },
+        {
+          "date": "2025-07-21",
+          "value": 7.176
+        },
+        {
+          "date": "2025-07-22",
+          "value": 7.1748
+        },
+        {
+          "date": "2025-07-23",
+          "value": 7.1599
+        },
+        {
+          "date": "2025-07-24",
+          "value": 7.1541
+        },
+        {
+          "date": "2025-07-25",
+          "value": 7.1679
+        },
+        {
+          "date": "2025-07-28",
+          "value": 7.1778
+        },
+        {
+          "date": "2025-07-29",
+          "value": 7.1769
+        },
+        {
+          "date": "2025-07-30",
+          "value": 7.1934
+        },
+        {
+          "date": "2025-07-31",
+          "value": 7.2002
+        },
+        {
+          "date": "2025-08-01",
+          "value": 7.2116
+        },
+        {
+          "date": "2025-08-04",
+          "value": 7.178
+        },
+        {
+          "date": "2025-08-05",
+          "value": 7.1835
+        },
+        {
+          "date": "2025-08-06",
+          "value": 7.1822
+        },
+        {
+          "date": "2025-08-07",
+          "value": 7.1806
+        },
+        {
+          "date": "2025-08-08",
+          "value": 7.1839
+        },
+        {
+          "date": "2025-08-11",
+          "value": 7.1884
+        },
+        {
+          "date": "2025-08-12",
+          "value": 7.1785
+        },
+        {
+          "date": "2025-08-13",
+          "value": 7.1744
+        },
+        {
+          "date": "2025-08-14",
+          "value": 7.1795
+        },
+        {
+          "date": "2025-08-15",
+          "value": 7.1817
+        },
+        {
+          "date": "2025-08-18",
+          "value": 7.1847
+        },
+        {
+          "date": "2025-08-19",
+          "value": 7.1819
+        },
+        {
+          "date": "2025-08-20",
+          "value": 7.1757
+        },
+        {
+          "date": "2025-08-21",
+          "value": 7.1793
+        },
+        {
+          "date": "2025-08-22",
+          "value": 7.1651
+        },
+        {
+          "date": "2025-08-25",
+          "value": 7.151
+        },
+        {
+          "date": "2025-08-26",
+          "value": 7.152
+        },
+        {
+          "date": "2025-08-27",
+          "value": 7.1536
+        },
+        {
+          "date": "2025-08-28",
+          "value": 7.1306
+        },
+        {
+          "date": "2025-08-29",
+          "value": 7.1304
+        },
+        {
+          "date": "2025-09-02",
+          "value": 7.139
+        },
+        {
+          "date": "2025-09-03",
+          "value": 7.1415
+        },
+        {
+          "date": "2025-09-04",
+          "value": 7.1414
+        },
+        {
+          "date": "2025-09-05",
+          "value": 7.1323
+        },
+        {
+          "date": "2025-09-08",
+          "value": 7.1293
+        },
+        {
+          "date": "2025-09-09",
+          "value": 7.1209
+        },
+        {
+          "date": "2025-09-10",
+          "value": 7.1207
+        },
+        {
+          "date": "2025-09-11",
+          "value": 7.1184
+        },
+        {
+          "date": "2025-09-12",
+          "value": 7.1242
+        },
+        {
+          "date": "2025-09-15",
+          "value": 7.1186
+        },
+        {
+          "date": "2025-09-16",
+          "value": 7.1142
+        },
+        {
+          "date": "2025-09-17",
+          "value": 7.1033
+        },
+        {
+          "date": "2025-09-18",
+          "value": 7.1125
+        },
+        {
+          "date": "2025-09-19",
+          "value": 7.1142
+        },
+        {
+          "date": "2025-09-22",
+          "value": 7.114
+        },
+        {
+          "date": "2025-09-23",
+          "value": 7.1116
+        },
+        {
+          "date": "2025-09-24",
+          "value": 7.1315
+        },
+        {
+          "date": "2025-09-25",
+          "value": 7.1338
+        },
+        {
+          "date": "2025-09-26",
+          "value": 7.1328
+        },
+        {
+          "date": "2025-09-29",
+          "value": 7.1194
+        },
+        {
+          "date": "2025-09-30",
+          "value": 7.119
+        },
+        {
+          "date": "2025-10-01",
+          "value": 7.12
+        },
+        {
+          "date": "2025-10-02",
+          "value": 7.12
+        },
+        {
+          "date": "2025-10-03",
+          "value": 7.12
+        },
+        {
+          "date": "2025-10-06",
+          "value": 7.12
+        },
+        {
+          "date": "2025-10-07",
+          "value": 7.12
+        },
+        {
+          "date": "2025-10-08",
+          "value": 7.12
+        },
+        {
+          "date": "2025-10-09",
+          "value": 7.1275
+        },
+        {
+          "date": "2025-10-10",
+          "value": 7.134
+        },
+        {
+          "date": "2025-10-14",
+          "value": 7.1384
+        },
+        {
+          "date": "2025-10-15",
+          "value": 7.1262
+        },
+        {
+          "date": "2025-10-16",
+          "value": 7.123
+        },
+        {
+          "date": "2025-10-17",
+          "value": 7.1264
+        },
+        {
+          "date": "2025-10-20",
+          "value": 7.1195
+        },
+        {
+          "date": "2025-10-21",
+          "value": 7.1218
+        },
+        {
+          "date": "2025-10-22",
+          "value": 7.1257
+        },
+        {
+          "date": "2025-10-23",
+          "value": 7.1221
+        },
+        {
+          "date": "2025-10-24",
+          "value": 7.1211
+        },
+        {
+          "date": "2025-10-27",
+          "value": 7.1102
+        },
+        {
+          "date": "2025-10-28",
+          "value": 7.0988
+        },
+        {
+          "date": "2025-10-29",
+          "value": 7.098
+        },
+        {
+          "date": "2025-10-30",
+          "value": 7.1097
+        },
+        {
+          "date": "2025-10-31",
+          "value": 7.1169
+        },
+        {
+          "date": "2025-11-03",
+          "value": 7.1222
+        },
+        {
+          "date": "2025-11-04",
+          "value": 7.1295
+        },
+        {
+          "date": "2025-11-05",
+          "value": 7.126
+        },
+        {
+          "date": "2025-11-06",
+          "value": 7.1195
+        },
+        {
+          "date": "2025-11-07",
+          "value": 7.1219
+        },
+        {
+          "date": "2025-11-10",
+          "value": 7.1193
+        },
+        {
+          "date": "2025-11-12",
+          "value": 7.112
+        },
+        {
+          "date": "2025-11-13",
+          "value": 7.095
+        },
+        {
+          "date": "2025-11-14",
+          "value": 7.0992
+        },
+        {
+          "date": "2025-11-17",
+          "value": 7.1075
+        },
+        {
+          "date": "2025-11-18",
+          "value": 7.1074
+        },
+        {
+          "date": "2025-11-19",
+          "value": 7.1106
+        },
+        {
+          "date": "2025-11-20",
+          "value": 7.1098
+        },
+        {
+          "date": "2025-11-21",
+          "value": 7.1066
+        },
+        {
+          "date": "2025-11-24",
+          "value": 7.102
+        },
+        {
+          "date": "2025-11-25",
+          "value": 7.0845
+        },
+        {
+          "date": "2025-11-26",
+          "value": 7.0758
+        },
+        {
+          "date": "2025-11-28",
+          "value": 7.0751
+        },
+        {
+          "date": "2025-12-01",
+          "value": 7.0717
+        },
+        {
+          "date": "2025-12-02",
+          "value": 7.07
+        },
+        {
+          "date": "2025-12-03",
+          "value": 7.0636
+        },
+        {
+          "date": "2025-12-04",
+          "value": 7.0714
+        },
+        {
+          "date": "2025-12-05",
+          "value": 7.0696
+        },
+        {
+          "date": "2025-12-08",
+          "value": 7.071
+        },
+        {
+          "date": "2025-12-09",
+          "value": 7.0633
+        },
+        {
+          "date": "2025-12-10",
+          "value": 7.064
+        },
+        {
+          "date": "2025-12-11",
+          "value": 7.0579
+        },
+        {
+          "date": "2025-12-12",
+          "value": 7.0548
+        },
+        {
+          "date": "2025-12-15",
+          "value": 7.047
+        },
+        {
+          "date": "2025-12-16",
+          "value": 7.0417
+        },
+        {
+          "date": "2025-12-17",
+          "value": 7.0431
+        },
+        {
+          "date": "2025-12-18",
+          "value": 7.0404
+        },
+        {
+          "date": "2025-12-19",
+          "value": 7.0409
+        },
+        {
+          "date": "2025-12-22",
+          "value": 7.0367
+        },
+        {
+          "date": "2025-12-23",
+          "value": 7.028
+        },
+        {
+          "date": "2025-12-24",
+          "value": 7.0142
+        },
+        {
+          "date": "2025-12-26",
+          "value": 7.0063
+        },
+        {
+          "date": "2025-12-29",
+          "value": 7.0056
+        },
+        {
+          "date": "2025-12-30",
+          "value": 6.9961
+        },
+        {
+          "date": "2025-12-31",
+          "value": 6.9931
+        },
+        {
+          "date": "2026-01-02",
+          "value": 6.9877
+        },
+        {
+          "date": "2026-01-05",
+          "value": 6.988
+        },
+        {
+          "date": "2026-01-06",
+          "value": 6.9834
+        },
+        {
+          "date": "2026-01-07",
+          "value": 6.9965
+        },
+        {
+          "date": "2026-01-08",
+          "value": 6.9835
+        },
+        {
+          "date": "2026-01-09",
+          "value": 6.9772
+        },
+        {
+          "date": "2026-01-12",
+          "value": 6.9731
+        },
+        {
+          "date": "2026-01-13",
+          "value": 6.9775
+        },
+        {
+          "date": "2026-01-14",
+          "value": 6.973
+        },
+        {
+          "date": "2026-01-15",
+          "value": 6.966
+        },
+        {
+          "date": "2026-01-16",
+          "value": 6.9681
+        },
+        {
+          "date": "2026-01-20",
+          "value": 6.9599
+        },
+        {
+          "date": "2026-01-21",
+          "value": 6.9637
+        },
+        {
+          "date": "2026-01-22",
+          "value": 6.97
+        },
+        {
+          "date": "2026-01-23",
+          "value": 6.9631
+        },
+        {
+          "date": "2026-01-26",
+          "value": 6.9542
+        },
+        {
+          "date": "2026-01-27",
+          "value": 6.9545
+        },
+        {
+          "date": "2026-01-28",
+          "value": 6.9462
+        },
+        {
+          "date": "2026-01-29",
+          "value": 6.948
+        },
+        {
+          "date": "2026-01-30",
+          "value": 6.951
+        },
+        {
+          "date": "2026-02-02",
+          "value": 6.9463
+        },
+        {
+          "date": "2026-02-03",
+          "value": 6.9377
+        },
+        {
+          "date": "2026-02-04",
+          "value": 6.9415
+        },
+        {
+          "date": "2026-02-05",
+          "value": 6.9378
+        },
+        {
+          "date": "2026-02-06",
+          "value": 6.9388
+        },
+        {
+          "date": "2026-02-09",
+          "value": 6.92
+        },
+        {
+          "date": "2026-02-10",
+          "value": 6.9106
+        },
+        {
+          "date": "2026-02-11",
+          "value": 6.9125
+        },
+        {
+          "date": "2026-02-12",
+          "value": 6.901
+        },
+        {
+          "date": "2026-02-13",
+          "value": 6.908
+        },
+        {
+          "date": "2026-02-17",
+          "value": 6.9031
+        },
+        {
+          "date": "2026-02-18",
+          "value": 6.9031
+        },
+        {
+          "date": "2026-02-19",
+          "value": 6.9031
+        },
+        {
+          "date": "2026-02-20",
+          "value": 6.9031
+        },
+        {
+          "date": "2026-02-23",
+          "value": 6.9031
+        },
+        {
+          "date": "2026-02-24",
+          "value": 6.883
+        },
+        {
+          "date": "2026-02-25",
+          "value": 6.8692
+        },
+        {
+          "date": "2026-02-26",
+          "value": 6.8409
+        },
+        {
+          "date": "2026-02-27",
+          "value": 6.8579
+        },
+        {
+          "date": "2026-03-02",
+          "value": 6.8821
+        },
+        {
+          "date": "2026-03-03",
+          "value": 6.8996
+        },
+        {
+          "date": "2026-03-04",
+          "value": 6.8969
+        },
+        {
+          "date": "2026-03-05",
+          "value": 6.8912
+        },
+        {
+          "date": "2026-03-06",
+          "value": 6.8965
+        },
+        {
+          "date": "2026-03-09",
+          "value": 6.9066
+        },
+        {
+          "date": "2026-03-10",
+          "value": 6.8766
+        },
+        {
+          "date": "2026-03-11",
+          "value": 6.8655
+        },
+        {
+          "date": "2026-03-12",
+          "value": 6.8689
+        },
+        {
+          "date": "2026-03-13",
+          "value": 6.8961
+        },
+        {
+          "date": "2026-03-16",
+          "value": 6.8955
+        },
+        {
+          "date": "2026-03-17",
+          "value": 6.8863
+        },
+        {
+          "date": "2026-03-18",
+          "value": 6.8726
+        },
+        {
+          "date": "2026-03-19",
+          "value": 6.8998
+        },
+        {
+          "date": "2026-03-20",
+          "value": 6.8857
+        },
+        {
+          "date": "2026-03-23",
+          "value": 6.8807
+        },
+        {
+          "date": "2026-03-24",
+          "value": 6.8918
+        },
+        {
+          "date": "2026-03-25",
+          "value": 6.9011
+        },
+        {
+          "date": "2026-03-26",
+          "value": 6.9107
+        },
+        {
+          "date": "2026-03-27",
+          "value": 6.9116
+        },
+        {
+          "date": "2026-03-30",
+          "value": 6.9119
+        },
+        {
+          "date": "2026-03-31",
+          "value": 6.898
+        },
+        {
+          "date": "2026-04-01",
+          "value": 6.872
+        },
+        {
+          "date": "2026-04-02",
+          "value": 6.8856
+        },
+        {
+          "date": "2026-04-03",
+          "value": 6.8824
+        },
+        {
+          "date": "2026-04-06",
+          "value": 6.8778
+        },
+        {
+          "date": "2026-04-07",
+          "value": 6.8567
+        },
+        {
+          "date": "2026-04-08",
+          "value": 6.8287
+        },
+        {
+          "date": "2026-04-09",
+          "value": 6.8314
+        },
+        {
+          "date": "2026-04-10",
+          "value": 6.8278
+        },
+        {
+          "date": "2026-04-13",
+          "value": 6.8303
+        },
+        {
+          "date": "2026-04-14",
+          "value": 6.8157
+        },
+        {
+          "date": "2026-04-15",
+          "value": 6.818
+        },
+        {
+          "date": "2026-04-16",
+          "value": 6.8208
+        },
+        {
+          "date": "2026-04-17",
+          "value": 6.817
+        },
+        {
+          "date": "2026-04-20",
+          "value": 6.8172
+        },
+        {
+          "date": "2026-04-21",
+          "value": 6.8208
+        },
+        {
+          "date": "2026-04-22",
+          "value": 6.8275
+        },
+        {
+          "date": "2026-04-23",
+          "value": 6.826
+        },
+        {
+          "date": "2026-04-24",
+          "value": 6.8359
+        },
+        {
+          "date": "2026-04-27",
+          "value": 6.8228
+        },
+        {
+          "date": "2026-04-28",
+          "value": 6.8374
+        },
+        {
+          "date": "2026-04-29",
+          "value": 6.8375
+        },
+        {
+          "date": "2026-04-30",
+          "value": 6.8273
+        },
+        {
+          "date": "2026-05-01",
+          "value": 6.8276
+        },
+        {
+          "date": "2026-05-04",
+          "value": 6.83
+        },
+        {
+          "date": "2026-05-05",
+          "value": 6.8276
+        },
+        {
+          "date": "2026-05-06",
+          "value": 6.811
+        },
+        {
+          "date": "2026-05-07",
+          "value": 6.8014
+        },
+        {
+          "date": "2026-05-08",
+          "value": 6.8005
+        }
+      ],
+      "caveat": "USD/CNY from FRED normalized local history; raw endpoint is not called by the UI.",
+      "evidenceEligible": false,
+      "surface": "hidden",
+      "coverage_visible": false,
+      "reason_hidden": "FRED DEXCHUS is USD/CNY only; RMB bilateral FX is not rendered in Market charts or coverage."
     },
     {
       "id": "us10y",
@@ -76036,6 +77091,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DGS10",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/DGS10/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:53e7fdb0acb85e4ff15737bf5b23fbf7488c0d313c4a9c1fcb343f9eda59c783",
@@ -77038,7 +78094,9 @@
         }
       ],
       "caveat": "US 10Y from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
     },
     {
       "id": "broad-usd",
@@ -77051,6 +78109,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DTWEXBGS",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/DTWEXBGS/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:2f23a86d34d2a8edb5c15c738f82e7fb839e9b638b1b4359ad80562fbfc80675",
@@ -78053,7 +79112,9 @@
         }
       ],
       "caveat": "Broad USD from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
     },
     {
       "id": "nasdaq",
@@ -78066,6 +79127,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/NASDAQCOM/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:7db8a5791fef1b5262af5d987d97214fd419e435956cb1b8ef057b65d791584f",
@@ -79076,7 +80138,10 @@
         }
       ],
       "caveat": "NASDAQ from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "coverage_only",
+      "coverage_visible": true,
+      "reason_hidden": "NASDAQ is retained for lineage and coverage; S&P 500 is the displayed broad risk-asset proxy."
     },
     {
       "id": "sp500",
@@ -79089,6 +80154,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/SP500",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/SP500/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:0a9d7928b9cc99d30c4ec68bed54e523ac10850cb9eb5949668e42a43fa2cf63",
@@ -80099,7 +81165,9 @@
         }
       ],
       "caveat": "S&P 500 from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
     },
     {
       "id": "vix",
@@ -80112,6 +81180,7 @@
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "raw_path": "data/raw/fred/VIXCLS/2026-05-12T13-26-25-090Z.csv",
       "source_hash": "sha256:ef20d7692982d62e71b6ccb7da58c78438db7e1c3c462b924be6e0bce707ed9d",
@@ -81146,7 +82215,9 @@
         }
       ],
       "caveat": "VIX from FRED normalized local history; raw endpoint is not called by the UI.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
     },
     {
       "id": "gold-spot",
@@ -81159,9 +82230,17 @@
       "source_id": "stooq-market",
       "provider_id": "stooq",
       "license_status": "open",
+      "source_url": "https://stooq.com/q/d/?s=xauusd",
       "retrieved_at": "2026-05-13T01:18:37.251Z",
       "raw_path": "data/raw/stooq/xauusd/2026-05-13T01-18-37-251Z.json",
       "source_hash": "sha256:49d0a80b53654347f7e435c4d2627fe3ad67e3b8b1c452a7bea11829808f2004",
+      "provider_symbol": "xauusd",
+      "field_used": "Close",
+      "proxy_for": "gold_spot_usd_per_oz",
+      "not_equivalent_to": [
+        "LBMA Gold Price",
+        "COMEX futures continuous contract"
+      ],
       "points": [
         {
           "date": "2025-05-13",
@@ -82201,7 +83280,30 @@
         }
       ],
       "caveat": "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or futures continuous contract.",
-      "evidenceEligible": false
+      "evidenceEligible": false,
+      "surface": "market_chart",
+      "coverage_visible": true
+    },
+    {
+      "id": "usd-cnh-pending",
+      "target": "usd_cnh",
+      "label": "USD/CNH",
+      "group": "safe_haven_fx",
+      "color": "#a855f7",
+      "unit": "CNH per USD",
+      "status": "pending_source",
+      "source_id": "usdcnh-pending",
+      "provider_id": "pending",
+      "license_status": "pending",
+      "source_url": null,
+      "raw_path": null,
+      "source_hash": null,
+      "points": [],
+      "caveat": "Pending offshore CNH source; FRED DEXCHUS is USD/CNY only.",
+      "evidenceEligible": false,
+      "surface": "hidden",
+      "coverage_visible": false,
+      "reason_hidden": "No source-bound offshore CNH daily series is connected."
     }
   ],
   "event_overlays": [
@@ -82422,6 +83524,26 @@
         "broad_usd",
         "traffic"
       ]
+    }
+  ],
+  "regime_overlays": [
+    {
+      "id": "regime-evt-history-iran-claims-hormuz-shut-2026",
+      "label": "source-backed Hormuz disruption window",
+      "start_at": "2026-02-28T00:00:00Z",
+      "end_at": "2026-04-17T00:00:00Z",
+      "source_event_id": "evt-history-iran-claims-hormuz-shut-2026",
+      "source_url": "https://www.spglobal.com/energy/en/news-research/latest-news/crude-oil/022826-iran-claims-hormuz-is-shut-down-after-irgc-threat-to-shipping-tasnim",
+      "caveat": "Event-backed market overlay from curated timeline; shading is visual context only, not an inference or probability signal."
+    },
+    {
+      "id": "regime-evt-history-iran-recloses-hormuz-2026",
+      "label": "source-backed Hormuz disruption window",
+      "start_at": "2026-04-18T00:00:00Z",
+      "end_at": null,
+      "source_event_id": "evt-history-iran-recloses-hormuz-2026",
+      "source_url": "https://apnews.com/article/ab475cb979825b956a10d60103026b37",
+      "caveat": "Event-backed market overlay from curated timeline; shading is visual context only, not an inference or probability signal."
     }
   ]
 }

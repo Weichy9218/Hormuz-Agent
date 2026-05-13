@@ -222,14 +222,14 @@ Numbers:       tabular-nums
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Traffic chart — full width (PortWatch daily transit calls)            │
 │ daily + 7d avg + 1y baseline (dashed)                                 │
-│ ░░░░ Hormuz closure period shading (2026-02-28 → range end)           │
+│ optional source-backed regime overlay from generated data             │
 │ Event overlay vertical lines; AIS caveat below                        │
 └──────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────┬───────────────────────────────────────────────┐
 │ Brent (USD/bbl)       │ WTI (USD/bbl)                                 │
 │ line chart, own y-axis│ line chart, own y-axis                        │
-│ ░░ closure shading    │ ░░ closure shading                            │
+│ source-backed regime overlay, if generated                             │
 └──────────────────────┴───────────────────────────────────────────────┘
 ┌──────────────────────┬───────────────────────────────────────────────┐
 │ Broad USD index       │ Gold spot (USD/oz)                            │
@@ -258,8 +258,8 @@ Numbers:       tabular-nums
 
 - Range selector 控制所有图的 x 轴窗口。
 - **Traffic chart（全宽）**：来自 `market_chart.json` `group="traffic"`：daily transit calls + 7d 滚动均值 + 1y 同期均值（baseline_points，虚线）；event overlay 竖线；AIS 局限 caveat 在图下方常驻。
-- **每个指标独立折线图**（individual line chart，原生单位 y 轴，不 normalize）：Brent、WTI、Broad USD、Gold spot、US10Y、VIX、S&P500 各一张；NASDAQ 保留在 coverage table 作溯源，不作为主图；US CPI 月度数据单独一张（线 + 散点）。布局：**每行 2 张**，2 列 grid。Gold 当前使用 Stooq XAU/USD 1y daily OHLC 的 Close 字段作 spot proxy，必须在 caveat 标明它不是 LBMA benchmark 历史序列或 futures continuous contract。USD/CNY 与 USD/CNH 不在 Market 图表或 coverage table 展示。
-- **Hormuz 封锁期色块**（closure shading）：每张图（包括 Traffic）都叠加一个半透明 amber 色块，x 区间 `2026-02-28` 至当前 range 末端，`opacity: 0.10–0.12`，右侧加小标注"封锁架构"。
+- **每个指标独立折线图**（individual line chart，原生单位 y 轴，不 normalize）：Brent、WTI、Broad USD、Gold spot、US10Y、VIX、S&P500 各一张；NASDAQ 保留在 coverage table 作溯源，不作为主图；US CPI 月度数据单独一张（线 + 散点）。布局：**每行 2 张**，2 列 grid。Gold 当前使用 Stooq XAU/USD 1y daily OHLC 的 Close 字段作 spot proxy，必须在 caveat 和 structured lineage 标明它不是 LBMA benchmark 历史序列或 futures continuous contract。USD/CNY 与 USD/CNH 不在 Market 图表或 coverage table 展示；USD/CNY 可作为 hidden lineage 保留供 audit。
+- **Regime overlay**：只从 `market_chart.json.regime_overlays` 渲染 source-backed 半透明色块；每条 overlay 必须有 `source_event_id`、`source_url` 与 caveat。没有 source-backed overlay 时不画色块，禁止在 React 组件里硬编码 closure / regime 日期。
 - **节假日/gap 断线**：FRED 空值行（节假日/非交易日）不填 0，直接从 `points` 中剔除，折线在 gap 处显示为断开（不连接），不插值，不跌到 0。
 - **日频 series 不画逐点圆点**：每条日频 series 只在最后一个数据点画一个小圆（半径 3px，颜色与线同色），用于显示"最新值"；不在中间每点都画 marker。月频稀疏 series（US CPI）才对每点画 marker。
 - **Pending series**：保留数据契约和审计入口，但 Market 页不渲染独立 pending 占位区，也不进入 coverage table，避免把未接入 source 当作覆盖项。
@@ -396,7 +396,7 @@ pending     not authorized / not implemented
 
 | Audit | 检查内容 | 范围 |
 | --- | --- | --- |
-| `audit:data` | FRED 9 series active 行有 raw_path / source_hash / retrieved_at / source_url / provider_id / license_status；pending 行 value=null + points=[]；USD/CNH 不来自 FRED DEXCHUS | Market |
+| `audit:data` | FRED 9 series active 行有 raw_path / source_hash / retrieved_at / source_url / provider_id / license_status；pending 行 value=null + points=[]；USD/CNY 与 USD/CNH 不进入 visible Market surfaces；traffic baseline / Gold proxy lineage 可审计 | Market |
 | `audit:events` *(new)* | events_timeline.jsonl 每条 entry 有 event_id / event_at / source_url / retrieved_at / severity_hint；severity_hint ∈ 允许集合；source_type ∈ {official, media, open-source} | News / Overview |
 | `audit:polymarket` *(new)* | polymarket_questions.json 每条有 question_id / question_url / resolution_criteria / last_fetched / odds 区间合法；不被任何 forecast pipeline / EvidenceClaim 消费 | Overview |
 | `audit:legacy` | 防止旧 schema 回流；**扩展**：检查 Overview/Market/News 渲染代码不引用 `scenarioDistribution / pricingPattern / judgement_updated / mechanismTags / checkpoint` 等 forecast revision 字段 | 全仓 |

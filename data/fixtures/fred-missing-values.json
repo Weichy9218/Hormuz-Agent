@@ -1,0 +1,20 @@
+{
+  "missing_tokens": [
+    { "label": "empty string", "raw": "" },
+    { "label": "whitespace", "raw": "   " },
+    { "label": "FRED dot", "raw": "." },
+    { "label": "dash", "raw": "-" },
+    { "label": "NaN string", "raw": "NaN" },
+    { "label": "null", "raw": null },
+    { "label": "undefined omitted" }
+  ],
+  "valid_tokens": [
+    { "raw": "0.125", "expected": 0.125 },
+    { "raw": " 321.435 ", "expected": 321.435 }
+  ],
+  "official_missing_marker": {
+    "series_id": "CPIAUCSL",
+    "date": "2025-10-01",
+    "reason": "official_missing"
+  }
+}

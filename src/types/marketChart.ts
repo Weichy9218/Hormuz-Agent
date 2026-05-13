@@ -124,6 +124,32 @@ export interface MarketChartMissingPoint {
   reason: string;
 }
 
+export type MarketChartSurface =
+  | "market_chart"
+  | "overview_snapshot"
+  | "coverage_only"
+  | "hidden";
+
+export interface TrafficBaselineMetadata {
+  baseline_method: "same_calendar_window";
+  baseline_window_days: number;
+  baseline_lookback_years: number;
+  baseline_n_obs: number;
+  baseline_mean: number | null;
+  baseline_std: number | null;
+  latest_z_score: number | null;
+}
+
+export interface MarketRegimeOverlay {
+  id: string;
+  label: string;
+  start_at: string;
+  end_at: string | null;
+  source_event_id: string;
+  source_url: string;
+  caveat: string;
+}
+
 export interface MarketChartBundle {
   built_at: string;
   data_as_of: string;
@@ -138,11 +164,20 @@ export interface MarketChartBundle {
     source_id: string;
     provider_id?: string;
     license_status: "open" | "restricted" | "pending" | "unknown";
+    source_url?: string | null;
     retrieved_at?: string;
     raw_path?: string | null;
     source_hash?: `sha256:${string}` | null;
+    surface: MarketChartSurface;
+    coverage_visible: boolean;
+    reason_hidden?: string;
+    provider_symbol?: string;
+    field_used?: string;
+    proxy_for?: string;
+    not_equivalent_to?: string[];
     points: MarketChartPoint[];
     baseline_points?: MarketChartPoint[];
+    baseline_metadata?: TrafficBaselineMetadata;
     missing_points?: MarketChartMissingPoint[];
     caveat: string;
     evidenceEligible: false;
@@ -154,4 +189,5 @@ export interface MarketChartBundle {
     severity_hint: TimelineSeverity;
     related_market_targets: TimelineEvent["related_market_targets"];
   }>;
+  regime_overlays?: MarketRegimeOverlay[];
 }

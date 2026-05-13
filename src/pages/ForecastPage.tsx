@@ -24,11 +24,13 @@ import type {
   GalaxyActionTrace,
   GalaxyActionTraceItem,
   GalaxyHormuzRunArtifact,
+  GalaxyQuestionRow,
 } from "../types/galaxy";
 
 type ForecastProjection = ReturnType<typeof projectForecastState>;
 type RunStatus = "idle" | "running" | "completed" | "failed";
 type QuestionPreset = "brent_weekly_high" | "custom";
+type GalaxyQuestionKind = NonNullable<GalaxyQuestionRow["metadata"]>["question_kind"];
 type SidePanelTab = "result" | "inspector";
 type FinalSource = "current run" | "last completed" | "history";
 type AgentActionStats = Record<NonNullable<GalaxyActionTraceItem["evidenceRole"]>, number> & {
@@ -165,10 +167,82 @@ function boxedAnswerForAction(action: GalaxyActionTraceItem) {
   return action.rawPreview?.boxedAnswer;
 }
 
-function questionSummary(projection: ForecastProjection, customQuestionText?: string) {
+function tradingWeekEnd(dateText: string) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const daysUntilFriday = (5 - date.getUTCDay() + 7) % 7;
+  date.setUTCDate(date.getUTCDate() + daysUntilFriday);
+  return date.toISOString().slice(0, 10);
+}
+
+function brentQuestionPreview(dateText: string): GalaxyQuestionRow {
+  const endDate = tradingWeekEnd(dateText);
+  return {
+    task_id: `hormuz-brent-weekly-high-${dateText}`,
+    task_question:
+      `During the trading week containing ${dateText} (UTC+8), from ${dateText} through ${endDate} inclusive, ` +
+      "what will be the highest daily Brent crude oil spot price, in USD per barrel, reported by FRED series DCOILBRENTEU?",
+    task_description:
+      `Scope: Resolution source is FRED series DCOILBRENTEU; target is the highest daily Brent crude oil spot price from ${dateText} through ${endDate}.`,
+    metadata: {
+      case_id: "hormuz",
+      question_kind: "brent_weekly_high",
+      generated_for_date: dateText,
+      timezone: "UTC+8",
+      horizon: "this_week",
+      target: "brent",
+      target_series: "DCOILBRENTEU",
+      unit: "USD/bbl",
+      resolution_window: {
+        start_date: dateText,
+        end_date: endDate,
+        timezone: "UTC+8",
+      },
+      source_boundary: ["fred-market", "official-advisory", "public-news-context", "ais-flow-pending"],
+    },
+  };
+}
+
+function customQuestionPreview(text: string): GalaxyQuestionRow {
+  const questionText = text.trim();
+  return {
+    task_id: "hormuz-custom-live",
+    task_question: questionText,
+    task_description: questionText ? `Custom question: ${questionText}` : "Custom question pending.",
+    metadata: {
+      case_id: "hormuz",
+      question_kind: "custom",
+      generated_for_date: new Date().toISOString().slice(0, 10),
+      timezone: "UTC+8",
+    },
+  };
+}
+
+function questionKindFromTaskId(taskId?: string): GalaxyQuestionKind | undefined {
+  if (!taskId) return undefined;
+  if (taskId.includes("brent-weekly-high")) return "brent_weekly_high";
+  if (taskId.includes("custom")) return "custom";
+  if (taskId.includes("traffic-risk")) return "hormuz_traffic_risk";
+  return undefined;
+}
+
+function dateFromTaskId(taskId?: string) {
+  return taskId?.match(/(\d{4}-\d{2}-\d{2})$/)?.[1];
+}
+
+function localDateText() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function questionSummaryFromQuestion(question?: GalaxyQuestionRow | null, customQuestionText?: string) {
   const customText = customQuestionText?.trim();
   if (customText) return customText;
-  const q = projection.galaxyRun?.question;
+  const q = question;
   if (!q) return "尚未加载预测问题。";
   const meta = q.metadata;
   if (meta?.question_kind === "brent_weekly_high") {
@@ -231,10 +305,12 @@ function finalPayload(
       "pending",
     confidence:
       finalAction?.forecastPayload?.confidence ??
-      projection.galaxyRun?.runMeta.confidence ??
+      (allowMetaFallback ? projection.galaxyRun?.runMeta.confidence : undefined) ??
       "unknown",
     terminal:
-      projection.galaxyRun?.runMeta.terminalReason ??
+      finalAction?.toolName ??
+      (allowMetaFallback ? projection.galaxyRun?.runMeta.terminalReason : undefined) ??
+      (source === "current run" ? "pending" : undefined) ??
       "record_forecast",
     payload: finalAction?.forecastPayload,
     action: finalAction,
@@ -284,6 +360,8 @@ function GalaxyRunHeader({
   historyRuns,
   selectedHistoryRunId,
   questionPreset,
+  activeQuestion,
+  activeQuestionKind,
   customQuestionText,
   onSelectHistoryRun,
   onQuestionPresetChange,
@@ -299,6 +377,8 @@ function GalaxyRunHeader({
   historyRuns: GalaxyRunHistoryItem[];
   selectedHistoryRunId: string;
   questionPreset: QuestionPreset;
+  activeQuestion: GalaxyQuestionRow | null;
+  activeQuestionKind?: GalaxyQuestionKind;
   customQuestionText: string;
   onSelectHistoryRun: (runId: string) => void;
   onQuestionPresetChange: (preset: QuestionPreset) => void;
@@ -316,10 +396,17 @@ function GalaxyRunHeader({
     liveStatus?.runDir ?? meta?.runDir ?? meta?.outputDir ?? "not loaded";
   const taskId = liveStatus?.taskId ?? meta?.taskId ?? projection.runId;
   const command = liveStatus?.command ?? meta?.command;
-  const isCustomPreset = questionPreset === "custom";
+  const activePreset =
+    isRunning && activeQuestionKind === "brent_weekly_high"
+      ? "brent_weekly_high"
+      : isRunning && activeQuestionKind === "custom"
+        ? "custom"
+        : questionPreset;
+  const isCustomPreset = activePreset === "custom";
   const customQuestionReady = customQuestionText.trim().length > 0;
   const customTopic = inferCustomQuestionTopic(customQuestionText);
   const canRun = !isRunning && (!isCustomPreset || customQuestionReady);
+  const lastAction = actions.at(-1);
   const runButtonLabel = isRunning
     ? "运行中..."
     : isCustomPreset
@@ -343,14 +430,16 @@ function GalaxyRunHeader({
             <div className="galaxy-preset-toggle" role="group" aria-label="问题预设">
               <button
                 type="button"
-                className={questionPreset === "brent_weekly_high" ? "selected" : ""}
+                className={activePreset === "brent_weekly_high" ? "selected" : ""}
+                disabled={isRunning}
                 onClick={() => onQuestionPresetChange("brent_weekly_high")}
               >
                 Brent 周高
               </button>
               <button
                 type="button"
-                className={questionPreset === "custom" ? "selected" : ""}
+                className={activePreset === "custom" ? "selected" : ""}
+                disabled={isRunning}
                 onClick={() => onQuestionPresetChange("custom")}
               >
                 自定义问题
@@ -384,7 +473,7 @@ function GalaxyRunHeader({
               </small>
               <p className="galaxy-question-current">
                 当前目标 · {customQuestionText.trim()
-                  ? `${customTopic.title} · ${questionSummary(projection, customQuestionText)}`
+                  ? `${customTopic.title} · ${questionSummaryFromQuestion(activeQuestion, customQuestionText)}`
                   : "尚未输入自定义预测问题。"}
               </p>
             </div>
@@ -392,8 +481,8 @@ function GalaxyRunHeader({
             <div className="galaxy-question-preview">
               <span>当前目标</span>
               <p>
-                {artifactQuestionKind === "brent_weekly_high"
-                  ? questionSummary(projection)
+                {activeQuestionKind === "brent_weekly_high"
+                  ? questionSummaryFromQuestion(activeQuestion)
                   : "预测目标：本交易周 Brent 原油最高日价，分辨率来源 FRED DCOILBRENTEU，单位 USD/bbl。"}
               </p>
             </div>
@@ -471,9 +560,18 @@ function GalaxyRunHeader({
         {isCustomPreset ? (
           <p className={`galaxy-run-hint ${customQuestionReady ? "ready" : ""}`}>
             <FileText size={14} />
-            {customQuestionReady
+            {isRunning
+              ? "当前 live run 使用自定义问题；运行完成前预测值保持 pending。"
+              : customQuestionReady
               ? "将以自定义问题启动新的 galaxy run；运行完成前右侧仍显示上次完成结果。"
               : "输入自定义问题后才能启动；当前结果仍来自上次完成 run。"}
+          </p>
+        ) : null}
+        {isRunning ? (
+          <p className="galaxy-run-hint ready">
+            <RefreshCw size={14} className="spin-icon" />
+            当前 live run 尚未写入 record_forecast 时，预测值保持 pending；viewer 不会用历史 artifact 冒充当前结果。
+            {lastAction ? ` 最新动作：${lastAction.title}` : ""}
           </p>
         ) : null}
         {runMessage ? <p className="galaxy-run-message">{runMessage}</p> : null}
@@ -528,16 +626,20 @@ function FinalForecastCard({
 
 function CustomForecastCard({
   projection,
+  question,
   actions,
   finalSource,
+  customQuestionText,
 }: {
   projection: ForecastProjection;
+  question: GalaxyQuestionRow | null;
   actions: GalaxyActionTraceItem[];
   finalSource: FinalSource;
+  customQuestionText?: string;
 }) {
   const final = finalPayload(projection, actions, finalSource);
   const payload = final.payload;
-  const displayedQuestion = questionSummary(projection);
+  const displayedQuestion = questionSummaryFromQuestion(question ?? projection.galaxyRun?.question, customQuestionText);
   const topic = inferCustomQuestionTopic(displayedQuestion);
   const evidenceCount =
     (payload?.keyEvidenceItems?.length ?? 0) +
@@ -849,11 +951,30 @@ export function ForecastPage({
         ? "history"
         : "last completed";
   const final = finalPayload(projection, actions, finalSource, runtimeLiveStatus?.runId);
-  const artifactQuestionKind = projection.galaxyRun?.question?.metadata?.question_kind;
-  const showCustomForecast = artifactQuestionKind
-    ? artifactQuestionKind === "custom"
-    : questionPreset === "custom";
-  const showNumericForecast = !showCustomForecast && isNumericForecastQuestion(projection.galaxyRun?.question, final.prediction);
+  const artifactQuestion = projection.galaxyRun?.question ?? null;
+  const liveQuestionKind = questionKindFromTaskId(runtimeLiveStatus?.taskId ?? runtimeLiveStatus?.runId);
+  const activeQuestionKind =
+    runtimeLiveStatus?.status === "running" && liveQuestionKind
+      ? liveQuestionKind
+      : artifactQuestion?.metadata?.question_kind ?? questionPreset;
+  const liveQuestionText =
+    actions.find((action) => action.kind === "question")?.rawPreview?.text ??
+    actions.find((action) => action.kind === "question")?.summary ??
+    customQuestionText;
+  const activeQuestion =
+    runtimeLiveStatus?.status === "running" && activeQuestionKind === "brent_weekly_high"
+      ? brentQuestionPreview(
+        dateFromTaskId(runtimeLiveStatus.taskId) ??
+        dateFromTaskId(runtimeLiveStatus.runId) ??
+        localDateText(),
+      )
+      : runtimeLiveStatus?.status === "running" && activeQuestionKind === "custom"
+        ? customQuestionPreview(liveQuestionText)
+        : artifactQuestion ?? (questionPreset === "custom"
+          ? customQuestionPreview(customQuestionText)
+          : brentQuestionPreview(localDateText()));
+  const showCustomForecast = activeQuestionKind === "custom";
+  const showNumericForecast = !showCustomForecast && isNumericForecastQuestion(activeQuestion, final.prediction);
   const handleSelectAction = useCallback((actionId: string | null) => {
     setSelectedActionId(actionId);
     if (actionId) setSidePanelTab("inspector");
@@ -1076,6 +1197,8 @@ export function ForecastPage({
         historyRuns={historyRuns}
         selectedHistoryRunId={selectedHistoryRunId}
         questionPreset={questionPreset}
+        activeQuestion={activeQuestion}
+        activeQuestionKind={activeQuestionKind}
         customQuestionText={customQuestionText}
         onSelectHistoryRun={(runId) => {
           void handleSelectHistoryRun(runId);
@@ -1127,7 +1250,7 @@ export function ForecastPage({
           {sidePanelTab === "result" ? (
             showNumericForecast ? (
               <NumericForecastCard
-                question={projection.galaxyRun?.question}
+                question={activeQuestion}
                 final={final}
                 brentSeries={brentDailySeries}
                 finalSource={finalSource}
@@ -1136,8 +1259,10 @@ export function ForecastPage({
             ) : showCustomForecast ? (
               <CustomForecastCard
                 projection={projection}
+                question={activeQuestion}
                 actions={actions}
                 finalSource={finalSource}
+                customQuestionText={runtimeLiveStatus?.status === "running" ? liveQuestionText : customQuestionText}
               />
             ) : (
               <FinalForecastCard

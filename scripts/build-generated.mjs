@@ -35,6 +35,32 @@ const MARKET_META = {
   us_cpi: { id: "us-cpi", label: "美国 CPI 指数", group: "risk_rates_vol", color: "#f97316" },
 };
 
+const MARKET_SERIES_SURFACES = {
+  brent: { surface: "market_chart", coverage_visible: true },
+  wti: { surface: "market_chart", coverage_visible: true },
+  vix: { surface: "market_chart", coverage_visible: true },
+  broad_usd: { surface: "market_chart", coverage_visible: true },
+  gold: { surface: "market_chart", coverage_visible: true },
+  us10y: { surface: "market_chart", coverage_visible: true },
+  sp500: { surface: "market_chart", coverage_visible: true },
+  nasdaq: {
+    surface: "coverage_only",
+    coverage_visible: true,
+    reason_hidden: "NASDAQ is retained for lineage and coverage; S&P 500 is the displayed broad risk-asset proxy.",
+  },
+  us_cpi: { surface: "market_chart", coverage_visible: true },
+  usd_cny: {
+    surface: "hidden",
+    coverage_visible: false,
+    reason_hidden: "FRED DEXCHUS is USD/CNY only; RMB bilateral FX is not rendered in Market charts or coverage.",
+  },
+  usd_cnh: {
+    surface: "hidden",
+    coverage_visible: false,
+    reason_hidden: "No source-bound offshore CNH daily series is connected.",
+  },
+};
+
 const PENDING_MARKET_SERIES = [
   {
     id: "usd-cnh-pending",
@@ -47,15 +73,15 @@ const PENDING_MARKET_SERIES = [
     source_id: "usdcnh-pending",
     provider_id: "pending",
     license_status: "pending",
+    source_url: null,
     raw_path: null,
     source_hash: null,
     points: [],
     caveat: "Pending offshore CNH source; FRED DEXCHUS is USD/CNY only.",
     evidenceEligible: false,
+    ...MARKET_SERIES_SURFACES.usd_cnh,
   },
 ];
-const MARKET_CHART_HIDDEN_TARGETS = new Set(["usd_cny", "usd_cnh"]);
-
 const TRAFFIC_VESSEL_META = [
   { vesselType: "tanker", target: "portwatch_daily_transit_calls_tanker", label: "PortWatch 油轮通行量", color: "#f59e0b" },
   { vesselType: "container", target: "portwatch_daily_transit_calls_container", label: "PortWatch 集装箱船通行量", color: "#14b8a6" },
@@ -69,7 +95,7 @@ const FRED_MARKET_CAVEATS = {
 };
 
 const FRED_MISSING_POINT_REASONS = {
-  us_cpi: "FRED CPIAUCSL 本地 CSV 快照在该 observation date 为空值。",
+  us_cpi: "official_missing",
 };
 
 const TOPIC_STOP_KEYS = new Set(["core_event", "hormuz", "iran"]);
@@ -219,6 +245,10 @@ function marketUnit(target, fallback) {
   return fallback || "index";
 }
 
+function visibilityForTarget(target, fallbackSurface = "market_chart") {
+  return MARKET_SERIES_SURFACES[target] ?? { surface: fallbackSurface, coverage_visible: fallbackSurface !== "hidden" };
+}
+
 async function buildFredSeries(rows) {
   const byTarget = new Map();
   const missingByTarget = new Map();
@@ -262,6 +292,7 @@ async function buildFredSeries(rows) {
       source_id: "fred-market",
       provider_id: "fred",
       license_status: "open",
+      source_url: latest.source_url,
       retrieved_at: latest.retrieved_at,
       raw_path: lineage.raw_path,
       source_hash: lineage.source_hash,
@@ -269,6 +300,7 @@ async function buildFredSeries(rows) {
       missing_points: missingPoints.length > 0 ? missingPoints : undefined,
       caveat: `${baseCaveat}${missingCaveat}`,
       evidenceEligible: false,
+      ...visibilityForTarget(target),
     });
   }
   return series;
@@ -296,11 +328,13 @@ async function buildGoldSeries(row) {
       source_id: "stooq-market",
       provider_id: "stooq",
       license_status: "unknown",
+      source_url: row?.source_url ?? "https://stooq.com/q/d/?s=xauusd",
       raw_path: null,
       source_hash: null,
       points: [],
       caveat: "Gold XAU/USD history missing source-bound local snapshot; run npm run fetch:gold.",
       evidenceEligible: false,
+      ...visibilityForTarget("gold"),
     };
   }
   return {
@@ -314,14 +348,20 @@ async function buildGoldSeries(row) {
     source_id: row.source_id ?? "stooq-market",
     provider_id: row.provider_id ?? "stooq",
     license_status: row.license_status ?? "open",
+    source_url: row.source_url ?? "https://stooq.com/q/d/?s=xauusd",
     retrieved_at: row.retrieved_at,
     raw_path: row.raw_path ?? null,
     source_hash: row.source_hash ?? null,
+    provider_symbol: "xauusd",
+    field_used: "Close",
+    proxy_for: "gold_spot_usd_per_oz",
+    not_equivalent_to: ["LBMA Gold Price", "COMEX futures continuous contract"],
     points,
     caveat:
       row.caveat ??
       "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or continuous futures history.",
     evidenceEligible: false,
+    ...visibilityForTarget("gold"),
   };
 }
 
@@ -417,7 +457,7 @@ function rollingAverage(rows, index, windowSize) {
   return window.reduce((sum, row) => sum + row.value, 0) / window.length;
 }
 
-function sameWindowBaseline(rows, row) {
+function sameWindowBaselineStats(rows, row) {
   const currentDate = parseDate(row.date);
   if (!currentDate) return null;
   const past = rows.filter((candidate) => {
@@ -427,7 +467,36 @@ function sameWindowBaseline(rows, row) {
     return diffDays >= 350 && diffDays <= 380;
   });
   if (past.length === 0) return null;
-  return past.reduce((sum, candidate) => sum + candidate.value, 0) / past.length;
+  const values = past.map((candidate) => candidate.value);
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  const std = Math.sqrt(variance);
+  return {
+    method: "same_calendar_window",
+    window_days: 31,
+    lookback_years: 1,
+    n_obs: values.length,
+    mean,
+    std,
+    z_score: std > 0 ? (row.value - mean) / std : null,
+  };
+}
+
+function sameWindowBaseline(rows, row) {
+  return sameWindowBaselineStats(rows, row)?.mean ?? null;
+}
+
+function trafficBaselineMetadata(rows, latest) {
+  const stats = latest ? sameWindowBaselineStats(rows, latest) : null;
+  return {
+    baseline_method: "same_calendar_window",
+    baseline_window_days: 31,
+    baseline_lookback_years: 1,
+    baseline_n_obs: stats?.n_obs ?? 0,
+    baseline_mean: stats ? Number(stats.mean.toFixed(2)) : null,
+    baseline_std: stats ? Number(stats.std.toFixed(2)) : null,
+    latest_z_score: stats?.z_score == null ? null : Number(stats.z_score.toFixed(2)),
+  };
 }
 
 function buildTrafficSeries(transitRows) {
@@ -445,6 +514,7 @@ function buildTrafficSeries(transitRows) {
     .filter(Boolean);
   const latest = rows.at(-1);
   const raw = latest ?? {};
+  const baseline_metadata = trafficBaselineMetadata(rows, latest);
   const latestCaveat = String(raw.caveat ?? "");
   const latestTanker = latestCaveat.match(/n_tanker=(\d+)/)?.[1];
   const latestCargo = latestCaveat.match(/n_cargo=(\d+)/)?.[1];
@@ -457,6 +527,7 @@ function buildTrafficSeries(transitRows) {
     source_id: "imf-portwatch-hormuz",
     provider_id: "imf-portwatch",
     license_status: "open",
+    source_url: raw.source_url,
     retrieved_at: raw.retrieved_at,
     raw_path: raw.raw_path || null,
     source_hash: raw.source_hash || null,
@@ -476,6 +547,9 @@ function buildTrafficSeries(transitRows) {
       status: rows.length > 0 ? "active" : "pending_source",
       points,
       baseline_points: baselinePoints,
+      baseline_metadata,
+      surface: "market_chart",
+      coverage_visible: true,
       ...common,
     },
     rollingSeries: {
@@ -487,6 +561,8 @@ function buildTrafficSeries(transitRows) {
       unit: "日通过船次",
       status: rows.length > 0 ? "active" : "pending_source",
       points: rollingPoints,
+      surface: "market_chart",
+      coverage_visible: true,
       ...common,
     },
     vesselSeries: TRAFFIC_VESSEL_META.map((meta) => {
@@ -503,6 +579,7 @@ function buildTrafficSeries(transitRows) {
         source_id: "imf-portwatch-hormuz",
         provider_id: "imf-portwatch",
         license_status: "open",
+        source_url: latestVessel.source_url,
         retrieved_at: latestVessel.retrieved_at,
         raw_path: latestVessel.raw_path || null,
         source_hash: latestVessel.source_hash || null,
@@ -510,6 +587,8 @@ function buildTrafficSeries(transitRows) {
         caveat:
           `PortWatch chokepoint6 霍尔木兹海峡${meta.label.replace("PortWatch ", "")}，与总通行量同源；AIS/GNSS 局限同样适用。${coverageText}`,
         evidenceEligible: false,
+        surface: "coverage_only",
+        coverage_visible: true,
       };
     }),
     rows,
@@ -670,6 +749,40 @@ function buildEventOverlays(events) {
     }));
 }
 
+function buildRegimeOverlays(events) {
+  const ordered = [...events].sort((a, b) => String(a.event_at).localeCompare(String(b.event_at)));
+  const overlays = [];
+  let active = null;
+
+  for (const event of ordered) {
+    const text = `${event.title ?? ""}\n${event.description ?? ""}`;
+    const isClosureStart =
+      /close|closed|closure|blockade|shipping halt|near standstill|关闭|封锁|停滞/i.test(text) &&
+      (event.related_market_targets ?? []).includes("traffic");
+    const isDeescalation =
+      event.severity_hint === "deescalation" || /reopen|reopened|resume|恢复|重新开放/i.test(text);
+
+    if (isClosureStart && !active) {
+      active = {
+        id: `regime-${event.event_id}`,
+        label: "source-backed Hormuz disruption window",
+        start_at: event.event_at,
+        end_at: null,
+        source_event_id: event.event_id,
+        source_url: event.source_url,
+        caveat: "Event-backed market overlay from curated timeline; shading is visual context only, not an inference or probability signal.",
+      };
+    } else if (isDeescalation && active) {
+      active.end_at = event.event_at;
+      overlays.push(active);
+      active = null;
+    }
+  }
+
+  if (active) overlays.push(active);
+  return overlays;
+}
+
 async function main() {
   const [baseline, fredRows, goldRow, transitRows, advisories, eventsRaw, polymarketRaw] = await Promise.all([
     readJson(paths.baseline, []),
@@ -725,13 +838,14 @@ async function main() {
     ...fredSeries,
     goldSeries,
     ...PENDING_MARKET_SERIES,
-  ].filter((series) => !MARKET_CHART_HIDDEN_TARGETS.has(series.target));
+  ];
 
   const market = {
     built_at: BUILT_AT,
     data_as_of: marketDataAsOf,
     series: marketSeries,
     event_overlays: buildEventOverlays(displayEvents),
+    regime_overlays: buildRegimeOverlays(displayEvents),
   };
 
   await mkdir(paths.generatedDir, { recursive: true });
