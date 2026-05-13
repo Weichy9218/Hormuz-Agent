@@ -1,33 +1,70 @@
-// Overview page consumes the generated background snapshot for a 10-second Hormuz scan.
+// Overview is the reviewer entry page: static product framing plus dynamic, sourced previews.
 import {
+  Activity,
   ArrowRight,
+  BarChart3,
   ExternalLink,
+  Newspaper,
 } from "lucide-react";
 import { CaseMap } from "../components/map/CaseMap";
 import { InfoTitle } from "../components/shared/InfoTitle";
 import snapshotJson from "../../data/generated/overview_snapshot.json";
-import type { HormuzBaselineFact, OverviewSnapshot } from "../types/marketChart";
-import type { PolymarketQuestionRef } from "../types/polymarket";
-import type { TimelineEvent, TimelineSeverity } from "../types/timeline";
+import type { OverviewSnapshot } from "../types/marketChart";
+import type { PolymarketQuestionOutcome, PolymarketQuestionRef } from "../types/polymarket";
+import type { TimelineEvent } from "../types/timeline";
 
 const snapshot = snapshotJson as OverviewSnapshot;
 
-const severityCopy: Record<OverviewSnapshot["current_severity"], string> = {
-  quiet: "QUIET",
-  routine: "ROUTINE",
-  watch: "WATCH",
-  elevated: "ELEVATED",
-  severe: "SEVERE",
-};
+const pageLinks = [
+  {
+    href: "/forecast",
+    icon: Activity,
+    label: "Forecast Agent",
+    meta: "dynamic run trace",
+    title: "看一次真实 forecast agent 怎么跑完",
+    body: "从问题设置、web evidence、tool calls 到最终 record_forecast，Forecast 是唯一的预测 truth surface。",
+  },
+  {
+    href: "/market",
+    icon: BarChart3,
+    label: "Market",
+    meta: "dynamic data",
+    title: "看市场和 traffic 背景",
+    body: "Traffic transit calls、Brent / WTI / VIX / Broad USD 与事件 overlay，只展示原始市场背景。",
+  },
+  {
+    href: "/news",
+    icon: Newspaper,
+    label: "News",
+    meta: "curated timeline",
+    title: "看事件时间线",
+    body: "官方 advisory 与 promoted media events，按 source、severity、topic 可过滤，可回到原始来源。",
+  },
+];
 
-type SeverityTone = OverviewSnapshot["current_severity"] | TimelineSeverity;
+const exampleQuestions = [
+  "这次 Hormuz 相关事件是否足以改变 Brent 近一周高点预测？",
+  "Traffic 是否已经回到历史同窗口水平？",
+  "同一条 advisory 在 News timeline、Market overlay 和 Forecast evidence 中如何被复核？",
+];
 
-const baselineLabels: Record<string, string> = {
-  "oil-flow": "Oil flow",
-  "bypass-capacity": "Bypass capacity",
-  "asia-exposure": "Asia exposure",
-  "lng-relevance": "LNG relevance",
-};
+const staticDynamicRows = [
+  {
+    label: "Static",
+    title: "Case context",
+    body: "网站定位、Hormuz baseline、地图轮廓和页面导航是静态解释层。",
+  },
+  {
+    label: "Dynamic",
+    title: "Local snapshots",
+    body: "Traffic、market rows、events timeline 来自 data/generated，显示 built_at / retrieved_at。",
+  },
+  {
+    label: "External",
+    title: "Polymarket reference",
+    body: "外部市场只作参考，不进入 forecast pipeline；live fetch 不稳定时显式 pending。",
+  },
+];
 
 function parseDate(value?: string | null) {
   if (!value) return null;
@@ -37,7 +74,6 @@ function parseDate(value?: string | null) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return "pending";
   const date = parseDate(value);
   if (!date) return "pending";
   return new Intl.DateTimeFormat("en", {
@@ -49,7 +85,6 @@ function formatDateTime(value?: string | null) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "pending";
   const date = parseDate(value);
   if (!date) return "pending";
   return new Intl.DateTimeFormat("en", {
@@ -77,225 +112,202 @@ function deltaDirection(value: number | null | undefined) {
   return value > 0 ? "positive" : "negative";
 }
 
-function eventSeverityTone(severity: TimelineSeverity): SeverityTone {
-  return severity === "deescalation" ? "quiet" : severity;
-}
-
-function bestOutcome(ref: PolymarketQuestionRef) {
-  const priced = ref.outcomes.filter((outcome) => outcome.last_price !== null);
-  return priced.sort((a, b) => Number(b.last_price) - Number(a.last_price))[0] ?? ref.outcomes[0];
-}
-
-function truncateText(value: string, maxLength = 100) {
+function truncateText(value: string, maxLength = 115) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, maxLength).trimEnd()}…`;
 }
 
-const marketLabels: Record<string, string> = {
-  brent: "Brent",
-  wti: "WTI",
-  vix: "VIX",
-  broad_usd: "Broad USD",
-  gold: "Gold",
-  usd_cnh: "USD/CNH",
-};
+function cleanOutcomeId(outcomeId: string) {
+  const suffix = outcomeId.includes(":") ? outcomeId.split(":").at(-1) : outcomeId;
+  return String(suffix ?? outcomeId).replace(/_/g, " ").toUpperCase();
+}
 
-const marketOrder = ["brent", "wti", "vix", "broad_usd"];
+function sortedOutcomes(ref: PolymarketQuestionRef) {
+  const outcomes = [...ref.outcomes];
+  return outcomes.sort((a, b) => Number(b.last_price ?? -1) - Number(a.last_price ?? -1));
+}
 
-function HeadlineStrip({ snapshot }: { snapshot: OverviewSnapshot }) {
-  const latest = snapshot.latest_events[0];
+function outcomePercent(outcome: PolymarketQuestionOutcome) {
+  return outcome.last_price === null || outcome.last_price === undefined
+    ? null
+    : Math.max(0, Math.min(100, outcome.last_price * 100));
+}
 
+function staticTrafficSummary(snapshot: OverviewSnapshot) {
+  const traffic = snapshot.traffic_snapshot;
+  if (!traffic) return "Traffic snapshot pending";
+  return `${formatNumber(traffic.latest_value, 0)} daily transit calls · ${formatDelta(traffic.delta_vs_baseline_pct, "%")} vs 1y avg`;
+}
+
+function HeroPanel({ snapshot }: { snapshot: OverviewSnapshot }) {
   return (
-    <section className="console-card overview-headline-strip">
-      <span className="overview-severity-badge" data-severity={snapshot.current_severity}>
-        {severityCopy[snapshot.current_severity]}
-      </span>
-      <h1>Hormuz status as of {formatDateTime(snapshot.data_as_of)}</h1>
-      {latest ? (
-        <p className="overview-headline-event">
-          <span>{latest.title}</span>
-          <a href="/news">
-            News <ArrowRight size={14} />
-          </a>
+    <section className="console-card overview-product-hero">
+      <div className="overview-hero-copy">
+        <span className="overview-page-kicker">Single-case reviewer console</span>
+        <h1>Hormuz Risk Interface shows what the case is, what the market says, and how the forecast agent reasons.</h1>
+        <p>
+          This site is a compact review surface for one high-dimensional geopolitical forecasting case.
+          Use Overview to orient yourself, then jump into the live agent trace, market background, or event timeline.
         </p>
-      ) : null}
-      <div className="overview-headline-meta" aria-label="overview freshness">
-        <span>last event {formatDateTime(latest?.event_at)}</span>
-        <span aria-hidden="true">·</span>
-        <span>built {formatDate(snapshot.built_at)}</span>
+        <div className="overview-hero-actions" aria-label="primary overview links">
+          <a href="/forecast">
+            Open Forecast Agent <ArrowRight size={15} />
+          </a>
+          <a href="/market">Market background</a>
+          <a href="/news">Event timeline</a>
+        </div>
       </div>
+      <aside className="overview-hero-status" aria-label="static and dynamic data boundary">
+        <div>
+          <span>Static frame</span>
+          <strong>Website guide + Hormuz context</strong>
+        </div>
+        <div>
+          <span>Dynamic snapshot</span>
+          <strong>{staticTrafficSummary(snapshot)}</strong>
+        </div>
+        <div>
+          <span>Data built</span>
+          <strong>{formatDateTime(snapshot.built_at)}</strong>
+        </div>
+      </aside>
     </section>
   );
 }
 
-function SeverityChip({
-  severity,
-  size = "small",
-}: {
-  severity: SeverityTone;
-  size?: "small" | "large";
-}) {
-  const label = severity === "quiet" ? "QUIET" : severity.toUpperCase();
+function NavigationCards() {
   return (
-    <span className={`overview-severity-chip overview-severity-chip-${size}`} data-severity={severity}>
-      {label}
-    </span>
+    <section className="overview-navigation-grid" aria-label="overview page destinations">
+      {pageLinks.map((item) => {
+        const Icon = item.icon;
+        return (
+          <a className="console-card overview-nav-card" href={item.href} key={item.href}>
+            <span className="overview-nav-icon">
+              <Icon size={18} />
+            </span>
+            <span className="overview-nav-meta">{item.meta}</span>
+            <strong>{item.title}</strong>
+            <p>{item.body}</p>
+            <span className="overview-nav-link">
+              {item.label} <ArrowRight size={14} />
+            </span>
+          </a>
+        );
+      })}
+    </section>
   );
 }
 
-function DeltaBadge({
-  value,
-  unit = "",
-  suffix,
-}: {
-  value: number | null | undefined;
-  unit?: string;
-  suffix?: string;
-}) {
+function ExampleQuestions() {
   return (
-    <span className="overview-delta-badge" data-direction={deltaDirection(value)}>
-      {formatDelta(value, unit)}
-      {suffix ? ` ${suffix}` : ""}
-    </span>
-  );
-}
-
-function MetricBlock({
-  label,
-  value,
-  unit,
-  subtitle,
-  deltaValue,
-  deltaUnit,
-  deltaSuffix,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  subtitle: string;
-  deltaValue?: number | null;
-  deltaUnit?: string;
-  deltaSuffix?: string;
-}) {
-  return (
-    <article className="overview-traffic-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <em>{unit}</em>
-      <small>{subtitle}</small>
-      {deltaSuffix ? (
-        <DeltaBadge value={deltaValue} unit={deltaUnit} suffix={deltaSuffix} />
-      ) : null}
-    </article>
-  );
-}
-
-function BaselineStrip({ facts }: { facts: HormuzBaselineFact[] }) {
-  return (
-    <section className="console-card overview-baseline-strip">
-      <InfoTitle title="Why Hormuz matters" subtitle="Structural baseline, not same-day throughput" />
-      <ul>
-        {facts.map((fact) => (
-          <li key={fact.fact_id} title={`${fact.caveat} Retrieved ${formatDateTime(fact.retrieved_at)}`}>
-            <strong>{fact.value}</strong>
-            <em>{fact.unit}</em>
-            <p>{baselineLabels[fact.fact_id] ?? fact.fact_id}</p>
-            <small>
-              {fact.source_id} · retrieved {formatDateTime(fact.retrieved_at)}
-            </small>
-          </li>
+    <section className="console-card overview-questions-card">
+      <InfoTitle title="Example questions" subtitle="What this demo is good for asking" />
+      <ol>
+        {exampleQuestions.map((question) => (
+          <li key={question}>{question}</li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }
 
-function LatestEventsCard({ events }: { events: TimelineEvent[] }) {
+function StaticDynamicCard({ snapshot }: { snapshot: OverviewSnapshot }) {
+  const sourceIds = [
+    "source ids",
+    "eia-iea-hormuz",
+    snapshot.traffic_snapshot?.source_id,
+    "fred-market",
+    "events-curated",
+    "polymarket-curated",
+  ].filter(Boolean).join(" · ");
+
   return (
-    <section className="console-card overview-latest-events-card">
-      <InfoTitle title="Latest events" subtitle="Top 3 promoted timeline entries" />
-      <ul>
+    <section className="console-card overview-boundary-card">
+      <InfoTitle title="Static vs dynamic" subtitle="Do not mix context with live evidence" />
+      <div className="overview-boundary-list">
+        {staticDynamicRows.map((row) => (
+          <article key={row.label}>
+            <span>{row.label}</span>
+            <strong>{row.title}</strong>
+            <p>{row.body}</p>
+          </article>
+        ))}
+      </div>
+      <p className="overview-card-caveat">
+        Current local snapshot: built {formatDateTime(snapshot.built_at)} · data as-of {formatDateTime(snapshot.data_as_of)} · {sourceIds}.
+      </p>
+    </section>
+  );
+}
+
+function ContextMapCard() {
+  return (
+    <div className="overview-context-map">
+      <CaseMap compact variant="context" />
+    </div>
+  );
+}
+
+function LatestEventsPreview({ events }: { events: TimelineEvent[] }) {
+  return (
+    <section className="console-card overview-preview-card">
+      <InfoTitle title="Latest sourced events" subtitle="Dynamic · from generated news timeline" />
+      <ul className="overview-event-preview-list">
         {events.slice(0, 3).map((event) => (
           <li key={event.event_id}>
-            <a href={`/news#${event.event_id}`} className="overview-event-link" title={event.description}>
-              <SeverityChip severity={eventSeverityTone(event.severity_hint)} />
-              <span className="overview-event-copy">
-                <strong>{event.title}</strong>
-                <span>
-                  {event.source_name} · {formatDate(event.event_at)}
-                </span>
-              </span>
-              <ArrowRight size={15} aria-hidden="true" />
+            <a href={`/news#${event.event_id}`} title={event.description}>
+              <span data-severity={event.severity_hint}>{event.severity_hint.toUpperCase()}</span>
+              <strong>{event.title}</strong>
+              <small>
+                {event.source_name} · {formatDate(event.event_at)}
+              </small>
             </a>
           </li>
         ))}
       </ul>
+      <a className="overview-inline-link" href="/news">
+        Open full timeline <ArrowRight size={14} />
+      </a>
     </section>
   );
 }
 
-function TrafficSnapshotCard({ snapshot }: { snapshot: OverviewSnapshot["traffic_snapshot"] }) {
-  return (
-    <section className="console-card overview-traffic-card">
-      <InfoTitle title="Traffic snapshot" subtitle="PortWatch daily transit calls" />
-      {snapshot ? (
-        <>
-          <div className="overview-traffic-metrics" title={snapshot.caveat}>
-            <MetricBlock
-              label="Latest"
-              value={formatNumber(snapshot.latest_value, 0)}
-              unit="daily transit calls"
-              subtitle={formatDate(snapshot.latest_date)}
-            />
-            <MetricBlock
-              label="7d avg"
-              value={formatNumber(snapshot.avg_7d, 2)}
-              unit="daily transit calls"
-              subtitle={`1y avg ${formatNumber(snapshot.baseline_1y_same_window, 2)}`}
-              deltaValue={snapshot.delta_vs_baseline_pct}
-              deltaUnit="%"
-              deltaSuffix="vs 1y avg"
-            />
-          </div>
-          <p className="overview-card-caveat">{snapshot.caveat}</p>
-        </>
-      ) : (
-        <p className="overview-card-caveat">PortWatch traffic snapshot pending.</p>
-      )}
-    </section>
-  );
-}
-
-function MarketSnapshotCard({ snapshot }: { snapshot: OverviewSnapshot["market_snapshot"] }) {
-  const activeRows = marketOrder
-    .map((target) => snapshot.find((item) => item.target === target && item.status === "active"))
-    .filter((item): item is OverviewSnapshot["market_snapshot"][number] => Boolean(item));
-  const pendingRows = snapshot.filter((item) => item.status === "pending_source");
+function MarketPreview({ snapshot }: { snapshot: OverviewSnapshot }) {
+  const traffic = snapshot.traffic_snapshot;
+  const marketRows = snapshot.market_snapshot
+    .filter((item) => ["brent", "wti", "vix", "broad_usd"].includes(item.target))
+    .slice(0, 4);
 
   return (
-    <section className="console-card overview-market-card">
-      <InfoTitle title="Market snapshot" subtitle="FRED active rows, raw values only" />
-      <ul className="overview-market-list">
-        {activeRows.map((item) => (
-          <li key={item.target} title={`${item.caveat ?? ""} Retrieved ${formatDateTime(item.retrieved_at)}`}>
-            <span>{marketLabels[item.target] ?? item.label}</span>
+    <section className="console-card overview-preview-card">
+      <InfoTitle title="Market and traffic preview" subtitle="Dynamic · local generated snapshot" />
+      <div className="overview-traffic-preview">
+        <span>Traffic</span>
+        <strong>{traffic ? formatNumber(traffic.latest_value, 0) : "—"}</strong>
+        <small>
+          daily transit calls
+          {traffic ? ` · ${formatDate(traffic.latest_date)}` : ""}
+        </small>
+        {traffic ? (
+          <b data-direction={deltaDirection(traffic.delta_vs_baseline_pct)}>
+            {formatDelta(traffic.delta_vs_baseline_pct, "%")} vs 1y avg
+          </b>
+        ) : null}
+      </div>
+      <ul className="overview-market-preview-list">
+        {marketRows.map((item) => (
+          <li key={item.target}>
+            <span>{item.label.replace(" spot proxy", "")}</span>
             <strong>
               {formatNumber(item.value, 2)} {item.unit}
-              <DeltaBadge value={item.delta_1d} suffix="1d" />
             </strong>
+            <b data-direction={deltaDirection(item.delta_1d)}>{formatDelta(item.delta_1d)} 1d</b>
           </li>
         ))}
       </ul>
-      {pendingRows.length > 0 ? (
-        <div className="overview-market-pending" aria-label="pending market coverage">
-          {pendingRows.map((item) => (
-            <span key={item.target} title={item.caveat}>
-              {marketLabels[item.target] ?? item.label} — pending
-            </span>
-          ))}
-          <a href="/market">coverage in Market</a>
-        </div>
-      ) : null}
+      <a className="overview-inline-link" href="/market">
+        Open market background <ArrowRight size={14} />
+      </a>
     </section>
   );
 }
@@ -306,27 +318,40 @@ function PolymarketCard({ refs }: { refs: PolymarketQuestionRef[] }) {
       <div className="overview-polymarket-banner">External market, not our forecast</div>
       <div className="overview-polymarket-heading">
         <InfoTitle
-          title="External prediction markets"
-          subtitle="Selected Polymarket references, excluded from forecast inputs"
+          title="Polymarket-style external reference"
+          subtitle="Dynamic only when curated odds are available; otherwise visibly pending"
         />
       </div>
       <div className="overview-polymarket-grid">
         {refs.map((ref) => {
-          const outcome = bestOutcome(ref);
-          const lastPrice = outcome?.last_price;
-          const hasOdds = lastPrice !== null && lastPrice !== undefined;
+          const outcomes = sortedOutcomes(ref);
+          const hasOdds = outcomes.some((outcome) => outcomePercent(outcome) !== null);
           return (
             <article key={ref.question_id} title={ref.caveat}>
-              <span className="overview-polymarket-topic">{ref.topic_tags.join(" / ")}</span>
-              <a href={ref.question_url} rel="noreferrer" target="_blank">
-                <strong>
-                  {ref.title} <ExternalLink size={13} />
-                </strong>
-              </a>
-              <p className="overview-polymarket-odds">
-                {hasOdds ? `${outcome.outcome_id.toUpperCase()}: ${(lastPrice * 100).toFixed(0)}%` : "odds pending"}
-                {!hasOdds && ref.stale ? <span>stale</span> : null}
-              </p>
+              <div className="overview-polymarket-card-head">
+                <span>{ref.topic_tags.join(" / ")}</span>
+                <a href={ref.question_url} rel="noreferrer" target="_blank">
+                  Polymarket <ExternalLink size={13} />
+                </a>
+              </div>
+              <strong>{ref.title}</strong>
+              <div className="overview-polymarket-outcomes">
+                {outcomes.slice(0, 4).map((outcome) => {
+                  const pct = outcomePercent(outcome);
+                  return (
+                    <div key={outcome.outcome_id}>
+                      <span>{cleanOutcomeId(outcome.outcome_id)}</span>
+                      <b>{pct === null ? "pending" : `${pct.toFixed(0)}%`}</b>
+                      <i style={{ width: `${pct ?? 0}%` }} />
+                    </div>
+                  );
+                })}
+              </div>
+              {!hasOdds ? (
+                <p className="overview-polymarket-pending">
+                  odds pending · external page may have live odds, but local curated snapshot has not captured them.
+                </p>
+              ) : null}
               <p className="overview-polymarket-resolution" title={ref.resolution_criteria}>
                 {truncateText(ref.resolution_criteria)}
               </p>
@@ -345,21 +370,22 @@ function PolymarketCard({ refs }: { refs: PolymarketQuestionRef[] }) {
 export function OverviewPage() {
   return (
     <section className="page-grid overview-page">
-      <div className="overview-main-layout">
-        <HeadlineStrip snapshot={snapshot} />
+      <div className="overview-guide-layout">
+        <HeroPanel snapshot={snapshot} />
+        <NavigationCards />
 
-        <BaselineStrip facts={snapshot.baseline} />
+        <div className="overview-guide-main">
+          <div className="overview-guide-left">
+            <ExampleQuestions />
+            <ContextMapCard />
+          </div>
 
-        <div className="overview-map-slot">
-          <CaseMap compact />
+          <aside className="overview-guide-right">
+            <StaticDynamicCard snapshot={snapshot} />
+            <MarketPreview snapshot={snapshot} />
+            <LatestEventsPreview events={snapshot.latest_events} />
+          </aside>
         </div>
-
-        <LatestEventsCard events={snapshot.latest_events} />
-
-        <aside className="overview-right-stack">
-          <TrafficSnapshotCard snapshot={snapshot.traffic_snapshot} />
-          <MarketSnapshotCard snapshot={snapshot.market_snapshot} />
-        </aside>
 
         <PolymarketCard refs={snapshot.polymarket_refs} />
       </div>
