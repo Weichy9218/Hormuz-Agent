@@ -407,34 +407,68 @@ async function buildMarketSnapshot(fredRows) {
       delta_1d: deltaFromRows(fredRows, target, 1),
       delta_7d: deltaFromRows(fredRows, target, 7),
       source_id: row?.source_id ?? "fred-market",
+      provider_id: row ? "fred" : "pending",
+      license_status: row?.license_status ?? "pending",
+      source_url: row?.source_url ?? `https://fred.stlouisfed.org/series/${row?.series_id ?? ""}`,
       retrieved_at: row?.retrieved_at ?? BUILT_AT,
       status: row ? "active" : "pending_source",
       caveat: row ? "FRED normalized local snapshot." : "FRED row missing from normalized history.",
     });
   }
+  return snapshot;
+}
 
-  snapshot.push(
-    {
-      target: "gold",
-      label: "Gold",
-      value: null,
-      unit: "USD/oz",
-      source_id: "gold-pending",
-      retrieved_at: BUILT_AT,
-      status: "pending_source",
-      caveat: "Pending stable daily source.",
-    },
-    {
-      target: "usd_cnh",
-      label: "USD/CNH",
-      value: null,
-      unit: "CNH per USD",
-      source_id: "usdcnh-pending",
-      retrieved_at: BUILT_AT,
-      status: "pending_source",
-      caveat: "Pending offshore CNH source.",
-    },
-  );
+function activeGoldMarketSnapshot(goldSeries) {
+  if (goldSeries?.status !== "active") return null;
+  const latest = goldSeries.points?.at(-1);
+  if (!latest) return null;
+  return {
+    target: "gold",
+    label: goldSeries.label,
+    value: latest.value,
+    unit: goldSeries.unit,
+    source_id: goldSeries.source_id,
+    provider_id: goldSeries.provider_id,
+    license_status: goldSeries.license_status,
+    source_url: goldSeries.source_url,
+    retrieved_at: goldSeries.retrieved_at,
+    status: "active",
+    caveat: goldSeries.caveat,
+  };
+}
+
+function pendingGoldMarketSnapshot() {
+  return {
+    target: "gold",
+    label: "Gold",
+    value: null,
+    unit: "USD/oz",
+    source_id: "gold-pending",
+    provider_id: "pending",
+    license_status: "pending",
+    source_url: "https://stooq.com/q/d/?s=xauusd",
+    retrieved_at: BUILT_AT,
+    status: "pending_source",
+    caveat: "Pending stable daily source.",
+  };
+}
+
+async function buildOverviewMarketSnapshot(fredRows, goldSeries) {
+  const snapshot = await buildMarketSnapshot(fredRows);
+  snapshot.push(activeGoldMarketSnapshot(goldSeries) ?? pendingGoldMarketSnapshot());
+  snapshot.push({
+    target: "usd_cnh",
+    label: "USD/CNH",
+    value: null,
+    unit: "CNH per USD",
+    source_id: "usdcnh-pending",
+    provider_id: "pending",
+    license_status: "pending",
+    source_url: null,
+    retrieved_at: BUILT_AT,
+    status: "pending_source",
+    caveat: "Pending offshore CNH source.",
+  });
   return snapshot;
 }
 
@@ -818,7 +852,7 @@ async function main() {
     current_severity: currentSeverity(displayEvents),
     latest_events: displayEvents.slice(0, 3),
     traffic_snapshot: buildTrafficSnapshot(traffic),
-    market_snapshot: await buildMarketSnapshot(fredRows),
+    market_snapshot: await buildOverviewMarketSnapshot(fredRows, goldSeries),
     polymarket_refs: polymarketRefs,
   };
 

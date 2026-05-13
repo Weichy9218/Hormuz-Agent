@@ -210,7 +210,7 @@ interface NormalizedMarketObservation {
 
 FRED `DEXCHUS` → `usd_cny` only。任何映射到 `usd_cnh` 必须来自有效 FX vendor（candidate，目前 pending）。
 
-**空值处理规则（重要）**：FRED CSV 中节假日/非交易日的 `value` 字段为空字符串 `""`。`build-generated.mjs` 里的 `numeric()` 函数必须在 `Number()` 转换前先检查空串：
+**空值处理规则（重要）**：FRED CSV 中节假日/非交易日的 `value` 字段为空字符串 `""`。`fetch-fred.mjs` 与 `build-generated.mjs` 必须在 `Number()` 转换前先检查空串 / whitespace / `"."` / `"-"` / `"NaN"`：
 
 ```js
 // 正确
@@ -453,6 +453,9 @@ interface OverviewSnapshot {
     delta_1d?: number | null;
     delta_7d?: number | null;
     source_id: string;
+    provider_id?: string;
+    license_status?: "open" | "restricted" | "pending" | "unknown";
+    source_url?: string | null;
     retrieved_at: string;
     status: "active" | "pending_source";
     caveat?: string;

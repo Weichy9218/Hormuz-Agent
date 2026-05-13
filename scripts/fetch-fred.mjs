@@ -272,15 +272,20 @@ function toCsv(rows) {
   ].join("\n") + "\n";
 }
 
+function numericStrict(value) {
+  const s = String(value ?? "").trim();
+  if (!s || s === "." || s === "-" || /^nan$/i.test(s)) return null;
+  const number = Number(s);
+  return Number.isFinite(number) ? number : null;
+}
+
 function parseFredCsv(csv, seriesId) {
   const rows = csv.trim().split(/\r?\n/);
   const dataRows = rows.slice(1);
   return dataRows
     .map((line) => {
       const [date, rawValue] = line.split(",");
-      const value = rawValue === "." || rawValue == null || rawValue === ""
-        ? null
-        : Number(rawValue);
+      const value = numericStrict(rawValue);
       return { date, value };
     })
     .filter((row) => {

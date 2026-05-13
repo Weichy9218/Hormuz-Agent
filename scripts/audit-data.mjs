@@ -2,7 +2,7 @@
 // UI must read generated local data rather than remote APIs or scattered TS fixtures.
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -15,6 +15,7 @@ const normalizedFredUrl = new URL("../data/normalized/market/fred_series.csv", i
 const fredMissingFixtureUrl = new URL("../data/fixtures/fred-missing-values.json", import.meta.url);
 const generatedMarketUrl = new URL("../data/generated/market_series.json", import.meta.url);
 const generatedMarketChartUrl = new URL("../data/generated/market_chart.json", import.meta.url);
+const generatedOverviewUrl = new URL("../data/generated/overview_snapshot.json", import.meta.url);
 const generatedNewsTimelineUrl = new URL("../data/generated/news_timeline.json", import.meta.url);
 const baselineUrl = new URL("../data/normalized/baseline/hormuz_baseline.json", import.meta.url);
 const sourceRegistryJsonUrl = new URL("../data/registry/sources.json", import.meta.url);
@@ -25,6 +26,12 @@ const evidenceClaimsUrl = new URL("../data/evidence/evidence_claims.jsonl", impo
 const canonicalInputsUrl = new URL("../data/generated/canonical_inputs.json", import.meta.url);
 const rawFredDir = resolve(root, "data/raw/fred");
 const rawHashCache = new Map();
+const backgroundSurfaceFiles = [
+  resolve(root, "src/pages/OverviewPage.tsx"),
+  resolve(root, "src/pages/MarketPage.tsx"),
+  resolve(root, "src/pages/NewsPage.tsx"),
+  resolve(root, "src/pages/NewsTimelinePage.tsx"),
+];
 
 const activeMarketChartRanges = {
   brent: { min: 1, max: 250 },
@@ -198,6 +205,15 @@ async function assertRawHash(record, label) {
   }
   if (actual !== record.source_hash) {
     throw new Error(`${label}: source_hash does not match ${record.raw_path}`);
+  }
+}
+
+async function readTextIfExists(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return "";
+    throw error;
   }
 }
 
@@ -641,12 +657,13 @@ function auditLocalCode(dataFile, sourceRegistryFile, canonicalStoreFile, source
   }
 }
 
-async function auditGeneratedMarketChart(bundle) {
+async function auditGeneratedMarketChart(bundle, timelineBundle) {
   if (!bundle || !Array.isArray(bundle.series)) {
     throw new Error("market_chart.json must expose a series array.");
   }
 
   const allowedSurfaces = new Set(["market_chart", "overview_snapshot", "coverage_only", "hidden"]);
+  const timelineEventsById = new Map((timelineBundle?.events ?? []).map((event) => [event.event_id, event]));
   const seriesByTarget = new Map(bundle.series.map((series) => [series.target, series]));
   const usdCny = seriesByTarget.get("usd_cny");
   if (!usdCny || usdCny.surface !== "hidden" || usdCny.coverage_visible !== false || usdCny.status !== "active") {
@@ -795,8 +812,66 @@ async function auditGeneratedMarketChart(bundle) {
     for (const field of ["id", "label", "start_at", "source_event_id", "source_url", "caveat"]) {
       if (!overlay[field]) throw new Error(`regime_overlays: ${overlay.id ?? "overlay"} missing ${field}`);
     }
+    const event = timelineEventsById.get(overlay.source_event_id);
+    if (!event) {
+      throw new Error(`${overlay.id}: regime overlay source_event_id missing from news_timeline events.`);
+    }
+    if (event.source_url !== overlay.source_url) {
+      throw new Error(`${overlay.id}: regime overlay source_url must match its timeline event.`);
+    }
+    if (!(event.related_market_targets ?? []).includes("traffic")) {
+      throw new Error(`${overlay.id}: regime overlay source event must be traffic-related.`);
+    }
     if (/forecast|scenario|pricingPattern/i.test(overlay.caveat)) {
       throw new Error(`${overlay.id}: regime overlay caveat must not introduce forecast/scenario interpretation.`);
+    }
+  }
+}
+
+function auditGeneratedOverviewSnapshot(bundle, marketChartBundle) {
+  if (!bundle || !Array.isArray(bundle.market_snapshot)) {
+    throw new Error("overview_snapshot.json must expose market_snapshot.");
+  }
+  const goldChart = marketChartBundle.series.find((series) => series.target === "gold" && series.status === "active");
+  const goldSnapshot = bundle.market_snapshot.find((item) => item.target === "gold");
+  if (!goldSnapshot) {
+    throw new Error("overview_snapshot market_snapshot must include gold.");
+  }
+  for (const item of bundle.market_snapshot) {
+    for (const field of ["source_id", "provider_id", "license_status", "retrieved_at", "caveat"]) {
+      if (!item[field]) throw new Error(`overview_snapshot ${item.target}: missing ${field}.`);
+    }
+    if (item.status === "active" && !item.source_url) {
+      throw new Error(`overview_snapshot ${item.target}: active market snapshot row missing source_url.`);
+    }
+  }
+  if (goldChart) {
+    const latestGold = goldChart.points?.at(-1);
+    if (
+      goldSnapshot.status !== "active" ||
+      goldSnapshot.source_id !== goldChart.source_id ||
+      goldSnapshot.provider_id !== goldChart.provider_id ||
+      goldSnapshot.value !== latestGold?.value
+    ) {
+      throw new Error("overview_snapshot gold must mirror the active Stooq Gold proxy from market_chart.");
+    }
+    if (!/Stooq XAU\/USD/i.test(goldSnapshot.caveat ?? "")) {
+      throw new Error("overview_snapshot gold caveat must preserve Stooq XAU/USD proxy lineage.");
+    }
+  }
+  const usdCnh = bundle.market_snapshot.find((item) => item.target === "usd_cnh");
+  if (!usdCnh || usdCnh.status !== "pending_source" || usdCnh.source_id !== "usdcnh-pending") {
+    throw new Error("overview_snapshot USD/CNH must remain pending_source.");
+  }
+}
+
+async function auditNoHardcodedBackgroundRegimeDates() {
+  const forbidden = /\b(?:2026-02-28|2026-04-18)\b|stressWindowStart|structureStartMs/;
+  for (const file of backgroundSurfaceFiles) {
+    const text = await readTextIfExists(file);
+    if (!text) continue;
+    if (forbidden.test(text)) {
+      throw new Error(`${relative(root, file)}: background surfaces must not hardcode regime/closure shading dates.`);
     }
   }
 }
@@ -840,6 +915,7 @@ const normalizedRows = parseCsv(await readFile(normalizedFredUrl, "utf8"));
 const fredMissingFixture = JSON.parse(await readFile(fredMissingFixtureUrl, "utf8"));
 const generatedMarketSeries = JSON.parse(await readFile(generatedMarketUrl, "utf8"));
 const generatedMarketChart = JSON.parse(await readFile(generatedMarketChartUrl, "utf8"));
+const generatedOverview = JSON.parse(await readFile(generatedOverviewUrl, "utf8"));
 const generatedNewsTimeline = JSON.parse(await readFile(generatedNewsTimelineUrl, "utf8"));
 const baselineFacts = JSON.parse(await readFile(baselineUrl, "utf8"));
 const sourceRegistry = JSON.parse(await readFile(sourceRegistryJsonUrl, "utf8"));
@@ -855,8 +931,10 @@ auditBaseline(baselineFacts);
 auditSourceRegistry(sourceRegistry);
 await auditAdvisories(advisoryRecords);
 await auditTraffic(transitRows);
-await auditGeneratedMarketChart(generatedMarketChart);
+await auditGeneratedMarketChart(generatedMarketChart, generatedNewsTimeline);
+auditGeneratedOverviewSnapshot(generatedOverview, generatedMarketChart);
 auditGeneratedNewsTimeline(generatedNewsTimeline);
+await auditNoHardcodedBackgroundRegimeDates();
 auditGeneratedCanonicalArtifacts({
   observations: sourceObservations,
   evidenceClaims,

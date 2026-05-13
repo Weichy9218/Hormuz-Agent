@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-05-13T04:32:39.379Z",
+  "built_at": "2026-05-13T04:50:53.359Z",
   "data_as_of": "2026-05-13T04:09:50.720Z",
   "baseline": [
     {
@@ -194,6 +194,9 @@
       "delta_1d": -5.97999999999999,
       "delta_7d": 6.400000000000006,
       "source_id": "fred-market",
+      "provider_id": "fred",
+      "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
@@ -206,6 +209,9 @@
       "delta_1d": 4.38000000000001,
       "delta_7d": 9.870000000000005,
       "source_id": "fred-market",
+      "provider_id": "fred",
+      "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
@@ -218,6 +224,9 @@
       "delta_1d": 0.11000000000000298,
       "delta_7d": 0.20000000000000284,
       "source_id": "fred-market",
+      "provider_id": "fred",
+      "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
@@ -230,19 +239,25 @@
       "delta_1d": 0.02759999999999252,
       "delta_7d": -0.3534000000000077,
       "source_id": "fred-market",
+      "provider_id": "fred",
+      "license_status": "open",
+      "source_url": "https://fred.stlouisfed.org/series/DTWEXBGS",
       "retrieved_at": "2026-05-12T13:26:25.090Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
     },
     {
       "target": "gold",
-      "label": "Gold",
-      "value": null,
+      "label": "Gold spot",
+      "value": 4715.34,
       "unit": "USD/oz",
-      "source_id": "gold-pending",
-      "retrieved_at": "2026-05-13T04:32:39.379Z",
-      "status": "pending_source",
-      "caveat": "Pending stable daily source."
+      "source_id": "stooq-market",
+      "provider_id": "stooq",
+      "license_status": "open",
+      "source_url": "https://stooq.com/q/d/?s=xauusd",
+      "retrieved_at": "2026-05-13T01:18:37.251Z",
+      "status": "active",
+      "caveat": "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or futures continuous contract."
     },
     {
       "target": "usd_cnh",
@@ -250,7 +265,10 @@
       "value": null,
       "unit": "CNH per USD",
       "source_id": "usdcnh-pending",
-      "retrieved_at": "2026-05-13T04:32:39.379Z",
+      "provider_id": "pending",
+      "license_status": "pending",
+      "source_url": null,
+      "retrieved_at": "2026-05-13T04:50:53.359Z",
       "status": "pending_source",
       "caveat": "Pending offshore CNH source."
     }

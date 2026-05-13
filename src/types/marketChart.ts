@@ -77,6 +77,9 @@ export interface OverviewSnapshot {
     delta_1d?: number | null;
     delta_7d?: number | null;
     source_id: string;
+    provider_id?: string;
+    license_status?: "open" | "restricted" | "pending" | "unknown";
+    source_url?: string | null;
     retrieved_at: string;
     status: "active" | "pending_source";
     caveat?: string;
