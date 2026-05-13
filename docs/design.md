@@ -220,30 +220,33 @@ Numbers:       tabular-nums
 └──────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Traffic chart (PortWatch daily transit calls)                         │
-│ daily series + 7d rolling avg + 1y same-window baseline (dashed)      │
-│ Vertical lines = events from News (hover → event title)               │
-│ AIS caveat under chart                                                 │
+│ Traffic chart — full width (PortWatch daily transit calls)            │
+│ daily + 7d avg + 1y baseline (dashed)                                 │
+│ ░░░░ Hormuz closure period shading (2026-02-28 → range end)           │
+│ Event overlay vertical lines; AIS caveat below                        │
 └──────────────────────────────────────────────────────────────────────┘
 
+┌──────────────────────┬───────────────────────────────────────────────┐
+│ Brent (USD/bbl)       │ WTI (USD/bbl)                                 │
+│ line chart, own y-axis│ line chart, own y-axis                        │
+│ ░░ closure shading    │ ░░ closure shading                            │
+└──────────────────────┴───────────────────────────────────────────────┘
+┌──────────────────────┬───────────────────────────────────────────────┐
+│ USD/CNY               │ Broad USD index                               │
+└──────────────────────┴───────────────────────────────────────────────┘
+┌──────────────────────┬───────────────────────────────────────────────┐
+│ US10Y (%)             │ VIX                                           │
+└──────────────────────┴───────────────────────────────────────────────┘
+┌──────────────────────┬───────────────────────────────────────────────┐
+│ NASDAQ                │ S&P 500                                       │
+└──────────────────────┴───────────────────────────────────────────────┘
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Normalized cross-asset chart (rebased to 0 at range start)            │
-│ Brent · WTI · VIX · Broad USD · USD/CNY · US10Y · SP500 · NASDAQ      │
-│ Gold / USD-CNH: pending, shown as legend-only                         │
-│ Vertical dashed lines = News events (hover → event title)             │
+│ US CPI (monthly · sparse · points shown as dots)                      │
 └──────────────────────────────────────────────────────────────────────┘
-
-┌────────────────────────┬────────────────────────┬────────────────────┐
-│ Energy                  │ Safe haven & FX        │ Risk · rates · vol │
-│ Brent · WTI             │ Gold[pending] · USD ·  │ VIX · US10Y · SP500│
-│                         │ USD/CNY · USD/CNH[pend]│ · NASDAQ           │
-│ small sparkline + value │ small sparkline + value│ small sparkline +v │
-└────────────────────────┴────────────────────────┴────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────┐
-│ Traffic detail (PortWatch by vessel type, if available)               │
-│ tanker · lng · container · dry_bulk · other sparkline + latest value  │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────┬───────────────────────────────────────────────┐
+│ Gold [pending]        │ USD/CNH [pending]                             │
+│ grey placeholder card │ grey placeholder card                         │
+└──────────────────────┴───────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Data coverage table                                                   │
@@ -253,13 +256,15 @@ Numbers:       tabular-nums
 
 必须展示：
 
-- Range selector 控制所有图与 sparkline 的窗口。
-- **Traffic chart**（独立组，置于跨资产图之前）：来自 `market_chart.json` `group="traffic"`：daily transit calls + 7d 滚动均值 + 1y 同期均值（baseline_points，虚线）；event overlay 与跨资产图一致；AIS 局限 caveat 在图下方常驻。
-- 跨资产主图：normalized line chart（rebase to 0 at range start）。
-- Event overlay：从 `events_timeline.jsonl` 拉当前 range 内事件，画竖虚线；hover/click 显示 event title + 跳 News 页 anchor。
-- 三组 sparkline：Energy / Safe haven & FX / Risk·rates·vol。
-- Traffic detail（如 PortWatch 提供 vessel_type 拆分）：tanker / lng / container / dry_bulk / other 各一条 sparkline。
-- 底部 coverage table 透明展示每条 series 的 source、license、`retrieved_at`、provider_status，pending 行显式标灰。
+- Range selector 控制所有图的 x 轴窗口。
+- **Traffic chart（全宽）**：来自 `market_chart.json` `group="traffic"`：daily transit calls + 7d 滚动均值 + 1y 同期均值（baseline_points，虚线）；event overlay 竖线；AIS 局限 caveat 在图下方常驻。
+- **每个指标独立折线图**（individual line chart，原生单位 y 轴，不 normalize）：Brent、WTI、USD/CNY、Broad USD、US10Y、VIX、NASDAQ、S&P500 各一张；US CPI 月度数据单独一张（线 + 散点）。布局：**每行 2 张**，2 列 grid。
+- **Hormuz 封锁期色块**（closure shading）：每张图（包括 Traffic）都叠加一个半透明 amber 色块，x 区间 `2026-02-28` 至当前 range 末端，`opacity: 0.10–0.12`，右侧加小标注"封锁架构"。
+- **节假日/gap 断线**：FRED 空值行（节假日/非交易日）不填 0，直接从 `points` 中剔除，折线在 gap 处显示为断开（不连接），不插值，不跌到 0。
+- **日频 series 不画逐点圆点**：每条日频 series 只在最后一个数据点画一个小圆（半径 3px，颜色与线同色），用于显示"最新值"；不在中间每点都画 marker。月频稀疏 series（US CPI）才对每点画 marker。
+- **Pending series**（Gold、USD-CNH）：灰色占位卡片，不画图，显示 "Data pending"；在 coverage table 里标灰。
+- **Event overlay**：每张图（包括每个 series 小图）都支持事件竖线；hover 显示 event title，点击跳 `/news#<event_id>`。overlay toggle 关闭时全部隐藏。
+- 底部 coverage table 显示 source、license、`retrieved_at`、provider_status，pending 行标灰。
 
 **禁止**：`MarketRead` / `pricingPattern` / "市场支持哪个 scenario" / "市场已 price-in 多少"。Market 页只画原始数据 + 事件标注，**不做解读**。解读交给 Forecast agent（在 Forecast 页里做）。
 

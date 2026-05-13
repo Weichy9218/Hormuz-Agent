@@ -14,7 +14,7 @@ export interface GalaxyQuestionRow {
   task_description: string;
   metadata?: {
     case_id?: "hormuz";
-    question_kind?: "brent_weekly_high" | "hormuz_traffic_risk";
+    question_kind?: "brent_weekly_high" | "hormuz_traffic_risk" | "custom";
     target_series_id?: "DCOILBRENTEU";
     generated_for_date?: string;
     timezone?: string;

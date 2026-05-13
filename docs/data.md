@@ -175,6 +175,21 @@ interface NormalizedMarketObservation {
 
 FRED `DEXCHUS` → `usd_cny` only。任何映射到 `usd_cnh` 必须来自有效 FX vendor（candidate，目前 pending）。
 
+**空值处理规则（重要）**：FRED CSV 中节假日/非交易日的 `value` 字段为空字符串 `""`。`build-generated.mjs` 里的 `numeric()` 函数必须在 `Number()` 转换前先检查空串：
+
+```js
+// 正确
+function numeric(value) {
+  const s = String(value ?? "").trim();
+  if (!s) return null;           // 空串 → null，不是 0
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+// 错误示例：Number("") === 0，会把节假日转成 0，造成折线图剧烈下跌
+```
+
+空值行必须被 builder 过滤掉（不进入 `points` 数组）。下游 UI 对 null/gap 的处理：折线图应在 gap 处断开（不连接两侧点），而不是插值或连接到 0。
+
 ### 4.4 `data/normalized/maritime/advisories.jsonl`
 
 ```ts

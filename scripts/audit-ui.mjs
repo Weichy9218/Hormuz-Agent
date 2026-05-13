@@ -75,11 +75,11 @@ assertContains(
 
 const legacyMarketScenarioField = ["supports", "Scenario"].join("");
 
-// Market must use pricingPattern and never revive the legacy market scenario field.
-assertContains(
+// Market is a raw-data background page; interpretation stays on Forecast.
+assertNotContains(
   "src/pages/MarketPage.tsx",
-  /pricingPattern/,
-  "Market must render MarketRead.pricingPattern",
+  /MarketRead|pricingPattern/,
+  "Market must not render MarketRead.pricingPattern or scenario interpretation",
 );
 for (const file of uiFiles) {
   assertNotContains(

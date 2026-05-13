@@ -18,7 +18,7 @@ const questionPath = resolve(root, "data/galaxy/hormuz-daily-question.jsonl");
 const latestArtifactPath = resolve(root, "data/galaxy/latest-run.json");
 const defaultOutputRoot = resolve(root, "data/galaxy/runs");
 const defaultQuestionKind = "brent-weekly-high";
-const supportedQuestionKinds = new Set(["brent-weekly-high", "hormuz-traffic-risk"]);
+const supportedQuestionKinds = new Set(["brent-weekly-high", "hormuz-traffic-risk", "custom"]);
 
 function galaxyVenvPath() {
   return process.env.GALAXY_VENV || resolve(galaxyRepo, ".venv");
@@ -1206,7 +1206,20 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const question = buildQuestion(args.date, args.questionKind);
+  let question;
+  if (args.questionKind === "custom") {
+    // Custom question was written to JSONL by the caller before invoking this script
+    const rawText = await readFile(questionPath, "utf8").catch(() => "");
+    const lastLine = rawText.trim().split("\n").filter(Boolean).at(-1) ?? "";
+    question = parseJsonMaybe(lastLine);
+    if (!question?.task_id) {
+      console.error("[run-galaxy] --question-kind custom requires a pre-written hormuz-daily-question.jsonl; falling back to default");
+      question = buildQuestion(args.date, defaultQuestionKind);
+      args.questionKind = defaultQuestionKind;
+    }
+  } else {
+    question = buildQuestion(args.date, args.questionKind);
+  }
   const startedAt = args.startedAt || new Date().toISOString();
   const timestamp = startedAt.replace(/\D/g, "").slice(0, 14) || Date.now().toString();
   const runId = args.runId || `${timestamp}__${question.task_id}`;
@@ -1214,7 +1227,9 @@ async function main() {
   const taskDir = resolve(outputDir, question.task_id);
   await mkdir(dirname(questionPath), { recursive: true });
   await mkdir(outputDir, { recursive: true });
-  await writeFile(questionPath, `${JSON.stringify(question, null, 0)}\n`, "utf8");
+  if (args.questionKind !== "custom") {
+    await writeFile(questionPath, `${JSON.stringify(question, null, 0)}\n`, "utf8");
+  }
   await ensureHormuzRunConfig(args, question, outputDir);
 
   const galaxyInvocation = buildGalaxyCommand(args, question, outputDir);

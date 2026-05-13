@@ -691,13 +691,13 @@ function MiniTrafficSparkline({
         <div style={newsPageUi.trafficHead}>
           <span style={newsPageUi.trafficTitle}>
             <Ship size={14} />
-            PortWatch ±7d
+            Traffic ±7d
           </span>
           <span style={newsPageUi.mutedNote}>
             {compactDate(start)}-{compactDate(end)}
           </span>
         </div>
-        <div style={newsPageUi.emptyState}>No PortWatch data in window</div>
+        <div style={newsPageUi.emptyState}>No traffic data in window</div>
       </div>
     );
   }
@@ -714,7 +714,7 @@ function MiniTrafficSparkline({
       <div style={newsPageUi.trafficHead}>
         <span style={newsPageUi.trafficTitle}>
           <Ship size={14} />
-          PortWatch ±7d
+          Traffic ±7d
         </span>
         <span style={newsPageUi.mutedNote}>
           {compactDate(start)}-{compactDate(end)}
@@ -722,7 +722,7 @@ function MiniTrafficSparkline({
       </div>
 
       <svg
-        aria-label={`PortWatch daily transit calls around ${formatDate(center)}`}
+        aria-label={`Daily transit calls around ${formatDate(center)}`}
         role="img"
         style={newsPageUi.sparkline}
         viewBox={`0 0 ${width} ${height}`}
@@ -787,13 +787,13 @@ function MiniTrafficSparkline({
 
       <div style={newsPageUi.entryMeta}>
         <span>{formatNumber(latestDaily.value, 0)} daily calls on {formatDate(latestDaily.date)}</span>
-        <span>{trafficSeries?.source_id ?? "imf-portwatch-hormuz"}</span>
+        <span>{trafficSeries?.source_id ?? "traffic-source"}</span>
         {trafficSeries?.retrieved_at ? (
           <span>retrieved {formatDateTime(trafficSeries.retrieved_at)}</span>
         ) : null}
       </div>
       <p style={newsPageUi.mutedNote}>
-        Solid line is daily transit calls; dashed line is PortWatch same-window baseline where available.
+        Solid line is daily transit calls; dashed line is same-window baseline where available.
       </p>
     </div>
   );
@@ -1065,7 +1065,7 @@ export function NewsPage() {
           <p style={newsPageUi.copy}>
             Promoted official advisories and curated media entries are shown as a source-bound
             chronology. The page is descriptive only: it preserves event provenance and optional
-            PortWatch traffic context without turning events into risk calls.
+            traffic context without turning events into risk calls.
           </p>
         </div>
 

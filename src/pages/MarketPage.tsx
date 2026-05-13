@@ -1091,7 +1091,7 @@ function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
   return (
     <section className="console-card market-m8-coverage-card">
       <div className="market-m8-coverage-head">
-        <InfoTitle title="数据覆盖表" subtitle="每条 series 的来源、许可、刷新时间、raw_path 与 caveat" />
+        <InfoTitle title="数据覆盖表" subtitle="每条 series 的 source id、许可、刷新时间、raw_path 与 caveat" />
         <span className="market-m8-pill">
           <Database size={14} />&nbsp;{pendingCount} pending
         </span>
@@ -1102,7 +1102,7 @@ function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
           <thead>
             <tr>
               <th>series</th>
-              <th>来源</th>
+              <th>source id</th>
               <th>状态</th>
               <th>许可</th>
               <th>retrieved_at</th>

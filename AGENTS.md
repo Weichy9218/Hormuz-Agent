@@ -30,6 +30,12 @@ git branch --show-current
 
 Dirty files are user or peer-agent work. Do not revert or overwrite unrelated changes. Use Chinese for summaries; keep code, APIs, scripts, and schema names in English.
 
+## Local Skills
+
+- `$beautiful-html-templates` 已安装到 `/Users/weichy/.codex/skills/beautiful-html-templates`。当任务是创建 / 改造 HTML slide deck、选择 deck template、把 brief 变成浏览器演示稿时使用它。
+- 使用方法：先读 skill 的 `SKILL.md`；按 `assets/index.json` 从 `assets/templates/<slug>/` 里挑 3 个候选；用真实题目做 3 个 title-slide previews 给用户选；用户确认后只复制被选中的模板到当前 workspace 并替换内容。
+- 约束：保留所选模板的 fonts、palette、layout grammar、decorative elements 和 navigation runtime；不要混用多个模板；最终 HTML artifact 放在项目 workspace 内，不写回 skill 目录。
+
 ## Two parallel tracks
 
 本仓库当前同时推进两条平行工作线，互不污染：

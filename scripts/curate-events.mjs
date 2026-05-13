@@ -241,12 +241,16 @@ async function mirrorAdvisories() {
 
 async function mergeHistorySeed(timeline) {
   const historySeed = await readJsonLines(paths.historySeed);
-  const existingIds = new Set(timeline.map((event) => event.event_id));
+  const byEventId = new Map(timeline.map((event, index) => [event.event_id, index]));
   let added = 0;
   for (const entry of historySeed) {
-    if (existingIds.has(entry.event_id)) continue;
+    const existingIndex = byEventId.get(entry.event_id);
+    if (existingIndex !== undefined) {
+      timeline[existingIndex] = entry;
+      continue;
+    }
     timeline.push(entry);
-    existingIds.add(entry.event_id);
+    byEventId.set(entry.event_id, timeline.length - 1);
     added += 1;
   }
   return added;

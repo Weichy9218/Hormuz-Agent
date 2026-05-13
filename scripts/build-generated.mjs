@@ -445,6 +445,10 @@ function buildTopicIndex(events) {
     .sort((a, b) => b.event_count - a.event_count || a.tag.localeCompare(b.tag));
 }
 
+function isCoreTimelineEvent(event) {
+  return event.source_id === "events-curated" || event.tags?.includes("core_event");
+}
+
 function buildEventOverlays(events) {
   const oneYearAgo = new Date(Date.now() - 365 * DAY_MS);
   return events
@@ -472,6 +476,8 @@ async function main() {
   ]);
 
   const events = eventsRaw.sort((a, b) => String(b.event_at).localeCompare(String(a.event_at)));
+  const coreEvents = events.filter(isCoreTimelineEvent);
+  const displayEvents = coreEvents.length > 0 ? coreEvents : events;
   const traffic = buildTrafficSeries(transitRows);
   const fredSeries = await buildFredSeries(fredRows);
   const polymarketRefs = buildPolymarketRefs(polymarketRaw);
@@ -488,8 +494,8 @@ async function main() {
     built_at: BUILT_AT,
     data_as_of: dataAsOf,
     baseline: baseline.filter((fact) => fact.source_id === "eia-iea-hormuz"),
-    current_severity: currentSeverity(events),
-    latest_events: events.slice(0, 3),
+    current_severity: currentSeverity(displayEvents),
+    latest_events: displayEvents.slice(0, 3),
     traffic_snapshot: buildTrafficSnapshot(traffic),
     market_snapshot: await buildMarketSnapshot(fredRows),
     polymarket_refs: polymarketRefs,
@@ -498,9 +504,9 @@ async function main() {
   const news = {
     built_at: BUILT_AT,
     data_as_of: dataAsOf,
-    events,
-    source_index: buildSourceIndex(events),
-    topic_index: buildTopicIndex(events),
+    events: displayEvents,
+    source_index: buildSourceIndex(displayEvents),
+    topic_index: buildTopicIndex(displayEvents),
   };
 
   const market = {
@@ -512,7 +518,7 @@ async function main() {
       ...fredSeries,
       ...PENDING_MARKET_SERIES,
     ],
-    event_overlays: buildEventOverlays(events),
+    event_overlays: buildEventOverlays(displayEvents),
   };
 
   await mkdir(paths.generatedDir, { recursive: true });
@@ -524,7 +530,7 @@ async function main() {
 
   console.log(
     `build:generated wrote overview_snapshot.json news_timeline.json market_chart.json ` +
-      `(events=${events.length}, market_series=${market.series.length}, polymarket_refs=${polymarketRefs.length})`,
+      `(events=${displayEvents.length}/${events.length}, market_series=${market.series.length}, polymarket_refs=${polymarketRefs.length})`,
   );
 }
 

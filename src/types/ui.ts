@@ -105,6 +105,14 @@ export interface ShippingLane {
   coordinates: CoordinatePoint[];
 }
 
+export interface MapPlace {
+  id: string;
+  label: string;
+  kind: "port" | "place";
+  x: number;
+  y: number;
+}
+
 export interface MarketPoint {
   date: string;
   value: number;

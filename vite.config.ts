@@ -13,6 +13,7 @@ const LOCAL_GALAXY_ENV_PATH = "/Users/weichy/code/galaxy-selfevolve/.env";
 
 interface AgentRequestBody {
   target?: string;
+  questionText?: string;
 }
 
 interface ApiEnv {
@@ -361,6 +362,7 @@ const GALAXY_REPO =
   process.env.GALAXY_REPO ||
   "/Users/weichy/Desktop/Doing-Right-Things/FutureX/papers/galaxy-selfevolve";
 const GALAXY_DEFAULT_QUESTION_KIND = "brent-weekly-high";
+const GALAXY_QUESTION_PATH = path.resolve(process.cwd(), "data/galaxy/hormuz-daily-question.jsonl");
 
 function shanghaiDate() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -373,6 +375,7 @@ function shanghaiDate() {
 
 function buildTaskId(date: string, questionKind = GALAXY_DEFAULT_QUESTION_KIND) {
   if (questionKind === "brent-weekly-high") return `hormuz-brent-weekly-high-${date}`;
+  if (questionKind === "custom") return `hormuz-custom-${date}`;
   return `hormuz-traffic-risk-${date}`;
 }
 
@@ -576,15 +579,34 @@ function sliceActionTrace(trace: ActionTraceLike, afterIndex: number | null) {
 function galaxyRunPlugin() {
   const runs = new Map<string, GalaxyRunRecord>();
 
-  function startRun() {
+  function startRun(questionText?: string) {
     const date = shanghaiDate();
-    const questionKind = GALAXY_DEFAULT_QUESTION_KIND;
+    const questionKind = questionText ? "custom" : GALAXY_DEFAULT_QUESTION_KIND;
     const taskId = buildTaskId(date, questionKind);
     const startedAt = new Date().toISOString();
     const runId = buildRunId(date, startedAt, taskId);
     const outputDir = path.join(GALAXY_RUNS_ROOT, date, runId);
     const runDir = path.join(outputDir, taskId);
     fs.mkdirSync(outputDir, { recursive: true });
+
+    if (questionText) {
+      const customQuestion = {
+        task_id: taskId,
+        task_question:
+          `${questionText.trim()}\n\n` +
+          `IMPORTANT: Your final answer MUST end with this exact format:\n` +
+          `\\boxed{your answer}\n\n` +
+          `Do not refuse to make a prediction. You must make a clear prediction based on the best data currently available.`,
+        task_description: `Custom question: ${questionText.trim().slice(0, 300)}`,
+        metadata: {
+          case_id: "hormuz",
+          question_kind: "custom",
+          generated_for_date: date,
+          timezone: "UTC+8",
+        },
+      };
+      fs.writeFileSync(GALAXY_QUESTION_PATH, `${JSON.stringify(customQuestion)}\n`, "utf8");
+    }
 
     const command = [
       "node",
@@ -682,7 +704,8 @@ function galaxyRunPlugin() {
         }
 
         try {
-          const record = startRun();
+          const body = await readRequestBody(request);
+          const record = startRun(body.questionText?.trim() || undefined);
           sendJson(response, 202, {
             ok: true,
             runId: record.runId,
