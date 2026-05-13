@@ -38,8 +38,8 @@ export function CaseMap({
           subtitle={isTraffic ? "示例船点 + 航道方向 + 数据边界；不是本站实时 AIS" : variant === "context" ? "Natural Earth region outline · route overlay · no live AIS" : compact ? undefined : "Hormuz region · static route context, no live AIS"}
         />
         {isTraffic ? (
-          <a className="map-live-link" href="https://hormuz.data-tracking.net/" rel="noreferrer" target="_blank">
-            公开 AIS 参考
+          <a className="map-live-link" href="https://www.shipxy.com/special/hormuz" rel="noreferrer" target="_blank">
+            参考站点 ↗
           </a>
         ) : null}
       </div>
@@ -135,22 +135,6 @@ export function CaseMap({
         <text className="map-label strait" x="514" y="326">{isTraffic ? "霍尔木兹海峡" : "Strait of Hormuz"}</text>
       </svg>
       {isTraffic ? (
-        <div className="map-traffic-stats" aria-label="public ais reference stats">
-          <article>
-            <span>参考站点</span>
-            <strong>约 950 艘/轮询</strong>
-          </article>
-          <article>
-            <span>更新节奏</span>
-            <strong>约 30 分钟</strong>
-          </article>
-          <article>
-            <span>可接数据</span>
-            <strong>ships / crossings</strong>
-          </article>
-        </div>
-      ) : null}
-      {isTraffic ? (
         <div className="map-traffic-legend" aria-label="vessel legend">
           {vesselLegend.map((item) => (
             <span data-type={item.type} key={item.type}>
@@ -160,11 +144,29 @@ export function CaseMap({
           ))}
         </div>
       ) : null}
-      <div className="map-caption">
-        {isTraffic
-          ? "边界说明：UAE 是阿拉伯联合酋长国（阿联酋）。当前船点是 AIS-style 示例叠加，不是本站实时抓取；正式使用前必须把 live JSON 纳入 data pipeline，并显示 source_url、retrieved_at 与 AIS 局限。"
-          : "Static geography only: country outlines use Natural Earth-style admin geometry; route overlays are explanatory and do not represent live vessel positions or current throughput."}
-      </div>
+      {isTraffic ? (
+        <div className="map-reference-panel" aria-label="map data boundary">
+          <article>
+            <span>网页参考</span>
+            <a href="https://www.shipxy.com/special/hormuz" rel="noreferrer" target="_blank">
+              ShipXY 霍尔木兹专题
+            </a>
+          </article>
+          <article>
+            <span>当前状态</span>
+            <strong>示意层，不进入本站动态快照</strong>
+          </article>
+          <p>
+            UAE 指阿拉伯联合酋长国（阿联酋）。图中的船点和航向用于说明可视化目标，不代表本站实时 AIS；
+            正式接入前必须先进入 data pipeline，并在界面显示 source_url、retrieved_at 与 AIS 局限。
+          </p>
+        </div>
+      ) : (
+        <div className="map-caption">
+          Static geography only: country outlines use Natural Earth-style admin geometry;
+          route overlays are explanatory and do not represent live vessel positions or current throughput.
+        </div>
+      )}
     </section>
   );
 }

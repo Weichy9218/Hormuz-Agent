@@ -121,10 +121,10 @@ function HeroPanel({ snapshot }: { snapshot: OverviewSnapshot }) {
     <section className="console-card overview-product-hero">
       <div className="overview-hero-copy">
         <span className="overview-page-kicker">单案例预测工作台</span>
-        <h1>用霍尔木兹这个深度 case，看事件、市场和预测 agent 如何被放在一起复核。</h1>
+        <h1>霍尔木兹风险复核台</h1>
         <p>
-          这里不是新闻聚合页、交易面板或实时 AIS 系统。Overview 只帮 reviewer 在 30 秒内建立语境：
-          发生了什么、哪些是本地动态快照、哪些只是解释层。真正的预测过程在 Forecast Agent。
+          以霍尔木兹为深度案例，把事件时间线、市场背景和 Forecast Agent 放到同一张复核桌上。
+          Overview 只负责建立语境；真正的预测过程在 Forecast Agent。
         </p>
         <div className="overview-hero-actions" aria-label="primary overview links">
           <a href="/forecast">
