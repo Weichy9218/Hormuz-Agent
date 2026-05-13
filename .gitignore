@@ -18,7 +18,12 @@ scripts/.snapshot.json
 # Keep main_agent.jsonl / final_forecast / checkpoint / run-meta /
 # run-artifact / task_summary inside data/galaxy/runs/, but never commit
 # the per-call search/web/tool_artifacts caches.
-data/raw/
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/traffic/
+!data/raw/traffic/**
+!data/raw/stooq/
+!data/raw/stooq/**
 data/galaxy/runs/**/search/
 data/galaxy/runs/**/web/
 data/galaxy/runs/**/tool_artifacts/

@@ -1,7 +1,191 @@
 {
-  "built_at": "2026-05-12T20:14:16.369Z",
-  "data_as_of": "2026-05-13T00:00:00Z",
+  "built_at": "2026-05-13T03:36:36.089Z",
+  "data_as_of": "2026-05-13T01:37:59.886Z",
   "events": [
+    {
+      "event_id": "evt-history-bunker-fuel-shortage-warning-2026",
+      "event_at": "2026-05-13T00:00:00Z",
+      "title": "航运业担忧 bunker fuel 供应短缺",
+      "description": "AP 报道称，Strait of Hormuz 封锁挤压航运燃料供应，船舶运营商开始担忧 bunker fuel 短缺，Singapore 等主要加油枢纽库存下降、价格上升。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://apnews.com/article/db0ba1dbc0bd3ff2179a84118d0064d0",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "elevated",
+      "geography": [
+        "Strait of Hormuz",
+        "Singapore",
+        "Persian Gulf"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "bunker_fuel",
+        "shipping_disruption",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-iran-expands-hormuz-zone-2026",
+      "event_at": "2026-05-12T00:00:00Z",
+      "title": "IRGCN 称 Hormuz 作战范围扩大",
+      "description": "Press TV 报道称，IRGCN 官员 Mohammad Akbarzadeh 表示，伊朗对 Strait of Hormuz 的定义已从有限水域扩大为从 Jask 和 Sirik 海岸延伸至 Greater Tunb Island 以外的战略区域。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Press TV",
+      "source_url": "https://www.presstv.ir/Detail/2026/05/12/768480/Strait-of-Hormuz-now-a-500-kilometer-operational-%E2%80%98crescent%E2%80%99--IRGC-Navy-",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "elevated",
+      "geography": [
+        "Strait of Hormuz",
+        "Jask",
+        "Sirik",
+        "Greater Tunb Island"
+      ],
+      "cross_check_source_urls": [
+        "https://3g.fx678.com/news/detail/202605121759142280",
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic",
+        "vix"
+      ],
+      "tags": [
+        "core_event",
+        "irgc",
+        "hormuz",
+        "operational_zone",
+        "iran"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-uk-joins-hormuz-mission-2026",
+      "event_at": "2026-05-12T00:00:00Z",
+      "title": "英国宣布加入 Hormuz 多国防御任务",
+      "description": "英国政府宣布，将为 Strait of Hormuz 多国防御任务投入 autonomous mine-hunting equipment、counter-drone systems、Typhoon jets 和 HMS Dragon。",
+      "source_type": "official",
+      "source_id": "events-curated",
+      "source_name": "GOV.UK",
+      "source_url": "https://www.gov.uk/government/news/uk-to-contribute-drones-jets-and-warship-to-multinational-mission-to-secure-the-strait-of-hormuz",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "watch",
+      "geography": [
+        "Strait of Hormuz",
+        "United Kingdom",
+        "Persian Gulf"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "traffic",
+        "vix"
+      ],
+      "tags": [
+        "core_event",
+        "naval",
+        "uk",
+        "escort",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-hormuz-ais-spoofing-2026",
+      "event_at": "2026-05-11T00:00:00Z",
+      "title": "Hormuz 周边 AIS 信号干扰扩大",
+      "description": "Insurance Journal 转引 Bloomberg 报道称，Persian Gulf 船舶地理定位数据出现明显异常，约 120 艘船显示在 Abu Dhabi 内陆同一片区域，反映 fresh attacks 后 signal interference 加剧。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Insurance Journal",
+      "source_url": "https://www.insurancejournal.com/news/international/2026/05/11/869271.htm",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "watch",
+      "geography": [
+        "Persian Gulf",
+        "Strait of Hormuz",
+        "Abu Dhabi"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "ais",
+        "gnss",
+        "shipping_risk",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-iran-rejects-us-proposal-2026",
+      "event_at": "2026-05-10T00:00:00Z",
+      "title": "伊朗回应美国停战方案并提出条件",
+      "description": "界面新闻援引公开报道称，伊朗对美国停战方案的回应聚焦结束地区战争、Hormuz 海上安全、解除对伊石油销售限制和解冻资产；特朗普随后称该回应不可接受。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Jiemian",
+      "source_url": "https://m.jiemian.com/article/14406959.html",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "elevated",
+      "geography": [
+        "Iran",
+        "Strait of Hormuz",
+        "United States"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "broad_usd"
+      ],
+      "tags": [
+        "core_event",
+        "diplomatic",
+        "us-iran",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
     {
       "event_id": "evt-history-us-disables-iranian-tankers-2026",
       "event_at": "2026-05-08T00:00:00Z",
@@ -78,6 +262,42 @@
       "curated_at": "2026-05-13T00:00:00Z"
     },
     {
+      "event_id": "evt-history-france-hormuz-carrier-mission-2026",
+      "event_at": "2026-05-06T00:00:00Z",
+      "title": "法国航母编队向 Hormuz 防御任务靠近",
+      "description": "AP 报道称，法国航母打击群向 Suez 以南和 Red Sea 方向移动，为可能的法英 Strait of Hormuz 防御任务做准备。法国军方表示，该任务需等待航运威胁下降且航运业愿意重新使用海峡。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://apnews.com/article/2749dc877f0ac34a0ccd4f0530786009",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "watch",
+      "geography": [
+        "Strait of Hormuz",
+        "Red Sea",
+        "Suez"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "traffic",
+        "vix"
+      ],
+      "tags": [
+        "core_event",
+        "naval",
+        "france",
+        "hormuz",
+        "escort"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
       "event_id": "evt-history-persian-gulf-seafarers-stranded-2026",
       "event_at": "2026-04-27T00:00:00Z",
       "title": "大量船员滞留 Persian Gulf",
@@ -109,6 +329,118 @@
         "shipping_disruption",
         "seafarers",
         "iran"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-iran-captures-two-vessels-2026",
+      "event_at": "2026-04-22T00:00:00Z",
+      "title": "伊朗称在 Hormuz 扣押两艘船",
+      "description": "Al Jazeera 报道称，一艘 container ship 在 Oman 附近遭枪击后，伊朗表示在 Strait of Hormuz 扣押两艘船。报道援引海事情报机构称，该船此前获得通过海峡许可。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Al Jazeera",
+      "source_url": "https://www.aljazeera.com/news/2026/4/22/iranian-gunboat-fires-on-container-ship-off-oman-coast",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Oman",
+        "Gulf of Oman"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic",
+        "vix"
+      ],
+      "tags": [
+        "core_event",
+        "vessel_seizure",
+        "irgc",
+        "shipping_disruption",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-iran-recloses-hormuz-2026",
+      "event_at": "2026-04-18T00:00:00Z",
+      "title": "伊朗再次关闭 Strait of Hormuz",
+      "description": "AP 报道称，伊朗在美国继续执行对伊朗港口的 blockade 后，重新关闭 Strait of Hormuz，并称靠近海峡的船舶可能被视为配合敌方行动。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://apnews.com/article/ab475cb979825b956a10d60103026b37",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman"
+      ],
+      "cross_check_source_urls": [
+        "https://www.pbs.org/newshour/world/irans-military-closes-strait-of-hormuz-again-citing-u-s-blockade"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "broad_usd",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "hormuz",
+        "iran",
+        "blockade",
+        "shipping_disruption"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-iran-reopens-hormuz-2026",
+      "event_at": "2026-04-17T00:00:00Z",
+      "title": "伊朗称 Strait of Hormuz 对商船重新开放",
+      "description": "AP 报道称，伊朗表示已向商业船舶完全重新开放 Strait of Hormuz；同一报道也提到，美国称针对伊朗船舶和港口的 blockade 仍将维持。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://www.military.com/daily-news/2026/04/17/iran-reopens-strait-of-hormuz-trump-says-blockade-iranian-ships-and-ports-will-stay-force.html",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "deescalation",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "hormuz",
+        "shipping_disruption",
+        "deescalation"
       ],
       "curated_by": "manual",
       "curated_at": "2026-05-13T00:00:00Z"
@@ -148,6 +480,191 @@
         "us-iran",
         "shipping_disruption",
         "naval"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-us-blockade-iran-ports-2026",
+      "event_at": "2026-04-13T00:00:00Z",
+      "title": "美国开始封锁伊朗港口相关航运",
+      "description": "Reuters 报道称，美国军方开始限制进出伊朗港口的海上交通；CENTCOM 同时称，非伊朗目的地船舶穿越 Strait of Hormuz 的航行自由不受该措施影响。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Reuters",
+      "source_url": "https://www.investing.com/news/world-news/us-to-blockade-iran-after-talks-fail-to-yield-adeal-4609134",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Gulf of Oman",
+        "Iran"
+      ],
+      "cross_check_source_urls": [
+        "https://www.kpbs.org/news/national/2026/04/13/trump-vows-to-sink-iranian-ships-approaching-a-u-s-blockade-of-strait-of-hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "broad_usd",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "blockade",
+        "us-iran",
+        "naval",
+        "shipping_disruption"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-ships-signal-china-links-2026",
+      "event_at": "2026-03-12T00:00:00Z",
+      "title": "部分商船在 Hormuz 周边标示 China-linked",
+      "description": "AP 基于 MarineTraffic 数据报道称，部分 Persian Gulf 和 Strait of Hormuz 周边商船在 AIS destination signals 中标示 China-linked，以降低被攻击风险。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Associated Press",
+      "source_url": "https://apnews.com/article/6f86d32df52abc738f9cdf5bc825cc20",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "watch",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "ais",
+        "shipping_risk",
+        "hormuz",
+        "china"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-hormuz-traffic-near-standstill-2026",
+      "event_at": "2026-03-08T00:00:00Z",
+      "title": "Hormuz 船舶通行接近停滞",
+      "description": "Bloomberg 经 World Oil 转载的船舶追踪报道显示，Strait of Hormuz 航运连续第七天接近停滞，过去 24 小时内仅观察到少量 Iran-linked commercial ships 通过。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "World Oil",
+      "source_url": "https://www.worldoil.com/news/2026/3/8/only-iran-linked-vessels-transiting-strait-of-hormuz-amid-shipping-halt/",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "traffic",
+        "shipping_disruption",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-irgc-confirms-hormuz-closed-2026",
+      "event_at": "2026-03-02T00:00:00Z",
+      "title": "IRGC 称 Strait of Hormuz 已关闭",
+      "description": "Al Jazeera 报道称，IRGC 高级人士表示 Strait of Hormuz 已关闭，并警告任何试图通过的船只将遭到攻击。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Al Jazeera",
+      "source_url": "https://www.aljazeera.com/news/2026/3/2/iran-says-will-attack-any-ship-trying-to-pass-through-strait-of-hormuz",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Persian Gulf",
+        "Gulf of Oman"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "vix",
+        "broad_usd",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "hormuz",
+        "iran",
+        "shipping_disruption",
+        "irgc"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-skylight-attacked-2026",
+      "event_at": "2026-03-01T00:00:00Z",
+      "title": "Tanker Skylight 在 Oman 附近遭袭",
+      "description": "Oman Maritime Security Centre 称，Palau-flagged tanker Skylight 在 Khasab 港以北海域遭袭。JMIC 后续 advisory 将该事件列为 Hormuz 区域 serious attack。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Ship & Bunker",
+      "source_url": "https://shipandbunker.com/news/world/322455-us-sanctioned-tanker-attacked-off-oman",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "severe",
+      "geography": [
+        "Strait of Hormuz",
+        "Oman",
+        "Khasab"
+      ],
+      "cross_check_source_urls": [
+        "https://dbce.org/wp-content/uploads/2026/03/Update-017-JMIC-Advisory-Note-17-Mar_FINAL.pdf"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "tanker",
+        "attack",
+        "hormuz"
       ],
       "curated_by": "manual",
       "curated_at": "2026-05-13T00:00:00Z"
@@ -338,6 +855,76 @@
       "curated_at": "2026-05-13T00:00:00Z"
     },
     {
+      "event_id": "evt-history-niovi-seized-2023",
+      "event_at": "2023-05-03T00:00:00Z",
+      "title": "IRGCN 在 Strait of Hormuz 扣押 Niovi",
+      "description": "美国海军称，Panama-flagged oil tanker Niovi 在穿越 Strait of Hormuz 时被 IRGCN 快艇围堵并扣押。这是同一周内第二起伊朗扣押商船事件。",
+      "source_type": "official",
+      "source_id": "events-curated",
+      "source_name": "U.S. Navy",
+      "source_url": "https://www.navy.mil/Press-Office/News-Stories/display-news/Article/3382689/second-merchant-vessel-seized-within-a-week-by-iran/",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "elevated",
+      "geography": [
+        "Strait of Hormuz"
+      ],
+      "cross_check_source_urls": [
+        "https://news.usni.org/2023/05/03/video-iran-seizes-second-oil-tanker-in-less-than-a-week"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "irgc",
+        "vessel_seizure",
+        "niovi",
+        "iran"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-advantage-sweet-seized-2023",
+      "event_at": "2023-04-27T00:00:00Z",
+      "title": "伊朗在 Gulf of Oman 扣押 Advantage Sweet",
+      "description": "美国海军称，Marshall Islands-flagged tanker Advantage Sweet 在 Gulf of Oman 国际水域被伊朗海军扣押。这是 2023 年 Hormuz 周边航运紧张的早期节点之一。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "USNI News",
+      "source_url": "https://news.usni.org/2023/04/27/centcom-iranian-naval-forces-seize-tanker-advantage-sweet-in-gulf-of-oman",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "elevated",
+      "geography": [
+        "Gulf of Oman",
+        "Strait of Hormuz"
+      ],
+      "cross_check_source_urls": [
+        "https://apnews.com/article/3a906e909be2ce63c87c1b208ed05baa"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic"
+      ],
+      "tags": [
+        "core_event",
+        "vessel_seizure",
+        "iran",
+        "gulf_of_oman"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
       "event_id": "evt-history-iran-seizes-greek-tankers-2022",
       "event_at": "2022-05-27T00:00:00Z",
       "title": "伊朗扣押两艘希腊油轮",
@@ -379,13 +966,13 @@
       "source_id": "events-curated",
       "source_name": "Associated Press",
       "source_type": "media",
-      "event_count": 5
+      "event_count": 10
     },
     {
       "source_id": "events-curated",
       "source_name": "Al Jazeera",
       "source_type": "media",
-      "event_count": 2
+      "event_count": 4
     },
     {
       "source_id": "events-curated",
@@ -395,50 +982,132 @@
     },
     {
       "source_id": "events-curated",
+      "source_name": "GOV.UK",
+      "source_type": "official",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "Insurance Journal",
+      "source_type": "media",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "Jiemian",
+      "source_type": "media",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "Press TV",
+      "source_type": "media",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "Reuters",
+      "source_type": "media",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "Ship & Bunker",
+      "source_type": "media",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "U.S. Navy",
+      "source_type": "official",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
       "source_name": "US Department of Defense",
       "source_type": "official",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "USNI News",
+      "source_type": "media",
+      "event_count": 1
+    },
+    {
+      "source_id": "events-curated",
+      "source_name": "World Oil",
+      "source_type": "media",
       "event_count": 1
     }
   ],
   "topic_index": [
     {
       "tag": "core_event",
-      "event_count": 10
-    },
-    {
-      "tag": "iran",
-      "event_count": 6
-    },
-    {
-      "tag": "us-iran",
-      "event_count": 6
+      "event_count": 26
     },
     {
       "tag": "hormuz",
-      "event_count": 4
+      "event_count": 17
     },
     {
-      "tag": "naval",
-      "event_count": 4
+      "tag": "iran",
+      "event_count": 11
     },
     {
       "tag": "shipping_disruption",
-      "event_count": 3
+      "event_count": 10
+    },
+    {
+      "tag": "us-iran",
+      "event_count": 8
+    },
+    {
+      "tag": "naval",
+      "event_count": 7
     },
     {
       "tag": "irgc",
-      "event_count": 2
+      "event_count": 6
     },
     {
       "tag": "vessel_seizure",
+      "event_count": 5
+    },
+    {
+      "tag": "blockade",
+      "event_count": 3
+    },
+    {
+      "tag": "ais",
       "event_count": 2
     },
     {
       "tag": "attack",
+      "event_count": 2
+    },
+    {
+      "tag": "escort",
+      "event_count": 2
+    },
+    {
+      "tag": "shipping_risk",
+      "event_count": 2
+    },
+    {
+      "tag": "bunker_fuel",
       "event_count": 1
     },
     {
-      "tag": "blockade",
+      "tag": "china",
+      "event_count": 1
+    },
+    {
+      "tag": "deescalation",
+      "event_count": 1
+    },
+    {
+      "tag": "diplomatic",
       "event_count": 1
     },
     {
@@ -446,7 +1115,19 @@
       "event_count": 1
     },
     {
+      "tag": "france",
+      "event_count": 1
+    },
+    {
+      "tag": "gnss",
+      "event_count": 1
+    },
+    {
       "tag": "greece",
+      "event_count": 1
+    },
+    {
+      "tag": "gulf_of_oman",
       "event_count": 1
     },
     {
@@ -466,7 +1147,15 @@
       "event_count": 1
     },
     {
+      "tag": "niovi",
+      "event_count": 1
+    },
+    {
       "tag": "nuclear",
+      "event_count": 1
+    },
+    {
+      "tag": "operational_zone",
       "event_count": 1
     },
     {
@@ -482,8 +1171,299 @@
       "event_count": 1
     },
     {
+      "tag": "tanker",
+      "event_count": 1
+    },
+    {
       "tag": "tankers",
       "event_count": 1
+    },
+    {
+      "tag": "traffic",
+      "event_count": 1
+    },
+    {
+      "tag": "uk",
+      "event_count": 1
+    }
+  ],
+  "topic_cloud": [
+    {
+      "key": "shipping_disruption",
+      "label": "shipping disruption",
+      "event_count": 12,
+      "event_ids": [
+        "evt-history-advantage-sweet-seized-2023",
+        "evt-history-bunker-fuel-shortage-warning-2026",
+        "evt-history-france-hormuz-carrier-mission-2026",
+        "evt-history-hormuz-traffic-near-standstill-2026",
+        "evt-history-iran-captures-two-vessels-2026",
+        "evt-history-iran-claims-hormuz-shut-2026",
+        "evt-history-iran-recloses-hormuz-2026",
+        "evt-history-iran-reopens-hormuz-2026",
+        "evt-history-irgc-confirms-hormuz-closed-2026",
+        "evt-history-persian-gulf-seafarers-stranded-2026",
+        "evt-history-us-blockade-iran-ports-2026",
+        "evt-history-us-iran-blockade-expanded-2026"
+      ],
+      "source_tags": [
+        "shipping_disruption",
+        "text"
+      ],
+      "weight": 1
+    },
+    {
+      "key": "naval",
+      "label": "naval",
+      "event_count": 9,
+      "event_ids": [
+        "evt-history-advantage-sweet-seized-2023",
+        "evt-history-france-hormuz-carrier-mission-2026",
+        "evt-history-niovi-seized-2023",
+        "evt-history-uk-joins-hormuz-mission-2026",
+        "evt-history-us-blockade-iran-ports-2026",
+        "evt-history-us-deploys-gulf-assets-2023",
+        "evt-history-us-disables-iranian-tankers-2026",
+        "evt-history-us-intercepts-iranian-attacks-ships-2026",
+        "evt-history-us-iran-blockade-expanded-2026"
+      ],
+      "source_tags": [
+        "naval",
+        "text"
+      ],
+      "weight": 0.866
+    },
+    {
+      "key": "us-iran",
+      "label": "US-Iran",
+      "event_count": 8,
+      "event_ids": [
+        "evt-history-iaea-iran-uranium-acceleration-2025",
+        "evt-history-iran-claims-hormuz-shut-2026",
+        "evt-history-iran-rejects-us-proposal-2026",
+        "evt-history-us-blockade-iran-ports-2026",
+        "evt-history-us-deploys-gulf-assets-2023",
+        "evt-history-us-disables-iranian-tankers-2026",
+        "evt-history-us-intercepts-iranian-attacks-ships-2026",
+        "evt-history-us-iran-blockade-expanded-2026"
+      ],
+      "source_tags": [
+        "us-iran"
+      ],
+      "weight": 0.816
+    },
+    {
+      "key": "irgc",
+      "label": "IRGC",
+      "event_count": 6,
+      "event_ids": [
+        "evt-history-iran-captures-two-vessels-2026",
+        "evt-history-iran-expands-hormuz-zone-2026",
+        "evt-history-iran-seizes-greek-tankers-2022",
+        "evt-history-irgc-confirms-hormuz-closed-2026",
+        "evt-history-irgc-seizes-msc-aries-2024",
+        "evt-history-niovi-seized-2023"
+      ],
+      "source_tags": [
+        "irgc",
+        "text"
+      ],
+      "weight": 0.707
+    },
+    {
+      "key": "vessel_seizure",
+      "label": "vessel seizure",
+      "event_count": 6,
+      "event_ids": [
+        "evt-history-advantage-sweet-seized-2023",
+        "evt-history-iran-captures-two-vessels-2026",
+        "evt-history-iran-seizes-greek-tankers-2022",
+        "evt-history-irgc-seizes-msc-aries-2024",
+        "evt-history-niovi-seized-2023",
+        "evt-history-us-deploys-gulf-assets-2023"
+      ],
+      "source_tags": [
+        "text",
+        "vessel_seizure"
+      ],
+      "weight": 0.707
+    },
+    {
+      "key": "blockade",
+      "label": "blockade",
+      "event_count": 5,
+      "event_ids": [
+        "evt-history-bunker-fuel-shortage-warning-2026",
+        "evt-history-iran-recloses-hormuz-2026",
+        "evt-history-iran-reopens-hormuz-2026",
+        "evt-history-us-blockade-iran-ports-2026",
+        "evt-history-us-iran-blockade-expanded-2026"
+      ],
+      "source_tags": [
+        "blockade",
+        "text"
+      ],
+      "weight": 0.645
+    },
+    {
+      "key": "tanker",
+      "label": "tanker",
+      "event_count": 5,
+      "event_ids": [
+        "evt-history-advantage-sweet-seized-2023",
+        "evt-history-iran-seizes-greek-tankers-2022",
+        "evt-history-niovi-seized-2023",
+        "evt-history-skylight-attacked-2026",
+        "evt-history-us-disables-iranian-tankers-2026"
+      ],
+      "source_tags": [
+        "tanker",
+        "tankers",
+        "text"
+      ],
+      "weight": 0.645
+    },
+    {
+      "key": "ais",
+      "label": "AIS",
+      "event_count": 2,
+      "event_ids": [
+        "evt-history-hormuz-ais-spoofing-2026",
+        "evt-history-ships-signal-china-links-2026"
+      ],
+      "source_tags": [
+        "ais",
+        "text"
+      ],
+      "weight": 0.408
+    },
+    {
+      "key": "attack",
+      "label": "attack",
+      "event_count": 2,
+      "event_ids": [
+        "evt-history-skylight-attacked-2026",
+        "evt-history-us-intercepts-iranian-attacks-ships-2026"
+      ],
+      "source_tags": [
+        "attack"
+      ],
+      "weight": 0.408
+    },
+    {
+      "key": "drone",
+      "label": "drone",
+      "event_count": 2,
+      "event_ids": [
+        "evt-history-iran-direct-attack-israel-2024",
+        "evt-history-uk-joins-hormuz-mission-2026"
+      ],
+      "source_tags": [
+        "drone",
+        "text"
+      ],
+      "weight": 0.408
+    },
+    {
+      "key": "escort",
+      "label": "escort",
+      "event_count": 2,
+      "event_ids": [
+        "evt-history-france-hormuz-carrier-mission-2026",
+        "evt-history-uk-joins-hormuz-mission-2026"
+      ],
+      "source_tags": [
+        "escort"
+      ],
+      "weight": 0.408
+    },
+    {
+      "key": "missile",
+      "label": "missile",
+      "event_count": 2,
+      "event_ids": [
+        "evt-history-iran-claims-hormuz-shut-2026",
+        "evt-history-iran-direct-attack-israel-2024"
+      ],
+      "source_tags": [
+        "missile",
+        "text"
+      ],
+      "weight": 0.408
+    },
+    {
+      "key": "shipping_risk",
+      "label": "shipping_risk",
+      "event_count": 2,
+      "event_ids": [
+        "evt-history-hormuz-ais-spoofing-2026",
+        "evt-history-ships-signal-china-links-2026"
+      ],
+      "source_tags": [
+        "shipping_risk"
+      ],
+      "weight": 0.408
+    },
+    {
+      "key": "bunker_fuel",
+      "label": "bunker fuel",
+      "event_count": 1,
+      "event_ids": [
+        "evt-history-bunker-fuel-shortage-warning-2026"
+      ],
+      "source_tags": [
+        "bunker_fuel",
+        "text"
+      ],
+      "weight": 0.289
+    },
+    {
+      "key": "china",
+      "label": "china",
+      "event_count": 1,
+      "event_ids": [
+        "evt-history-ships-signal-china-links-2026"
+      ],
+      "source_tags": [
+        "china"
+      ],
+      "weight": 0.289
+    },
+    {
+      "key": "deescalation",
+      "label": "deescalation",
+      "event_count": 1,
+      "event_ids": [
+        "evt-history-iran-reopens-hormuz-2026"
+      ],
+      "source_tags": [
+        "deescalation"
+      ],
+      "weight": 0.289
+    },
+    {
+      "key": "diplomatic",
+      "label": "diplomatic",
+      "event_count": 1,
+      "event_ids": [
+        "evt-history-iran-rejects-us-proposal-2026"
+      ],
+      "source_tags": [
+        "diplomatic"
+      ],
+      "weight": 0.289
+    },
+    {
+      "key": "france",
+      "label": "france",
+      "event_count": 1,
+      "event_ids": [
+        "evt-history-france-hormuz-carrier-mission-2026"
+      ],
+      "source_tags": [
+        "france"
+      ],
+      "weight": 0.289
     }
   ]
 }

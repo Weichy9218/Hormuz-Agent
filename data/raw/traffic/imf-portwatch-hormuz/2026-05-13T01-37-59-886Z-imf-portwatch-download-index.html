@@ -1,0 +1,373 @@
+
+
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/stock/modules/data.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+  integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+  crossorigin="anonymous"
+/>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://js.arcgis.com/4.28/"></script>
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+  integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+  crossorigin="anonymous"
+/>
+<script src="portwatch-monitor.js"></script>
+<link rel="stylesheet" type="text/css" href="portwatch-monitor.css" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"
+></script>
+
+<div
+  style="
+    text-align: right;
+    padding-right: 20;
+    padding-top: 10;
+    color: #c0c0c0;
+    font-size: 1vw;
+  "
+>
+  <p>
+    <img
+      src="https://imf-dataviz.maps.arcgis.com/sharing/rest/content/items/19b92a4413c34407878791299acde8d7/resources/clock_pw.png"
+      style="padding-right: 5px"
+    />
+    <span>Updated: </span><span id="latest"></span>
+  </p>
+</div>
+<div class="card text-center">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs justify-content-center">
+      <li class="nav-item">
+        <a class="nav-link active" href="#" id="value">TRADE VALUE</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" id="volume">TRADE VOLUME</a>
+      </li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <br />
+    
+  </div>
+  <br />
+  <div style="margin-right: auto; margin-left: auto; width: 80%">
+    <span class="source" style="text-align: justify"
+      >This is not an official estimate of the IMF. Rather, this page presents
+      an experimental nowcasting model of global maritime trade, leveraging
+      real-time satellite data on vessel movements. The model aims to provide a
+      timely indicator of global merchandise trade. Exports and imports are both
+      valued on a free-on-board (fob) basis. The estimates are updated on a
+      monthly basis with a lag of 7 working days and are subject to weekly
+      revisions. For background on the methodology, please see
+      <a
+        href="https://www.imf.org/en/Publications/WP/Issues/2025/05/16/Nowcasting-Global-Trade-from-Space-566957"
+        target="_blank"
+        style="color: #3b9ec5"
+        >here</a
+      >. For limitations of the data and approach, please see
+      <a
+        href="https://portwatch.imf.org/pages/faqs"
+        target="_blank"
+        style="color: #3b9ec5"
+        >here</a
+      >.
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="row" class="ts" id="div-WLD-trade">
+      <div class="row" class="ts" style="padding-top: 20; padding-bottom: 20">
+        <div><span id="title-WLD-trade" class="title-text"></span></div>
+        <span
+          id="sentence-text-trade"
+          class="sentence-text"
+          style="text-align: left"
+        ></span>
+        <span class="ytitle-WLD"></span>
+      </div>
+      <figure class="highcharts-figure">
+        <div id="container-WLD-trade"></div>
+      </figure>
+    </div>
+    <div class="row" class="ts">
+      <div class="col">
+        <div class="row" class="ts" style="padding-top: 20; padding-bottom: 20">
+          <div><span id="title-WLD-import" class="title-text"></span></div>
+          <span id="sentence-text-import" class="sentence-text"></span>
+          <span class="ytitle-WLD"></span>
+        </div>
+        <figure class="highcharts-figure">
+          <div id="container-WLD-import"></div>
+        </figure>
+      </div>
+      <div class="col">
+        <div class="row" class="ts" style="padding-top: 20; padding-bottom: 20">
+          <div><span id="title-WLD-export" class="title-text"></span></div>
+          <span id="sentence-text-export" class="sentence-text"></span>
+          <span class="ytitle-WLD"></span>
+        </div>
+        <figure class="highcharts-figure">
+          <div id="container-WLD-export"></div>
+        </figure>
+      </div>
+    </div>
+  </div>
+  <div style="margin-right: 12px; margin-left: 12px">
+    <span
+      class="source"
+      style="float: right; text-align: right; padding-bottom: 20"
+      >Source: Arslanalp S., S. M. Choi, P. Kamali, R. Koepke, M. McKetty, M.
+      Ruta, M. Saraiva, A. Sozzi, and J. Verschuur (2025), "Nowcasting Global
+      Trade from Space," IMF Working Paper 25/93.</span
+    >
+  </div>
+  <br />
+  <br />
+  <br />
+</div>
+
+<script>
+  var baseUrl =
+    "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Monthly_TradeNow/FeatureServer/0";
+
+  Highcharts.SVGRenderer.prototype.symbols.download = downloadSymbol;
+
+  var showSummaryOn = true;
+
+  var chartsExtent = function (series, chartType, suffix = "") {
+    /**
+     * Helper function to calculate the Y axis min/max for the charts
+     * @param {Array} series - Array of objects with the data
+     * @param {String} chartType - Type of chart (trade, import, export)
+     * @param {String} suffix - Suffix to append to the column names (e.g. _GR_MA)
+     */
+    var columns = [
+      "trade_" + chartType + suffix,
+      "import_" + chartType + suffix,
+      "export_" + chartType + suffix,
+    ];
+
+    allMin = columns.map((col) => seriesMin(series.map((s) => s[col])));
+    allMax = columns.map((col) => seriesMax(series.map((s) => s[col])));
+
+    return [Math.min(...allMin), Math.max(...allMax)];
+  };
+
+  var dynamicText = function (lastObs, tabSelected, chart) {
+    /**
+     * Helper function to generate dynamic text for the summary sentence
+     * @param {Object} lastObs - The last observation object from the series
+     * @param {String} tabSelected - The currently selected tab (value or volume)
+     * @param {String} chart - The type of chart (trade, import, export)
+     */
+
+    lastPeriodEnd = new Date(lastObs["date"]);
+    lastPeriodStart = new Date(
+      lastPeriodEnd.getUTCFullYear(),
+      lastPeriodEnd.getUTCMonth() - 2,
+      1
+    );
+    console.log(lastPeriodStart, lastPeriodEnd);
+
+    lastPeriodEnd = lastPeriodEnd.toLocaleDateString("en-us", {
+      year: "numeric",
+      month: "long",
+      timeZone: "UTC",
+    });
+    lastPeriodStart = lastPeriodStart.toLocaleDateString("en-us", {
+      year: "numeric",
+      month: "long",
+      timeZone: "UTC",
+    });
+    key = chart + "_" + tabSelected; // e.g. trade_value/volume, import_value/volume, export_value/volume
+    lastValue = Math.round(lastObs[key + "_GR_MA"] * 10) / 10;
+    trend = lastValue > 0 ? "increased" : "decreased";
+
+    return (
+      "Global maritime <b class='text-highlight'>" +
+      strCapitalize(key, (separator = "_")) +
+      "</b> over <b class='text-highlight'>" +
+      lastPeriodStart +
+      "-" +
+      lastPeriodEnd +
+      "</b> is estimated to have <b class='text-highlight'>" +
+      trend +
+      "</b> by <b class='text-highlight'>" +
+      lastValue +
+      " percent</b> compared to a year ago."
+    );
+  };
+
+  var dynamicTitle = function (tabSelected, chart) {
+    /**
+     * Helper function to generate dynamic text for the Y label
+     * @param {String} tabSelected - The currently selected tab (value or volume)
+     * @param {String} chart - The type of chart (trade, import, export)
+     */
+    return "World " + strCapitalize(chart) + " " + strCapitalize(tabSelected);
+  };
+
+  var dynamicYLabel = function (tabSelected) {
+    /**
+     * Helper function to generate dynamic text for the Y label
+     * @param {String} tabSelected - The currently selected tab (value or volume)
+     */
+    if (tabSelected == "value")
+      return "Maritime trade in US dollars, 3-month moving average, year on year change (%)";
+    else
+      return "Maritime trade in constant prices, 3-month moving average, year on year change (%)";
+  };
+
+  $(document).ready(function () {
+    queryAndChartData("WLD");
+  });
+
+  $.get(
+    "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Monthly_TradeNow/FeatureServer/0?f=json",
+    function (data) {
+      const lastEditDate = new Date(
+        data.editingInfo.dataLastEditDate
+      ).toLocaleDateString("en-us", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      });
+      $("#latest").html(lastEditDate);
+    }
+  );
+
+  var queryAndChartData = function (regionid) {
+    require(["esri/layers/FeatureLayer", "esri/rest/support/Query"], (
+      FeatureLayer,
+      Query
+    ) => {
+      const layer = new FeatureLayer({
+        url: baseUrl,
+      });
+
+      const query = new Query({
+        where: "ISO3='" + regionid + "'",
+        returnGeometry: false,
+        outFields: "*",
+        maxRecordCountFactor: 5,
+        cacheHint: true,
+      });
+
+      layer.queryFeatures(query).then((result) => {
+        var tabSelected = $("a.nav-link.active").attr("id");
+        var series = generateData(result.features);
+        var lastObs = series[series.length - 1];
+        var lastMonth = new Date(lastObs["date"]).toLocaleDateString("en-us", {
+          year: "numeric",
+          month: "long",
+          timeZone: "UTC",
+        });
+        // Get max and min for Y axis for all charts
+        const yExtents = {
+          value_GR: chartsExtent(series, "value", "_GR"),
+          volume_GR: chartsExtent(series, "volume", "_GR"),
+        };
+
+        console.log(series);
+        console.log(lastObs["date"]);
+
+        $("#title-WLD-trade").html(dynamicTitle(tabSelected, "trade"));
+        $("#title-WLD-import").html(dynamicTitle(tabSelected, "import"));
+        $("#title-WLD-export").html(dynamicTitle(tabSelected, "export"));
+
+        $(".ytitle-WLD").html(dynamicYLabel(tabSelected));
+
+        $("#sentence-text-trade").html(
+          dynamicText(lastObs, tabSelected, "trade")
+        );
+
+        $("#sentence-text-import").html(
+          dynamicText(lastObs, tabSelected, "import")
+        );
+
+        $("#sentence-text-export").html(
+          dynamicText(lastObs, tabSelected, "export")
+        );
+
+        createGrowthRateChart(
+          series,
+          "WLD",
+          "container-WLD-trade",
+          "trade_value",
+          yExtents["value_GR"]
+        );
+        createGrowthRateChart(
+          series,
+          "WLD",
+          "container-WLD-import",
+          "import_value",
+          yExtents["value_GR"]
+        );
+        createGrowthRateChart(
+          series,
+          "WLD",
+          "container-WLD-export",
+          "export_value",
+          yExtents["value_GR"]
+        );
+
+        $(".nav.nav-tabs.card-header-tabs > li").on("click", function (e) {
+          $(".nav.nav-tabs.card-header-tabs > li > a").removeClass("active");
+          $(this).children().addClass("active");
+          tabSelected = $("a.nav-link.active").attr("id");
+
+          $("#title-WLD-trade").html(dynamicTitle(tabSelected, "trade"));
+          $("#title-WLD-import").html(dynamicTitle(tabSelected, "import"));
+          $("#title-WLD-export").html(dynamicTitle(tabSelected, "export"));
+
+          $(".ytitle-WLD").html(dynamicYLabel(tabSelected));
+
+          $("#sentence-text-trade").html(
+            dynamicText(lastObs, tabSelected, "trade")
+          );
+
+          $("#sentence-text-import").html(
+            dynamicText(lastObs, tabSelected, "import")
+          );
+
+          $("#sentence-text-export").html(
+            dynamicText(lastObs, tabSelected, "export")
+          );
+
+          createGrowthRateChart(
+            series,
+            "WLD",
+            "container-WLD-trade",
+            "trade_" + tabSelected,
+            yExtents[tabSelected + "_GR"]
+          );
+          createGrowthRateChart(
+            series,
+            "WLD",
+            "container-WLD-import",
+            "import_" + tabSelected,
+            yExtents[tabSelected + "_GR"]
+          );
+          createGrowthRateChart(
+            series,
+            "WLD",
+            "container-WLD-export",
+            "export_" + tabSelected,
+            yExtents[tabSelected + "_GR"]
+          );
+        });
+      });
+    });
+  };
+</script>

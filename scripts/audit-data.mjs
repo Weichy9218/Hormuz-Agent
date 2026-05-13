@@ -14,6 +14,7 @@ const canonicalStoreUrl = new URL("../src/state/canonicalStore.ts", import.meta.
 const normalizedFredUrl = new URL("../data/normalized/market/fred_series.csv", import.meta.url);
 const generatedMarketUrl = new URL("../data/generated/market_series.json", import.meta.url);
 const generatedMarketChartUrl = new URL("../data/generated/market_chart.json", import.meta.url);
+const generatedNewsTimelineUrl = new URL("../data/generated/news_timeline.json", import.meta.url);
 const baselineUrl = new URL("../data/normalized/baseline/hormuz_baseline.json", import.meta.url);
 const sourceRegistryJsonUrl = new URL("../data/registry/sources.json", import.meta.url);
 const advisoriesUrl = new URL("../data/normalized/maritime/advisories.jsonl", import.meta.url);
@@ -22,6 +23,7 @@ const sourceObservationsUrl = new URL("../data/observations/source_observations.
 const evidenceClaimsUrl = new URL("../data/evidence/evidence_claims.jsonl", import.meta.url);
 const canonicalInputsUrl = new URL("../data/generated/canonical_inputs.json", import.meta.url);
 const rawFredDir = resolve(root, "data/raw/fred");
+const rawHashCache = new Map();
 
 const fredSeries = {
   DCOILBRENTEU: { label: "Brent spot", target: "brent" },
@@ -158,8 +160,12 @@ async function assertRawHash(record, label) {
   if (!/^sha256:[0-9a-f]{64}$/.test(record.source_hash ?? "")) {
     throw new Error(`${label}: invalid source_hash ${record.source_hash}`);
   }
-  const rawBytes = await readFile(resolve(root, record.raw_path));
-  const actual = `sha256:${createHash("sha256").update(rawBytes).digest("hex")}`;
+  let actual = rawHashCache.get(record.raw_path);
+  if (!actual) {
+    const rawBytes = await readFile(resolve(root, record.raw_path));
+    actual = `sha256:${createHash("sha256").update(rawBytes).digest("hex")}`;
+    rawHashCache.set(record.raw_path, actual);
+  }
   if (actual !== record.source_hash) {
     throw new Error(`${label}: source_hash does not match ${record.raw_path}`);
   }
@@ -270,7 +276,13 @@ function auditSourceRegistry(sourceRegistry) {
       "IEA source registry entry: The structural Hormuz baseline needs its own high-reliability registered source.",
     );
   }
-  for (const sourceId of ["official-advisory", "imf-portwatch-hormuz", "imo-hormuz-monthly", "fred-market"]) {
+  for (const sourceId of [
+    "official-advisory",
+    "imf-portwatch-hormuz",
+    "imo-hormuz-monthly",
+    "fred-market",
+    "stooq-market",
+  ]) {
     if (!byId.has(sourceId)) {
       throw new Error(`${sourceId}: P0 source missing from data/registry/sources.json`);
     }
@@ -323,6 +335,63 @@ async function auditTraffic(rows) {
   if (dailyRows.length < 30) {
     throw new Error("PortWatch normalized traffic must include at least 30 daily chokepoint observations.");
   }
+
+  const dailyAllRows = dailyRows
+    .filter((row) => (row.vessel_type || "all") === "all")
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (dailyAllRows.length < 2_000) {
+    throw new Error(
+      `PortWatch all-vessel daily history has only ${dailyAllRows.length} rows; pagination should cover the full ArcGIS layer.`,
+    );
+  }
+  if (dailyAllRows[0]?.date > "2019-01-02") {
+    throw new Error(
+      `PortWatch all-vessel daily history starts at ${dailyAllRows[0]?.date}; expected coverage from 2019-01-01-ish.`,
+    );
+  }
+
+  const dailyVesselTypes = new Set(dailyRows.map((row) => row.vessel_type || "all"));
+  for (const vesselType of ["all", "tanker", "container", "dry_bulk"]) {
+    if (!dailyVesselTypes.has(vesselType)) {
+      throw new Error(`PortWatch daily traffic missing vessel_type=${vesselType} split.`);
+    }
+  }
+  for (const row of dailyRows) {
+    const vesselText = `${row.vessel_type ?? ""} ${row.metric ?? ""} ${row.caveat ?? ""}`;
+    if (/\b(passenger|cruise)\b/i.test(vesselText)) {
+      throw new Error(`PortWatch ${row.date}: daily endpoint has no passenger/cruise field; do not infer it.`);
+    }
+  }
+
+  const manifestRow =
+    dailyAllRows.find((row) => row.raw_path?.includes("merged")) ??
+    dailyAllRows.find((row) => row.raw_path);
+  if (!manifestRow) {
+    throw new Error("PortWatch daily history missing merged raw manifest lineage.");
+  }
+  const manifest = JSON.parse(await readFile(resolve(root, manifestRow.raw_path), "utf8"));
+  if ((manifest.expected_count ?? 0) > 0 && dailyAllRows.length < manifest.expected_count) {
+    throw new Error(
+      `PortWatch normalized all-vessel rows ${dailyAllRows.length} are below upstream count ${manifest.expected_count}.`,
+    );
+  }
+  if ((manifest.expected_count ?? 0) > 1_000 && (!Array.isArray(manifest.pages) || manifest.pages.length < 2)) {
+    throw new Error("PortWatch raw manifest shows a multi-page layer but does not record pagination pages.");
+  }
+  if (manifest.pages?.some((page) => page.exceededTransferLimit) && dailyAllRows.length < (manifest.expected_count ?? 0)) {
+    throw new Error("PortWatch daily layer exceeded transfer limit, but normalized rows did not reach expected_count.");
+  }
+  if (manifest.stats?.min_date && dailyAllRows[0]?.date > manifest.stats.min_date) {
+    throw new Error(
+      `PortWatch normalized min date ${dailyAllRows[0]?.date} is later than raw stats min_date ${manifest.stats.min_date}.`,
+    );
+  }
+  if (manifest.stats?.max_date && dailyAllRows.at(-1)?.date < manifest.stats.max_date) {
+    throw new Error(
+      `PortWatch normalized max date ${dailyAllRows.at(-1)?.date} is earlier than raw stats max_date ${manifest.stats.max_date}.`,
+    );
+  }
+
   for (const row of dailyRows) {
     if (!Number.isFinite(Number(row.value))) {
       throw new Error(`PortWatch ${row.date}: daily_transit_calls must be numeric.`);
@@ -521,6 +590,57 @@ async function auditGeneratedMarketChart(bundle) {
       }
       await assertRawHash(series, `${series.id ?? series.target}:market_chart`);
     }
+
+    if (series.status === "active" && series.target === "gold") {
+      if (series.id !== "gold-spot") {
+        throw new Error(`${series.id ?? series.target}: active Gold market_chart series must use id=gold-spot.`);
+      }
+      if (series.source_id !== "stooq-market" || series.provider_id !== "stooq") {
+        throw new Error(`${series.id}: active Gold must use stooq-market / stooq lineage.`);
+      }
+      if (series.license_status !== "open") {
+        throw new Error(`${series.id}: active Gold license_status must be open.`);
+      }
+      if ((series.points?.length ?? 0) < 200) {
+        throw new Error(`${series.id}: Stooq Gold history must expose at least 200 daily points.`);
+      }
+      if (!/Stooq XAU\/USD daily OHLC/i.test(series.caveat ?? "") || !/not an LBMA benchmark/i.test(series.caveat ?? "")) {
+        throw new Error(`${series.id}: Gold caveat must state Stooq XAU/USD daily OHLC and not an LBMA benchmark.`);
+      }
+      await assertRawHash(series, `${series.id}:market_chart`);
+    }
+  }
+}
+
+function auditGeneratedNewsTimeline(bundle) {
+  if (!bundle || !Array.isArray(bundle.events)) {
+    throw new Error("news_timeline.json must expose an events array.");
+  }
+  if (!Array.isArray(bundle.topic_cloud) || bundle.topic_cloud.length === 0) {
+    throw new Error("news_timeline.json must expose a non-empty topic_cloud.");
+  }
+  const lowInformationKeys = new Set(["core_event", "hormuz", "iran"]);
+  for (const term of bundle.topic_cloud) {
+    if (!term.key || !term.label || !Number.isFinite(Number(term.weight))) {
+      throw new Error("topic_cloud term missing key/label/weight.");
+    }
+    if (term.weight < 0 || term.weight > 1) {
+      throw new Error(`${term.key}: topic_cloud weight must be normalized to 0..1.`);
+    }
+    if (!Array.isArray(term.event_ids) || term.event_ids.length === 0) {
+      throw new Error(`${term.key}: topic_cloud term must carry event_ids for filtering.`);
+    }
+    if (!Array.isArray(term.source_tags)) {
+      throw new Error(`${term.key}: topic_cloud term must carry folded source_tags.`);
+    }
+    if (lowInformationKeys.has(term.key)) {
+      throw new Error(`${term.key}: topic_cloud must not render low-information global tags.`);
+    }
+  }
+
+  const topTerm = [...bundle.topic_cloud].sort((a, b) => b.weight - a.weight)[0];
+  if (topTerm && lowInformationKeys.has(topTerm.key)) {
+    throw new Error(`${topTerm.key}: topic_cloud top term is a low-information global tag.`);
   }
 }
 
@@ -530,6 +650,7 @@ const canonicalStoreFile = await readFile(canonicalStoreUrl, "utf8");
 const normalizedRows = parseCsv(await readFile(normalizedFredUrl, "utf8"));
 const generatedMarketSeries = JSON.parse(await readFile(generatedMarketUrl, "utf8"));
 const generatedMarketChart = JSON.parse(await readFile(generatedMarketChartUrl, "utf8"));
+const generatedNewsTimeline = JSON.parse(await readFile(generatedNewsTimelineUrl, "utf8"));
 const baselineFacts = JSON.parse(await readFile(baselineUrl, "utf8"));
 const sourceRegistry = JSON.parse(await readFile(sourceRegistryJsonUrl, "utf8"));
 const advisoryRecords = parseJsonl(await readFile(advisoriesUrl, "utf8"));
@@ -544,6 +665,7 @@ auditSourceRegistry(sourceRegistry);
 await auditAdvisories(advisoryRecords);
 await auditTraffic(transitRows);
 await auditGeneratedMarketChart(generatedMarketChart);
+auditGeneratedNewsTimeline(generatedNewsTimeline);
 auditGeneratedCanonicalArtifacts({
   observations: sourceObservations,
   evidenceClaims,

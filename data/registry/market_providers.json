@@ -16,6 +16,22 @@
     "url": "https://fred.stlouisfed.org/docs/api/fred/"
   },
   {
+    "provider_id": "stooq",
+    "display_name": "Stooq",
+    "provider_status": "active",
+    "license_status": "open",
+    "target_ids": ["gold"],
+    "allowed_use": "production_active",
+    "promotion_gate": [
+      "raw Stooq historical-page snapshot exists under data/raw/stooq/xauusd/",
+      "source_hash matches raw JSON payload",
+      "normalized gold_xauusd_history.json contains 1y daily OHLC rows",
+      "UI caveat states Stooq XAU/USD daily OHLC, not LBMA benchmark or futures history"
+    ],
+    "caveat": "Stooq supplies XAU/USD daily OHLC history used as a safe-haven spot proxy; it is not an LBMA benchmark history or futures continuous contract.",
+    "url": "https://stooq.com/q/d/?s=xauusd"
+  },
+  {
     "provider_id": "tushare",
     "display_name": "Tushare",
     "provider_status": "candidate_smoke_test",

@@ -100,11 +100,12 @@ const FRED_SERIES = [
     seriesId: "CPIAUCSL",
     target: "us_cpi",
     id: "us-cpi",
-    label: "US CPI",
+    label: "美国 CPI 指数",
     unit: "index",
     color: "#b45309",
     evidenceEligible: false,
-    caveat: "FRED CPIAUCSL is monthly and lagged; useful for inflation background, not event-window evidence.",
+    caveat:
+      "FRED CPIAUCSL is a monthly, seasonally adjusted CPI index (1982-1984=100), not a year-over-year inflation percent.",
   },
 ];
 

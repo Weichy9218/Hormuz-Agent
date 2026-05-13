@@ -11,6 +11,7 @@ import { InfoTitle } from "../components/shared/InfoTitle";
 import data from "../../data/generated/market_chart.json";
 import type {
   MarketChartBundle,
+  MarketChartMissingPoint,
   MarketChartPoint,
 } from "../types/marketChart";
 
@@ -39,11 +40,14 @@ type WindowRange = {
 
 type ChartSeries = {
   id: string;
+  target: string;
   label: string;
   color: string;
   unit: string;
   status: MarketSeriesItem["status"];
   points: MarketChartPoint[];
+  missingPoints?: MarketChartMissingPoint[];
+  band?: Array<{ date: string; lower: number; upper: number }>;
   dashed?: boolean;
   caveat: string;
 };
@@ -63,8 +67,8 @@ const marketSections: MarketSection[] = [
   },
   {
     title: "美元 / 汇率",
-    subtitle: "USD/CNY 看人民币即期压力，Broad USD 看美元整体避险强弱",
-    ids: ["usd-cny", "broad-usd"],
+    subtitle: "Broad USD 看美元相对一篮子贸易伙伴货币的整体强弱，Gold 用 Stooq XAU/USD daily close 作避险代理",
+    ids: ["broad-usd", "gold-spot"],
   },
   {
     title: "利率 / 波动 / 风险资产",
@@ -73,38 +77,29 @@ const marketSections: MarketSection[] = [
   },
   {
     title: "美国 CPI",
-    subtitle: "月度、滞后发布的通胀背景指标；只作为宏观背景，不解释事件当日价格",
+    subtitle: "FRED CPIAUCSL：月度 CPI 指数，1982-1984=100、季节调整；不是同比通胀率百分比",
     ids: ["us-cpi"],
     wide: true,
   },
 ];
 
-const pendingIds = ["gold-pending", "usd-cnh-pending"];
-
 const indicatorNotes = [
   {
     title: "Gold",
     detail:
-      "黄金是典型避险资产，但 LBMA benchmark 与主流 futures 数据涉及 licence / vendor 边界；没有可审计授权源前保持 pending，不画假走势。",
+      "已接入 Stooq XAU/USD 1 年日线 OHLC，图上使用 Close 作为现货代理。它不是 LBMA Gold Price benchmark 历史序列，也不是 COMEX futures continuous contract。",
   },
   {
-    title: "USD/CNH",
+    title: "Broad USD / VIX",
     detail:
-      "USD/CNH 是离岸人民币汇率，不等于 FRED DEXCHUS 的 USD/CNY。Alpha Vantage / Twelve Data 可做 token 候选源，但需要 raw snapshot、source_hash 和审计后才能上线。",
+      "Broad USD 是 FRED 的广义美元指数，衡量美元相对一篮子贸易伙伴货币的整体强弱，不是兑人民币单一汇率。VIX 更直接反映风险偏好，NASDAQ 保留在 coverage table 作溯源。",
   },
   {
-    title: "VIX vs NASDAQ",
+    title: "美国 CPI",
     detail:
-      "本页主图保留 VIX，隐藏 NASDAQ。VIX 更适合观察油价与航运风险是否扩散到全球风险偏好；NASDAQ 仍保留在 coverage table 里作数据溯源。",
+      "本页使用 FRED CPIAUCSL，全项目 CPI 指数（Index 1982-1984=100，季节调整，月度）。当前 FRED 快照中 2025-10-01 是官方空值，图中标记为缺值，不补 0、不插值。",
   },
 ];
-
-const pendingChineseNotes: Record<string, string> = {
-  "gold-pending":
-    "候选方向：LBMA / ICE benchmark 或 licensed futures vendor。当前未满足 licence 与 raw lineage 要求，因此不生成 live 金价。",
-  "usd-cnh-pending":
-    "候选方向：Alpha Vantage / Twelve Data 等 FX API。必须确认是 offshore CNH，并完成 token、raw snapshot、source_hash 审计后才可提升为 active。",
-};
 
 const marketPageCss = `
 .market-m8-page {
@@ -120,7 +115,6 @@ const marketPageCss = `
 .market-m8-notes-card,
 .market-m8-chart-card,
 .market-m8-section,
-.market-m8-pending-section,
 .market-m8-coverage-card {
   display: grid;
   grid-column: 1 / -1;
@@ -132,12 +126,31 @@ const marketPageCss = `
   grid-template-columns: minmax(280px, 1fr) auto;
   align-items: center;
   border-color: #c9dcf4;
-  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  background: #f8fbff;
 }
 
 .market-m8-control-copy {
   display: grid;
   gap: 8px;
+}
+
+.market-m8-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.65rem, 2.2vw, 2.2rem);
+  font-weight: 920;
+  line-height: 1.04;
+  letter-spacing: 0;
+}
+
+.market-m8-subtitle {
+  margin: 0;
+  max-width: 58rem;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 760;
+  line-height: 1.42;
+  text-wrap: pretty;
 }
 
 .market-m8-control-copy p,
@@ -272,10 +285,12 @@ const marketPageCss = `
   padding: 15px;
   border-color: #d8e4f2;
   background: #fbfdff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .market-m8-chart-card.traffic {
   padding: 18px;
+  border-color: #bdd4ef;
   background: #ffffff;
 }
 
@@ -358,6 +373,13 @@ const marketPageCss = `
   pointer-events: none;
 }
 
+.market-m8-chart-note {
+  padding: 10px 12px;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
 .market-m8-grid-line {
   stroke: #e8eef6;
   stroke-width: 1;
@@ -379,6 +401,10 @@ const marketPageCss = `
 
 .market-m8-line.dashed {
   stroke-dasharray: 7 6;
+}
+
+.market-m8-variance-band {
+  opacity: 0.16;
 }
 
 .market-m8-marker {
@@ -406,6 +432,20 @@ const marketPageCss = `
 .market-m8-structure-label {
   fill: #b45309;
   font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.market-m8-missing-line {
+  stroke: #b91c1c;
+  stroke-width: 1.25;
+  stroke-dasharray: 2 5;
+  opacity: 0.72;
+}
+
+.market-m8-missing-label {
+  fill: #991b1b;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0;
 }
@@ -463,47 +503,6 @@ const marketPageCss = `
   background: #edf2f7;
   font-size: 0.66rem;
   font-weight: 900;
-}
-
-.market-m8-pending-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.market-m8-pending-card {
-  display: grid;
-  gap: 8px;
-  min-height: 132px;
-  padding: 15px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
-  color: #64748b;
-  background: #f8fafc;
-}
-
-.market-m8-pending-card strong {
-  color: #334155;
-  font-size: 0.95rem;
-  font-weight: 900;
-}
-
-.market-m8-pending-card b {
-  width: fit-content;
-  min-height: 24px;
-  padding: 3px 7px;
-  border-radius: 6px;
-  color: #64748b;
-  background: #e2e8f0;
-  font-size: 0.7rem;
-  font-weight: 900;
-}
-
-.market-m8-pending-card p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.8rem;
-  line-height: 1.45;
 }
 
 .market-m8-coverage-wrap {
@@ -587,6 +586,13 @@ const marketPageCss = `
   overflow-wrap: anywhere;
 }
 
+.market-m8-missing-summary {
+  margin-top: 6px;
+  color: #991b1b;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
 @media (max-width: 980px) {
   .market-m8-controls,
   .market-m8-notes-card,
@@ -602,8 +608,7 @@ const marketPageCss = `
     justify-content: flex-start;
   }
 
-  .market-m8-section-grid,
-  .market-m8-pending-grid {
+  .market-m8-section-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -613,7 +618,6 @@ const marketPageCss = `
   .market-m8-notes-card,
   .market-m8-chart-card,
   .market-m8-section,
-  .market-m8-pending-section,
   .market-m8-coverage-card {
     padding: 14px;
   }
@@ -666,10 +670,11 @@ function formatNumber(value: number, digits = 2) {
 }
 
 function formatSeriesValue(series: Pick<MarketSeriesItem, "unit">, value?: number | null) {
-  if (value === null || value === undefined || !Number.isFinite(value)) return "no data";
-  if (series.unit.includes("daily transit")) return `${formatNumber(value, 0)}`;
+  if (value === null || value === undefined || !Number.isFinite(value)) return "无数据";
+  if (isTrafficUnit(series.unit)) return `${formatNumber(value, 0)} 日通过船次`;
   if (series.unit === "%") return `${formatNumber(value, 2)}%`;
-  return `${formatNumber(value, 2)} ${series.unit}`;
+  if (series.unit === "index") return `${formatNumber(value, 2)} 指数点`;
+  return `${formatNumber(value, 2)} ${displayUnit(series.unit)}`;
 }
 
 function makeRange(key: RangeKey): WindowRange {
@@ -689,6 +694,16 @@ function inRange(value: string, range: WindowRange) {
 
 function pointsInRange(points: MarketChartPoint[], range: WindowRange) {
   return points.filter((point) => inRange(point.date, range));
+}
+
+function isTrafficUnit(unit: string) {
+  return unit.includes("daily transit") || unit.includes("日通过船次");
+}
+
+function displayUnit(unit: string) {
+  if (isTrafficUnit(unit)) return "日通过船次";
+  if (unit === "index") return "指数点";
+  return unit;
 }
 
 function lastPoint(points: MarketChartPoint[]) {
@@ -731,6 +746,60 @@ function linePath(
     .join(" ");
 }
 
+function bandPath(
+  band: Array<{ date: string; lower: number; upper: number }>,
+  xForDate: (date: string) => number,
+  yForValue: (value: number) => number,
+  maxGapDays = 3,
+) {
+  if (band.length < 2) return "";
+  const segments: Array<Array<{ date: string; lower: number; upper: number }>> = [];
+  for (const point of band) {
+    const previous = segments.at(-1)?.at(-1);
+    if (!previous || daysBetween(toDayMs(point.date), toDayMs(previous.date)) > maxGapDays) {
+      segments.push([point]);
+    } else {
+      segments.at(-1)?.push(point);
+    }
+  }
+
+  return segments
+    .filter((segment) => segment.length > 1)
+    .map((segment) => {
+      const upper = segment
+        .map((point, index) => `${index === 0 ? "M" : "L"}${xForDate(point.date).toFixed(1)} ${yForValue(point.upper).toFixed(1)}`)
+        .join(" ");
+      const lower = [...segment]
+        .reverse()
+        .map((point) => `L${xForDate(point.date).toFixed(1)} ${yForValue(point.lower).toFixed(1)}`)
+        .join(" ");
+      return `${upper} ${lower} Z`;
+    })
+    .join(" ");
+}
+
+function movingAveragePoints(points: MarketChartPoint[], windowSize: number) {
+  return points.map((point, index) => {
+    const window = points.slice(Math.max(0, index - windowSize + 1), index + 1);
+    const value = window.reduce((sum, item) => sum + item.value, 0) / window.length;
+    return { date: point.date, value: Number(value.toFixed(2)) };
+  });
+}
+
+function rollingVarianceBand(points: MarketChartPoint[], windowSize: number) {
+  return points.map((point, index) => {
+    const window = points.slice(Math.max(0, index - windowSize + 1), index + 1);
+    const mean = window.reduce((sum, item) => sum + item.value, 0) / window.length;
+    const variance = window.reduce((sum, item) => sum + (item.value - mean) ** 2, 0) / window.length;
+    const deviation = Math.sqrt(variance);
+    return {
+      date: point.date,
+      lower: Math.max(0, Number((mean - deviation).toFixed(2))),
+      upper: Number((mean + deviation).toFixed(2)),
+    };
+  });
+}
+
 function overlayOffsets(events: MarketOverlay[]) {
   const grouped = new Map<string, MarketOverlay[]>();
   for (const event of events) {
@@ -762,16 +831,35 @@ function getSeries(id: string) {
   return bundle.series.find((series) => series.id === id);
 }
 
+function isHiddenMarketSeries(series: MarketSeriesItem) {
+  return series.id === "usd-cny" || series.id === "usd-cnh-pending" || series.target === "usd_cny" || series.target === "usd_cnh";
+}
+
 function chartSeriesFrom(series: MarketSeriesItem, range: WindowRange): ChartSeries {
   return {
     id: series.id,
+    target: series.target,
     label: series.label,
     color: series.color,
     unit: series.unit,
     status: series.status,
     points: series.status === "active" ? pointsInRange(series.points, range) : [],
+    missingPoints: series.missing_points?.filter((point) => inRange(point.date, range)),
     caveat: series.caveat,
   };
+}
+
+function trafficLabel(item: Pick<ChartSeries, "id" | "target" | "label"> | Pick<MarketSeriesItem, "id" | "target" | "label">) {
+  if (item.id.includes("smoothed-3d")) return "3日平滑日通行量";
+  if (item.id.includes("variance-3d")) return "3日波动包络";
+  if (item.id.endsWith("-baseline")) return "1年同期基线";
+  if (item.target === "portwatch_7d_avg_transit_calls_all") return "7日均值";
+  if (item.target === "portwatch_daily_transit_calls_all") return "日通行量";
+  if (item.target === "portwatch_daily_transit_calls_tanker") return "油轮通行量";
+  if (item.target === "portwatch_daily_transit_calls_container") return "集装箱船通行量";
+  if (item.target === "portwatch_daily_transit_calls_dry_bulk") return "干散货船通行量";
+  if (item.target === "portwatch_daily_transit_calls_other") return "其他货船通行量";
+  return item.label;
 }
 
 function ChartLegend({ series }: { series: ChartSeries[] }) {
@@ -780,6 +868,8 @@ function ChartLegend({ series }: { series: ChartSeries[] }) {
       {series.map((item) => {
         const pending = item.status !== "active";
         const noData = item.status === "active" && item.points.length === 0;
+        const hasBand = Boolean(item.band?.length);
+        const hasMissing = Boolean(item.missingPoints?.length);
         return (
           <li
             className={`market-m8-legend-item${pending ? " pending" : ""}${noData ? " no-data" : ""}`}
@@ -790,9 +880,11 @@ function ChartLegend({ series }: { series: ChartSeries[] }) {
               className={`market-m8-legend-swatch${item.dashed ? " dashed" : ""}`}
               style={{ color: pending || noData ? "#94a3b8" : item.color }}
             />
-            {item.label}
-            {pending ? <em className="market-m8-tag">pending</em> : null}
-            {noData ? <em className="market-m8-tag">no data</em> : null}
+            {trafficLabel(item)}
+            {hasBand ? <em className="market-m8-tag">±1σ</em> : null}
+            {hasMissing ? <em className="market-m8-tag">缺值</em> : null}
+            {pending ? <em className="market-m8-tag">待接入</em> : null}
+            {noData ? <em className="market-m8-tag">无数据</em> : null}
           </li>
         );
       })}
@@ -822,7 +914,10 @@ function LineChartSvg({
   const padding = { top: 22, right: 24, bottom: 42, left: 66 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
-  const values = series.flatMap((item) => item.points.map((point) => point.value));
+  const values = series.flatMap((item) => [
+    ...item.points.map((point) => point.value),
+    ...(item.band?.flatMap((point) => [point.lower, point.upper]) ?? []),
+  ]);
   const domain = chartDomain(values, clampMinZero);
   const yTicks = ticks(domain.min, domain.max, 4);
   const xTicks = [range.startMs, range.startMs + (range.endMs - range.startMs) / 2, range.endMs];
@@ -904,18 +999,59 @@ function LineChartSvg({
         );
       })}
 
+      {series.flatMap((item) =>
+        (item.missingPoints ?? []).map((point) => {
+          const x = xForDate(point.date);
+          return (
+            <g key={`${item.id}-missing-${point.date}`}>
+              <title>
+                {item.label}: {point.date} 缺值。{point.reason}
+              </title>
+              <line
+                className="market-m8-missing-line"
+                x1={x}
+                x2={x}
+                y1={padding.top}
+                y2={padding.top + plotHeight}
+              />
+              <text className="market-m8-missing-label" textAnchor="middle" x={x} y={padding.top + 16}>
+                缺值
+              </text>
+            </g>
+          );
+        }),
+      )}
+
       {series.map((item) => {
+        const varianceBand = item.band ? bandPath(item.band, xForDate, yForValue, maxGapDays) : "";
         const path = linePath(item.points, xForDate, yForValue, maxGapDays);
+        const showSinglePoint = item.points.length === 1;
         const markers = shouldShowEveryMarker
           ? item.points
           : [item.points[item.points.length - 1]].filter(Boolean);
         return (
           <g key={item.id}>
+            {varianceBand ? (
+              <path
+                className="market-m8-variance-band"
+                d={varianceBand}
+                style={{ fill: item.color }}
+              />
+            ) : null}
             {path ? (
               <path
                 className={`market-m8-line${item.dashed ? " dashed" : ""}`}
                 d={path}
                 style={{ stroke: item.color }}
+              />
+            ) : null}
+            {showSinglePoint ? (
+              <line
+                className="market-m8-grid-line"
+                x1={padding.left}
+                x2={width - padding.right}
+                y1={yForValue(item.points[0].value)}
+                y2={yForValue(item.points[0].value)}
               />
             ) : null}
             {markers.map((point) => (
@@ -957,8 +1093,9 @@ function MarketLineChart({
   const first = series[0];
   const hasData = series.some((item) => item.points.length > 0);
   const latest = lastPoint(first.points);
+  const latestChange = !traffic && first.points.length > 1 ? changeFor(first.points) : "";
   const valueLabel = (value: number) => {
-    if (first.unit.includes("daily transit")) return formatNumber(value, 0);
+    if (isTrafficUnit(first.unit)) return formatNumber(value, 0);
     if (first.unit === "%") return `${formatNumber(value, 2)}%`;
     return formatNumber(value, first.unit === "index" ? 2 : 2);
   };
@@ -967,24 +1104,22 @@ function MarketLineChart({
     <article className={`console-card market-m8-chart-card${traffic ? " traffic" : ""}`}>
       <div className="market-m8-chart-head">
         <div className="market-m8-chart-title">
-          <h3>{traffic ? "Traffic" : first.label}</h3>
+          <h3>{traffic ? "霍尔木兹通行" : first.label}</h3>
           <p>
             {traffic
-              ? "PortWatch daily, 7d average, and same-window baseline"
-              : `${first.unit} · ${first.id}`}
+              ? "PortWatch 日通过船次：3日平滑、7日均值与1年同期基线"
+              : `${displayUnit(first.unit)} · ${first.id}`}
           </p>
         </div>
         <div className="market-m8-chart-meta">
           <span className="market-m8-pill">
             <LineChartIcon size={14} />&nbsp;{range.label}
           </span>
-          <span className="market-m8-pill">{events.length} events in range</span>
-          {!traffic ? (
-            <span className="market-m8-pill">
-              {latest ? formatSeriesValue(first, latest.value) : "no data"}
-              {latest ? ` · ${changeFor(first.points)}` : ""}
-            </span>
-          ) : null}
+          <span className="market-m8-pill">{events.length} 条事件标注</span>
+          <span className="market-m8-pill">
+            {latest ? formatSeriesValue(first, latest.value) : traffic ? "单位：日通过船次" : "无数据"}
+            {latestChange ? ` · ${latestChange}` : ""}
+          </span>
         </div>
       </div>
 
@@ -998,7 +1133,7 @@ function MarketLineChart({
           showMarkers={showMarkers}
           valueLabel={valueLabel}
         />
-        {!hasData ? <div className="market-m8-empty">No data in selected range</div> : null}
+        {!hasData ? <div className="market-m8-empty">当前区间无数据</div> : null}
       </div>
 
       <ChartLegend series={series} />
@@ -1026,7 +1161,7 @@ function MarketSectionCharts({
       <div className="market-m8-section-head">
         <InfoTitle title={section.title} subtitle={section.subtitle} />
         <span className="market-m8-pill">
-          <BarChart3 size={14} />&nbsp;{rows.length} charts
+          <BarChart3 size={14} />&nbsp;{rows.length} 张图
         </span>
       </div>
       <div className="market-m8-section-grid">
@@ -1058,42 +1193,15 @@ function IndicatorNotes() {
   );
 }
 
-function PendingSection() {
-  const pendingRows = pendingIds
-    .map(getSeries)
-    .filter((series): series is MarketSeriesItem => Boolean(series));
-
-  return (
-    <section className="console-card market-m8-pending-section">
-      <div className="market-m8-section-head">
-        <InfoTitle title="待接入指标" subtitle="保留数据契约和审计入口，但不画未经验证的 live 曲线" />
-        <span className="market-m8-pill">{pendingRows.length} placeholders</span>
-      </div>
-      <div className="market-m8-pending-grid">
-        {pendingRows.map((series) => (
-          <article className="market-m8-pending-card" key={series.id}>
-            <b>数据待接入</b>
-            <strong>{series.label}</strong>
-            <p>{pendingChineseNotes[series.id] ?? series.caveat}</p>
-            <span className="market-m8-muted">
-              {series.source_id} · {series.unit}
-            </span>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
-  const pendingCount = series.filter((item) => item.status !== "active").length;
+  const coverageRows = series.filter((item) => !isHiddenMarketSeries(item));
 
   return (
     <section className="console-card market-m8-coverage-card">
       <div className="market-m8-coverage-head">
-        <InfoTitle title="数据覆盖表" subtitle="每条 series 的 source id、许可、刷新时间、raw_path 与 caveat" />
+        <InfoTitle title="数据覆盖表" subtitle="逐项列出 source id、许可、刷新时间、raw_path、缺值和数据局限" />
         <span className="market-m8-pill">
-          <Database size={14} />&nbsp;{pendingCount} pending
+          <Database size={14} />&nbsp;{coverageRows.length} 条展示序列
         </span>
       </div>
 
@@ -1101,18 +1209,19 @@ function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
         <table className="market-m8-coverage-table">
           <thead>
             <tr>
-              <th>series</th>
+              <th>序列</th>
               <th>source id</th>
               <th>状态</th>
               <th>许可</th>
               <th>retrieved_at</th>
               <th>raw_path</th>
-              <th>caveat</th>
+              <th>数据说明</th>
             </tr>
           </thead>
           <tbody>
-            {series.map((item) => {
+            {coverageRows.map((item) => {
               const pending = item.status !== "active";
+              const missingSummary = item.missing_points?.map((point) => point.date).join(", ");
               return (
                 <tr className={pending ? "pending" : ""} key={item.id}>
                   <td>
@@ -1127,13 +1236,18 @@ function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
                   </td>
                   <td>
                     <span className={`market-m8-status${pending ? " pending" : ""}`}>
-                      {pending ? "pending" : item.status}
+                      {pending ? "待接入" : "已接入"}
                     </span>
                   </td>
                   <td>{item.license_status}</td>
                   <td>{formatDateTime(item.retrieved_at)}</td>
                   <td>{item.raw_path ?? "pending"}</td>
-                  <td className="market-m8-caveat-cell">{item.caveat}</td>
+                  <td className="market-m8-caveat-cell">
+                    {item.caveat}
+                    {missingSummary ? (
+                      <div className="market-m8-missing-summary">缺值：{missingSummary}（官方空值；未插值）</div>
+                    ) : null}
+                  </td>
                 </tr>
               );
             })}
@@ -1158,10 +1272,14 @@ function MarketControls({
   return (
     <section className="console-card market-m8-controls">
       <div className="market-m8-control-copy">
-        <InfoTitle title="市场背景" subtitle="原始交通与跨资产市场数据，只做背景展示，不做 forecast 解读" />
+        <h1 className="market-m8-title">市场背景</h1>
+        <p className="market-m8-subtitle">
+          原始交通与跨资产市场数据，只做背景展示，不做 forecast 解读。
+        </p>
         <p>
           生成时间 {formatDateTime(bundle.built_at)} · 数据截至 {formatDateTime(bundle.data_as_of)} · {bundle.series.length} 条
-          series · {bundle.event_overlays.length} 条事件标注
+          原始序列 · {bundle.series.filter((series) => !isHiddenMarketSeries(series)).length} 条展示序列 ·{" "}
+          {bundle.event_overlays.length} 条事件标注
         </p>
       </div>
       <div className="market-m8-control-actions">
@@ -1186,7 +1304,7 @@ function MarketControls({
           type="button"
         >
           {showEvents ? <ToggleRight size={17} /> : <ToggleLeft size={17} />}
-          Event overlay
+          事件标注
         </button>
       </div>
     </section>
@@ -1194,7 +1312,7 @@ function MarketControls({
 }
 
 export function MarketPage() {
-  const [rangeKey, setRangeKey] = useState<RangeKey>("30d");
+  const [rangeKey, setRangeKey] = useState<RangeKey>("90d");
   const [showEvents, setShowEvents] = useState(true);
   const range = useMemo(() => makeRange(rangeKey), [rangeKey]);
 
@@ -1203,32 +1321,59 @@ export function MarketPage() {
     const dailyTraffic =
       trafficRows.find((item) => item.target === "portwatch_daily_transit_calls_all") ??
       trafficRows.find((item) => item.baseline_points && item.baseline_points.length > 0);
+    const rollingTraffic = trafficRows.find((item) => item.target === "portwatch_7d_avg_transit_calls_all");
+    const dailyRangePoints = dailyTraffic ? pointsInRange(dailyTraffic.points, range) : [];
+    const smoothedTrafficSeries: ChartSeries[] =
+      dailyTraffic && dailyRangePoints.length > 0
+        ? [
+            {
+              id: `${dailyTraffic.id}-smoothed-3d`,
+              target: dailyTraffic.target,
+              label: "3日平滑日通行量",
+              color: dailyTraffic.color,
+              unit: dailyTraffic.unit,
+              status: "active",
+              points: pointsInRange(movingAveragePoints(dailyTraffic.points, 3), range),
+              band: rollingVarianceBand(dailyTraffic.points, 3).filter((point) => inRange(point.date, range)),
+              caveat: "日通行量先做 3 日移动平均；半透明包络为同一 3 日窗口内的均值 ± 1 标准差。",
+            },
+          ]
+        : [];
+    const rollingSeries: ChartSeries[] = rollingTraffic
+      ? [
+          {
+            ...chartSeriesFrom(rollingTraffic, range),
+            label: "7日均值",
+            color: "#0f766e",
+          },
+        ]
+      : [];
     const baselineSeries: ChartSeries[] =
       dailyTraffic?.baseline_points && dailyTraffic.baseline_points.length > 0
         ? [
             {
               id: `${dailyTraffic.id}-baseline`,
-              label: "1y baseline",
+              target: dailyTraffic.target,
+              label: "1年同期基线",
               color: "#64748b",
               unit: dailyTraffic.unit,
               status: "active",
               points: pointsInRange(dailyTraffic.baseline_points, range),
               dashed: true,
-              caveat: "PortWatch same-window historical baseline derived from PortWatch history.",
+              caveat: "由 PortWatch 自身历史派生的 1 年同期窗口均值，不与 IMO 阈值跨源拼接。",
             },
           ]
         : [];
-    const activeTraffic = trafficRows
-      .filter((item) => item.status === "active")
-      .map((item) => chartSeriesFrom(item, range));
     const overlays = showEvents
       ? bundle.event_overlays.filter((event) => inRange(event.event_at, range))
       : [];
 
     return {
-      trafficChartSeries: [...activeTraffic, ...baselineSeries],
+      trafficChartSeries: [...smoothedTrafficSeries, ...rollingSeries, ...baselineSeries],
       visibleEvents: overlays,
-      trafficCaveat: dailyTraffic?.caveat ?? "PortWatch traffic caveat pending.",
+      trafficCaveat:
+        dailyTraffic?.caveat ??
+        "PortWatch 通行量 caveat 待确认：AIS/GNSS 船舶信号可能受干扰、伪装、关闭 AIS 或事后修订影响。",
     };
   }, [range, showEvents]);
 
@@ -1247,7 +1392,7 @@ export function MarketPage() {
 
       <MarketLineChart
         events={visibleEvents}
-        note={`AIS/GNSS caveat: ${trafficCaveat}`}
+        note={`AIS/GNSS 注意事项：${trafficCaveat}`}
         range={range}
         series={trafficChartSeries}
         traffic
@@ -1261,9 +1406,6 @@ export function MarketPage() {
           section={section}
         />
       ))}
-
-      <PendingSection />
-
       <CoverageTable series={bundle.series} />
     </section>
   );

@@ -18,6 +18,9 @@ Last updated: 2026-05-12
   1. `data/events/events_timeline.jsonl` — Hormuz 事件脉络（News 主轴 + Overview top 3 + Market overlay）。
   2. `data/external/polymarket_questions.json` — 外部预测市场引用（Overview 卡片）。
   3. PortWatch traffic 升级为 UI 一等公民（Overview 置顶 Traffic 行 + Market 主图 traffic 组）。
+- News 页 topic 区从 raw tag button wall 升级为 `topic_cloud`：用生成数据给出高权重词、显示 label、event_count、event_ids 和筛选 key；UI 可以渲染为词云图，但仍保持点击筛选语义。
+- PortWatch daily history 必须分页抓取 ArcGIS layer 全量历史，而不是只取最近窗口。当前上游 `chokepoint6` 可返回 `2019-01-01` 起的 daily rows；历史事件的 `Traffic ±7d` 不能因为本地只抓最近 430 条而显示空窗。
+- Market 页可显示 `stooq-market` 的 XAU/USD 1y daily OHLC history；图上使用 Close 作避险资产 spot proxy，不替代 LBMA benchmark 历史序列或 futures continuous contract。
 - GDELT 升级为 P0 auto-ingest 通道，灌入 events_timeline 的 candidate 池。
 - `data/galaxy/runs/...` 完全归 Forecast 页使用；背景三页不读它，audit 也不混。
 
@@ -36,9 +39,10 @@ Last updated: 2026-05-12
 | --- | --- | --- | --- | --- |
 | P0 | `eia-iea-hormuz` | 结构性 baseline（≈20 mb/d、bypass、Asia exposure、LNG） | Overview baseline strip；News 顶部 context | 永远 baseline；不写成当日 throughput |
 | P0 | `official-advisory` | 官方海事 advisory（UKMTO / MARAD / IMO） | News timeline（official channel）；Overview latest events | 单条 advisory 可产生 timeline entry；severity_hint 必须基于原文 |
-| P0 | `imf-portwatch-hormuz` | 公开 traffic-flow proxy（AIS 反演的**日通过船数**） | **Overview Traffic 行（置顶）** + Market 主图 Traffic 组 + News 事件窗口对照 | baseline 用 PortWatch **自己**的 1y/5y 同期均值（**不**与 IMO `60 7d avg` threshold 跨源拼数）；AIS 局限（spoofing、dark vessels、revision）做 hover caveat；文案只述事实不做 "closure 概率" 解读 |
+| P0 | `imf-portwatch-hormuz` | 公开 traffic-flow proxy（AIS 反演的**日通过船数**，含 tanker/cargo/container 等同源拆分） | **Overview Traffic 行（置顶）** + Market 主图 Traffic 组 + News 事件窗口对照 | 必须分页抓全量 daily history（当前 `chokepoint6` 可到 2019-01-01）；baseline 用 PortWatch **自己**的 1y/5y 同期均值（**不**与 IMO `60 7d avg` threshold 跨源拼数）；AIS 局限（spoofing、dark vessels、revision）做 hover caveat；文案只述事实不做 "closure 概率" 解读 |
 | P0 | `imo-hormuz-monthly` | 月度 traffic 交叉验证 | News 背景说明（可选）；**不进 Overview / Market 主图** | 仅作为 PortWatch 趋势的 sanity check；数值未提取前留 chart snapshot |
 | P0 | `fred-market` | 9 个 FRED series：Brent / WTI / VIX / Broad USD / USD/CNY / US10Y / SP500 / NASDAQ / CPI | Market 主图 + sparkline；Overview snapshot（4 series） | 原始数值，不解读 |
+| P0 | `stooq-market` | XAU/USD 1y daily OHLC history | Market Gold spot 卡片；Overview 暂不消费 | 仅用 Close 作 safe-haven spot proxy；必须有 raw historical-page snapshot + `source_hash`；不是 LBMA benchmark 历史序列，也不是 futures 主连 |
 | P0 | `events-curated` *(new)* | curated Hormuz / US-Iran 事件脉络（advisory + GDELT auto-ingest + 人工 review 后入库） | News timeline 主轴；Overview top 3；Market overlay | 每条必须有可追溯 source_url + retrieved_at；GDELT auto-ingest 产生 `status="candidate"`，必须 promote 才进 timeline 渲染 |
 | P0 | `gdelt-news` *(upgraded)* | 自动新闻发现（GDELT DOC 2.0 `/api/v2/doc/doc`），灌入 candidate 池 | 不直接进 UI；只作为 events_timeline candidate 来源 | 仅产生 candidate；query 关键词限定 Hormuz / Iran / IRGC / Persian Gulf / Gulf of Oman / US Navy；按 url SHA1 去重；记录 query 与 retrieved_at |
 | P0 | `polymarket-curated` *(new)* | Polymarket 上 Hormuz / US-Iran / Oil / Regional 相关问题（gamma-api `/events` 抓取后筛） | Overview External prediction card（3–5 条） | 仅作外部对照；**不进入任何 forecast pipeline**；必须显示 "External market, not our forecast"；筛选规则见 §4.8 与 §5 |
@@ -50,7 +54,7 @@ Last updated: 2026-05-12
 
 说明：
 
-- PortWatch 是本项目最直接、最量化的 traffic 信号，也是 Polymarket "traffic returns to normal" 类问题事实上的 resolution 数据，必须进 UI。处理边界：(1) baseline 与 delta 全部用 PortWatch 自己的历史序列算，不跨源拼 IMO 阈值；(2) AIS 局限以 caveat 文案 + tooltip 形式展示；(3) 文案只描述事实，不出现 "closure 概率 / scenario" 语言。
+- PortWatch 是本项目最直接、最量化的 traffic 信号，也是 Polymarket "traffic returns to normal" 类问题事实上的 resolution 数据，必须进 UI。处理边界：(1) baseline 与 delta 全部用 PortWatch 自己的历史序列算，不跨源拼 IMO 阈值；(2) AIS 局限以 caveat 文案 + tooltip 形式展示；(3) 文案只描述事实，不出现 "closure 概率 / scenario" 语言；(4) News 历史事件窗口优先用 PortWatch 全量 daily history，缺口只能来自上游无值或抓取失败，不能来自本地 `resultRecordCount` 截断。
 - 旧 `polymarket-hormuz-traffic` 状态合并入 `polymarket-curated`；仅作 Overview 引用卡片来源；任何 forecast pipeline / EvidenceClaim 仍禁止消费。
 
 ## 3. Directory Layout
@@ -66,6 +70,7 @@ data/
     advisories/<source_name>/<retrieved_at>.meta.json
     traffic/portwatch/<retrieved_at>.<csv|json>
     traffic/imo/<retrieved_at>.<html|png>
+    stooq/xauusd/<retrieved_at>.json
     gdelt/<query_slug>/<retrieved_at>.json      # GDELT DOC 2.0 query 原始返回
     polymarket/events/<retrieved_at>.json       # gamma-api /events 全量列表快照
     polymarket/event/<slug>/<retrieved_at>.json # 单题详情快照（可选）
@@ -73,6 +78,7 @@ data/
   normalized/
     baseline/hormuz_baseline.json
     market/fred_series.csv
+    market/gold_xauusd_history.json
     maritime/advisories.jsonl
     maritime/hormuz_transits.csv                # PortWatch + IMO，按 source_id 区分
   events/
@@ -236,8 +242,23 @@ PortWatch 日序列**直接进 UI**（见 §4.11 Market `traffic` 组、§4.9 Ov
 
 - `7d_avg`：滚动 7 天均值。
 - `baseline_1y_same_window`：当日历窗口（±15d）在过去 1 年内的均值，作为 "vs normal" 对照。
+- `snapshot-portwatch.mjs` / `fetch-traffic.mjs` 必须使用 ArcGIS pagination 抓取全量 `Daily_Chokepoints_Data` rows：先用 `returnCountOnly=true` 与 `outStatistics(min(date), max(date), count(date))` 记录覆盖范围，再按 `resultOffset + resultRecordCount` 分页下载，直到没有 `exceededTransferLimit` 或已达到 `count`。禁止只用固定 `resultRecordCount` 最近 N 条作为 normalized daily history。
+- 当前 PortWatch `chokepoint6` endpoint 已确认覆盖 `2019-01-01` 至 `2026-05-10`、约 2687 条 daily rows；本地 normalized coverage 低于上游 count 或 `min(date)` 晚于上游 `min_date` 时，`audit:data` 应 fail。
+- PortWatch 同一 raw daily row 应派生同源船型拆分：
+  - `vessel_type="all"` ← `n_total`
+  - `vessel_type="tanker"` ← `n_tanker`
+  - `vessel_type="container"` ← `n_container`
+  - `vessel_type="dry_bulk"` ← `n_dry_bulk`
+  - `vessel_type="other"` ← `n_cargo - n_container - n_dry_bulk - n_general_cargo - n_roro`（若为负或任一字段缺失则不写该拆分行）
+- 中文讨论里常说的"油轮通行"对应 `vessel_type="tanker"`；如果要表示 cruise/passenger ship，当前 PortWatch daily endpoint 没有对应字段，必须保持 pending，不能把 `tanker` 误写成 cruise。
 - 跨源拼接禁止：`imo-hormuz-monthly` 不与 `imf-portwatch-hormuz` 共曲线，仅作 News 背景 sanity check。
 - AIS caveat（spoofing、dark vessels、PortWatch revision）必须在 UI hover / coverage table 中可见。
+
+News 事件窗口渲染规则：
+
+- `Traffic ±7d` 只在事件窗口与 PortWatch numeric coverage 有交集时画 sparkline。
+- 若事件早于 PortWatch 覆盖期或上游该窗口确实无值，UI 文案应写成 `Traffic data unavailable for this date range`，并显示 coverage range，而不是只写 `No traffic data`。
+- `events_timeline` 覆盖到 2022–2024 时，PortWatch 全量历史应能支持这些窗口；若仍为空，应优先检查 fetch pagination / normalized coverage，而不是删历史事件。
 
 ### 4.6 `data/raw/gdelt/<query_slug>/<retrieved_at>.json` 与 `data/events/events_candidates.jsonl` *(NEW, P0)*
 
@@ -426,8 +447,24 @@ interface NewsTimelineBundle {
     tag: string;
     event_count: number;
   }>;
+  topic_cloud: Array<{
+    key: string;                         // stable filter key; usually a canonical tag
+    label: string;                       // display label; may be zh-CN for reviewer readability
+    event_count: number;
+    weight: number;                      // normalized 0–1, for font size / opacity
+    event_ids: string[];                 // event_id list used when clicked
+    source_tags: string[];               // raw tags folded into this cloud term
+  }>;
 }
 ```
+
+`topic_index` 保留为兼容字段和 audit 计数；News filter UI 不应再把所有 raw tags 渲染成按钮墙。`topic_cloud` 是推荐入口：
+
+- Builder 从 `events[].tags`、标题和 description 中抽取候选词，停用 `core_event`、`hormuz` 这类低信息密度全局词；保留 `irgc`、`blockade`、`vessel_seizure`、`ais`、`bunker_fuel`、`escort` 等能解释事件结构的词。
+- 语义近似 raw tags 必须折叠为一个 cloud term，例如 `tankers` + `tanker` → `tanker`，`gnss` + `ais` 可分别保留但不重复到多个同义按钮。
+- `weight = sqrt(event_count / max_event_count)` 或等价的单调归一化；UI 用 weight 表达重要性，但点击行为仍等价于筛选 `event_ids`。
+- Cloud 数量建议 12–18 个。少于 8 个时退回 compact tag list；多于 18 个时只显示 top weighted terms，并在 tooltip / inspector 中保留完整 tag coverage。
+- Cloud 是导航/筛选，不是 evidence。不得从词云权重推出 severity、概率或 forecast 结论。
 
 ### 4.11 `data/generated/market_chart.json` *(NEW)*
 
@@ -449,8 +486,9 @@ interface MarketChartBundle {
     retrieved_at?: string;
     raw_path?: string | null;
     source_hash?: `sha256:${string}` | null;
-    points: Array<{ date: string; value: number }>;            // active 才有
+    points: Array<{ date: string; value: number }>;            // active 才有；Gold spot 使用 Stooq daily Close
     baseline_points?: Array<{ date: string; value: number }>;  // traffic 专用：1y 同期均值曲线
+    missing_points?: Array<{ date: string; reason: string }>;  // sparse macro/FRED 官方空值；不插值、不连线
     caveat: string;
     evidenceEligible: false;            // 强制 false
   }>;
@@ -480,7 +518,7 @@ interface MarketChartBundle {
 npm run fetch:p0
   ├── fetch-fred.mjs               → data/raw/fred/**, data/normalized/market/fred_series.csv
   ├── snapshot-advisories.mjs      → data/raw/advisories/**, data/normalized/maritime/advisories.jsonl
-  ├── snapshot-portwatch.mjs       → data/raw/traffic/portwatch/**, data/normalized/maritime/hormuz_transits.csv
+  ├── fetch-traffic.mjs            → data/raw/traffic/**, data/normalized/maritime/hormuz_transits.csv
   └── snapshot-baseline.mjs        → data/normalized/baseline/hormuz_baseline.json
 
 npm run curate:events     [NEW]
@@ -513,6 +551,21 @@ npm run build:data                  composite
   → build:evidence (legacy)
   → build:generated
 ```
+
+Traffic fetch 细节：
+
+```text
+fetch-traffic.mjs
+  1. snapshot PortWatch public page + download index
+  2. query ArcGIS metadata layer for `chokepoint6`
+  3. query ArcGIS daily layer count + min/max date
+  4. paginate Daily_Chokepoints_Data by `resultOffset` until full history is stored
+  5. write one raw JSON per page plus a merged raw manifest
+  6. normalize all/tanker/container/dry_bulk/other rows into hormuz_transits.csv
+  7. snapshot IMO Hormuz page + chart images as cross-check metadata only
+```
+
+`resultRecordCount` is a page size, not a history horizon. If ArcGIS returns `exceededTransferLimit=true`, the script must continue paging; writing only the first page is a data bug because it creates false `No traffic data` windows for historical events.
 
 curate 脚本设计原则：
 
@@ -558,7 +611,11 @@ npm run audit
 - FRED `DEXCHUS` 被映射到 `usd_cnh`；
 - 任一 active generated 市场行缺 `raw_path` / `source_hash` / `retrieved_at` / `source_url` / `provider_id` / `license_status`；
 - `source_hash` 不解析为真实 raw 文件或哈希不匹配；
+- PortWatch daily layer 返回 `exceededTransferLimit=true` 但 fetch 脚本没有继续分页；
+- `hormuz_transits.csv` 的 PortWatch daily numeric rows 明显少于上游 ArcGIS `returnCountOnly`，或本地 `min(date)` 晚于上游 `min_date`；
+- PortWatch `n_tanker` 被标成 cruise/passenger，或无字段时伪造 passenger/cruise 通行量；
 - PortWatch traffic 行 `baseline_points` 使用了非 PortWatch 来源（跨源拼接）；
+- `news_timeline.json` 缺 `topic_cloud`，或 `topic_cloud` 直接渲染 `core_event` / `hormuz` 这类全局低信息 tag 为最高权重词；
 - `audit:legacy` 检测到 `MarketRead.pricingPattern` / `Why not closure` 字面出现在背景三页 dom。
 
 ## 7. Implementation Status (2026-05-12)
@@ -570,12 +627,12 @@ npm run audit
 | FRED | `data/raw/fred/**`, `data/normalized/market/fred_series.csv` | 9 series 已落地 | — |
 | Baseline | `data/normalized/baseline/hormuz_baseline.json` | OK | — |
 | Advisories | `data/normalized/maritime/advisories.jsonl` | OK | — |
-| PortWatch / IMO | `data/normalized/maritime/hormuz_transits.csv` | 已有日序列，但未生成 baseline_1y_same_window | `[P0]` build-generated 派生 baseline 序列；UI 接 traffic 组 |
+| PortWatch / IMO | `data/normalized/maritime/hormuz_transits.csv` | 当前本地 PortWatch numeric rows 只覆盖最近约 430 天；上游 daily layer 已确认可到 2019-01-01 | `[P0]` `fetch-traffic.mjs` 改为 ArcGIS pagination 全量抓取；派生 all/tanker/container/dry_bulk/other；build-generated 派生 baseline 序列；News 历史事件窗口用全量 history |
 | GDELT candidates | `data/raw/gdelt/**`, `data/events/events_candidates.jsonl` | **不存在** | `[P0]` 实现 GDELT fetch + dedupe + candidate pool |
 | Events timeline | `data/events/events_timeline.jsonl` | **不存在** | `[P0]` curate-events.mjs：advisory mirror + candidate promote |
 | Polymarket refs | `data/external/polymarket_questions.json` | **不存在** | `[P0]` curate-polymarket.mjs (gamma-api /events) |
 | Generated overview | `data/generated/overview_snapshot.json` | 不存在 | `[P0]` build-generated.mjs |
-| Generated news | `data/generated/news_timeline.json` | 不存在 | `[P0]` build-generated.mjs |
+| Generated news | `data/generated/news_timeline.json` | 已有 events/source_index/topic_index；topic tags 在 UI 上会变成按钮墙 | `[P0]` build-generated.mjs 新增 `topic_cloud`，UI 用词云图替代 raw tag button wall |
 | Generated market | `data/generated/market_chart.json` | 不存在；当前用 `market_series.json` | `[P0]` 新增；旧文件向后兼容期保留 |
 | Evidence pipeline | `data/observations/`, `data/evidence/`, `data/checkpoints/`, `data/generated/canonical_inputs.json` | 已存在；当前驱动 Overview/Market | `[P0]` 解除与背景三页绑定（不删数据，只断 UI 引用） |
 | Galaxy artifact | `data/galaxy/runs/**`, `data/galaxy/latest-run.json` | 已有真实 run | Forecast 页消费，背景三页不读 |
@@ -607,7 +664,10 @@ npm run curate:polymarket -- --interactive   # 调 selected_for_overview / cavea
 - 不在背景三页渲染任何 scenario probability / pricingPattern / mechanism 链 / checkpoint。
 - 不抓 GDELT 全量；GDELT 只产候选，必须经 `curate:events` 决定 promote。
 - 不跨源拼 PortWatch 与 IMO threshold；PortWatch baseline 来自自身历史。
-- 不为 Gold / silver / USD-CNH / HSTECH / SHCOMP / 国内期货主连写入伪造走势；它们保持 pending。
+- 不用 IMO monthly chart 或其他来源补 PortWatch daily 空窗；IMO 只能做月度 sanity check / source panel。
+- 不把 PortWatch `n_tanker` 翻译或标注成 passenger/cruise ship；若需要 passenger/cruise，需要新 source 或保持 pending。
+- 不把 News topic cloud 作为风险强度、事件重要性或 forecast evidence；它只服务浏览和筛选。
+- 不为 Gold / silver / USD-CNH / HSTECH / SHCOMP / 国内期货主连写入伪造走势；Gold 只允许在有 raw lineage 时显示 Stooq XAU/USD daily Close 历史，LBMA benchmark / futures history 未接入前仍不能画对应历史走势；其余保持 pending。
 - 不写 `source_hash` 而对应 raw 文件不存在。
 - 不在 forecast pipeline 与背景三页之间建立双向引用（当前阶段）。
 
@@ -619,6 +679,8 @@ npm run curate:polymarket -- --interactive   # 调 selected_for_overview / cavea
 - IEA Strait of Hormuz: https://www.iea.org/about/oil-security-and-emergency-response/strait-of-hormuz
 - IMO Hormuz hub: https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx
 - IMF PortWatch: https://data-download.imf.org/ClimateData/portwatch-monitor.html
+- IMF PortWatch Hormuz ArcGIS daily layer: https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0
+- IMF PortWatch chokepoints metadata layer: https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/PortWatch_chokepoints_database/FeatureServer/0
 - UKMTO recent incidents: https://www.ukmto.org/recent-incidents
 - MARAD U.S. Maritime Alerts: https://www.maritime.dot.gov/msci-alerts
 - GDELT DOC 2.0 API: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
@@ -627,3 +689,4 @@ npm run curate:polymarket -- --interactive   # 调 selected_for_overview / cavea
 - ACLED API: https://acleddata.com/acled-api-documentation
 - UCDP API: https://ucdp.uu.se/apidocs/index.html
 - LBMA Gold Price: https://www.lbma.org.uk/prices-and-data/lbma-gold-price
+- Stooq XAU/USD historical data: https://stooq.com/q/d/?s=xauusd

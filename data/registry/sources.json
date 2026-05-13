@@ -167,6 +167,25 @@
     ]
   },
   {
+    "id": "stooq-market",
+    "name": "Stooq · XAU/USD daily OHLC",
+    "category": "market",
+    "status": "fresh",
+    "reliability": "medium",
+    "refreshCadence": "daily / local snapshot",
+    "expectedLatency": "daily",
+    "licenseStatus": "open",
+    "usage": "1y Gold XAU/USD safe-haven history in Market",
+    "caveat": "XAU/USD daily OHLC history; Market chart uses Close as a spot proxy, not LBMA benchmark history and not a futures continuous contract.",
+    "pending": false,
+    "url": "https://stooq.com/q/d/?s=xauusd",
+    "crossChecks": [
+      "Stooq historical table",
+      "raw historical-page snapshot",
+      "source_hash"
+    ]
+  },
+  {
     "id": "official-advisory",
     "name": "UKMTO / JMIC / MARAD advisory",
     "category": "maritime",

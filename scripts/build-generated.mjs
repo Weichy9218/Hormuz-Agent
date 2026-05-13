@@ -9,10 +9,12 @@ const root = resolve(here, "..");
 const BUILT_AT = new Date().toISOString();
 const DAY_MS = 24 * 60 * 60 * 1000;
 const POLYMARKET_STALE_MS = 48 * 60 * 60 * 1000;
+const TOPIC_CLOUD_LIMIT = 18;
 
 const paths = {
   baseline: resolve(root, "data", "normalized", "baseline", "hormuz_baseline.json"),
   fred: resolve(root, "data", "normalized", "market", "fred_series.csv"),
+  gold: resolve(root, "data", "normalized", "market", "gold_xauusd_history.json"),
   transits: resolve(root, "data", "normalized", "maritime", "hormuz_transits.csv"),
   advisories: resolve(root, "data", "normalized", "maritime", "advisories.jsonl"),
   events: resolve(root, "data", "events", "events_timeline.jsonl"),
@@ -26,30 +28,14 @@ const MARKET_META = {
   vix: { id: "vix", label: "VIX", group: "risk_rates_vol", color: "#ef4444" },
   broad_usd: { id: "broad-usd", label: "Broad USD", group: "safe_haven_fx", color: "#7c3aed" },
   usd_cny: { id: "usd-cny", label: "USD/CNY", group: "safe_haven_fx", color: "#9333ea" },
+  gold: { id: "gold-spot", label: "Gold spot", group: "safe_haven_fx", color: "#d97706" },
   us10y: { id: "us10y", label: "US 10Y", group: "risk_rates_vol", color: "#64748b" },
   sp500: { id: "sp500", label: "S&P 500", group: "risk_rates_vol", color: "#16a34a" },
   nasdaq: { id: "nasdaq", label: "NASDAQ", group: "risk_rates_vol", color: "#22c55e" },
-  us_cpi: { id: "us-cpi", label: "US CPI", group: "risk_rates_vol", color: "#f97316" },
+  us_cpi: { id: "us-cpi", label: "美国 CPI 指数", group: "risk_rates_vol", color: "#f97316" },
 };
 
 const PENDING_MARKET_SERIES = [
-  {
-    id: "gold-pending",
-    target: "gold",
-    label: "Gold",
-    group: "safe_haven_fx",
-    color: "#f59e0b",
-    unit: "USD/oz",
-    status: "pending_source",
-    source_id: "gold-pending",
-    provider_id: "pending",
-    license_status: "pending",
-    raw_path: null,
-    source_hash: null,
-    points: [],
-    caveat: "Pending stable daily source; no line is drawn until raw lineage is available.",
-    evidenceEligible: false,
-  },
   {
     id: "usd-cnh-pending",
     target: "usd_cnh",
@@ -67,6 +53,64 @@ const PENDING_MARKET_SERIES = [
     caveat: "Pending offshore CNH source; FRED DEXCHUS is USD/CNY only.",
     evidenceEligible: false,
   },
+];
+const MARKET_CHART_HIDDEN_TARGETS = new Set(["usd_cny", "usd_cnh"]);
+
+const TRAFFIC_VESSEL_META = [
+  { vesselType: "tanker", target: "portwatch_daily_transit_calls_tanker", label: "PortWatch 油轮通行量", color: "#f59e0b" },
+  { vesselType: "container", target: "portwatch_daily_transit_calls_container", label: "PortWatch 集装箱船通行量", color: "#14b8a6" },
+  { vesselType: "dry_bulk", target: "portwatch_daily_transit_calls_dry_bulk", label: "PortWatch 干散货船通行量", color: "#64748b" },
+  { vesselType: "other", target: "portwatch_daily_transit_calls_other", label: "PortWatch 其他货船通行量", color: "#8b5cf6" },
+];
+
+const FRED_MARKET_CAVEATS = {
+  us_cpi:
+    "FRED CPIAUCSL：美国城市消费者全项目 CPI 指数，单位为 Index 1982-1984=100、季节调整、月度发布。它不是同比通胀率百分比；通胀率需要用指数的百分比变化计算。",
+};
+
+const FRED_MISSING_POINT_REASONS = {
+  us_cpi: "FRED CPIAUCSL 本地 CSV 快照在该 observation date 为空值。",
+};
+
+const TOPIC_STOP_KEYS = new Set(["core_event", "hormuz", "iran"]);
+const TOPIC_KEY_ALIASES = new Map([
+  ["tankers", "tanker"],
+  ["oil_tanker", "tanker"],
+  ["oil_tankers", "tanker"],
+  ["vessel_seizures", "vessel_seizure"],
+  ["shipping_disruptions", "shipping_disruption"],
+  ["gulf_of_oman", "gulf_of_oman"],
+  ["persian_gulf", "persian_gulf"],
+]);
+const TOPIC_LABELS = new Map([
+  ["ais", "AIS"],
+  ["gnss", "GNSS"],
+  ["irgc", "IRGC"],
+  ["us-iran", "US-Iran"],
+  ["iaea", "IAEA"],
+  ["msc_aries", "MSC Aries"],
+  ["vessel_seizure", "vessel seizure"],
+  ["shipping_disruption", "shipping disruption"],
+  ["bunker_fuel", "bunker fuel"],
+  ["operational_zone", "operational zone"],
+  ["regional_escalation", "regional escalation"],
+  ["gulf_of_oman", "Gulf of Oman"],
+  ["persian_gulf", "Persian Gulf"],
+]);
+const TOPIC_PATTERNS = [
+  { key: "blockade", pattern: /\bblockade\b|封锁/i },
+  { key: "vessel_seizure", pattern: /\bseiz(?:e|ed|ure|ing)\b|扣押/i },
+  { key: "shipping_disruption", pattern: /\bshipping disruption\b|航运|通航/i },
+  { key: "tanker", pattern: /\btankers?\b|油轮/i },
+  { key: "irgc", pattern: /\bIRGC\b|革命卫队/i },
+  { key: "naval", pattern: /\bnav(?:y|al)\b|\bwarships?\b|军舰|海军/i },
+  { key: "ais", pattern: /\bAIS\b/i },
+  { key: "gnss", pattern: /\bGNSS\b|\bGPS\b/i },
+  { key: "bunker_fuel", pattern: /\bbunker fuel\b|燃油/i },
+  { key: "escort", pattern: /\bescort\b|护航/i },
+  { key: "nuclear", pattern: /\bnuclear\b|铀|核/i },
+  { key: "drone", pattern: /\bdrones?\b|无人机/i },
+  { key: "missile", pattern: /\bmissiles?\b|导弹/i },
 ];
 
 function csvSplitLine(line) {
@@ -168,6 +212,7 @@ async function fredLineage(row) {
 
 function marketUnit(target, fallback) {
   if (target === "brent" || target === "wti") return "USD/bbl";
+  if (target === "gold") return "USD/oz";
   if (target === "usd_cny") return "CNY per USD";
   if (target === "us10y") return "%";
   if (target === "vix") return "index";
@@ -176,9 +221,18 @@ function marketUnit(target, fallback) {
 
 async function buildFredSeries(rows) {
   const byTarget = new Map();
+  const missingByTarget = new Map();
   for (const row of rows) {
     const value = numeric(row.value);
-    if (value == null || !row.target || !row.date) continue;
+    if (!row.target || !row.date) continue;
+    if (value == null) {
+      const reason = FRED_MISSING_POINT_REASONS[row.target];
+      if (reason) {
+        if (!missingByTarget.has(row.target)) missingByTarget.set(row.target, []);
+        missingByTarget.get(row.target).push({ date: row.date, reason });
+      }
+      continue;
+    }
     if (!byTarget.has(row.target)) byTarget.set(row.target, []);
     byTarget.get(row.target).push({ ...row, value });
   }
@@ -188,8 +242,15 @@ async function buildFredSeries(rows) {
     const meta = MARKET_META[target];
     if (!meta) continue;
     targetRows.sort((a, b) => a.date.localeCompare(b.date));
+    const missingPoints = (missingByTarget.get(target) ?? []).sort((a, b) => a.date.localeCompare(b.date));
     const latest = targetRows.at(-1);
     const lineage = await fredLineage(latest);
+    const baseCaveat =
+      FRED_MARKET_CAVEATS[target] ?? `${meta.label} from FRED normalized local history; raw endpoint is not called by the UI.`;
+    const missingCaveat =
+      missingPoints.length > 0
+        ? ` 当前快照含官方空值：${missingPoints.map((point) => point.date).join(", ")}；图上标记缺值，不插值、不连线。`
+        : "";
     series.push({
       id: meta.id,
       target,
@@ -205,11 +266,63 @@ async function buildFredSeries(rows) {
       raw_path: lineage.raw_path,
       source_hash: lineage.source_hash,
       points: targetRows.map((row) => ({ date: row.date, value: row.value })),
-      caveat: `${meta.label} from FRED normalized local history; raw endpoint is not called by the UI.`,
+      missing_points: missingPoints.length > 0 ? missingPoints : undefined,
+      caveat: `${baseCaveat}${missingCaveat}`,
       evidenceEligible: false,
     });
   }
   return series;
+}
+
+async function buildGoldSeries(row) {
+  const points = Array.isArray(row?.points)
+    ? row.points
+        .map((point) => ({
+          date: point.date,
+          value: numeric(point.close ?? point.value),
+        }))
+        .filter((point) => point.date && point.value != null)
+        .sort((a, b) => a.date.localeCompare(b.date))
+    : [];
+  if (!row || points.length === 0 || !row.raw_path || !row.source_hash) {
+    return {
+      id: "gold-pending",
+      target: "gold",
+      label: "Gold",
+      group: "safe_haven_fx",
+      color: "#d97706",
+      unit: "USD/oz",
+      status: "pending_source",
+      source_id: "stooq-market",
+      provider_id: "stooq",
+      license_status: "unknown",
+      raw_path: null,
+      source_hash: null,
+      points: [],
+      caveat: "Gold XAU/USD history missing source-bound local snapshot; run npm run fetch:gold.",
+      evidenceEligible: false,
+    };
+  }
+  return {
+    id: "gold-spot",
+    target: "gold",
+    label: "Gold spot",
+    group: "safe_haven_fx",
+    color: "#d97706",
+    unit: "USD/oz",
+    status: "active",
+    source_id: row.source_id ?? "stooq-market",
+    provider_id: row.provider_id ?? "stooq",
+    license_status: row.license_status ?? "open",
+    retrieved_at: row.retrieved_at,
+    raw_path: row.raw_path ?? null,
+    source_hash: row.source_hash ?? null,
+    points,
+    caveat:
+      row.caveat ??
+      "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or continuous futures history.",
+    evidenceEligible: false,
+  };
 }
 
 function latestRowsByTarget(rows) {
@@ -285,12 +398,12 @@ async function buildMarketSnapshot(fredRows) {
   return snapshot;
 }
 
-function buildTrafficRows(transitRows) {
+function buildTrafficRows(transitRows, vesselType = "all") {
   return transitRows
     .filter((row) =>
       row.source_id === "imf-portwatch-hormuz" &&
       row.metric === "daily_transit_calls" &&
-      (row.vessel_type || "all") === "all" &&
+      (row.vessel_type || "all") === vesselType &&
       row.window === "daily" &&
       numeric(row.value) != null,
     )
@@ -332,6 +445,14 @@ function buildTrafficSeries(transitRows) {
     .filter(Boolean);
   const latest = rows.at(-1);
   const raw = latest ?? {};
+  const latestCaveat = String(raw.caveat ?? "");
+  const latestTanker = latestCaveat.match(/n_tanker=(\d+)/)?.[1];
+  const latestCargo = latestCaveat.match(/n_cargo=(\d+)/)?.[1];
+  const latestCapacity = latestCaveat.match(/capacity=(\d+)/)?.[1];
+  const coverageText = rows.length > 0 ? `覆盖期 ${rows[0].date} 至 ${rows.at(-1).date}` : "覆盖期待确认";
+  const latestText = latest
+    ? `最新日总通行 ${latest.value} 艘；油轮 ${latestTanker ?? "待确认"} 艘；货船 ${latestCargo ?? "待确认"} 艘；估算运力 ${latestCapacity ?? "待确认"}。`
+    : "最新日待确认。";
   const common = {
     source_id: "imf-portwatch-hormuz",
     provider_id: "imf-portwatch",
@@ -339,7 +460,8 @@ function buildTrafficSeries(transitRows) {
     retrieved_at: raw.retrieved_at,
     raw_path: raw.raw_path || null,
     source_hash: raw.source_hash || null,
-    caveat: raw.caveat || "AIS-derived PortWatch aggregate; revisions and AIS/GNSS limitations apply.",
+    caveat:
+      `PortWatch chokepoint6 霍尔木兹海峡日通行量，来自 AIS/GNSS 船舶信号反演；需注意 GPS 干扰、AIS 伪装、关闭 AIS 的船只和事后修订。${coverageText}；${latestText}`,
     evidenceEligible: false,
   };
 
@@ -347,10 +469,10 @@ function buildTrafficSeries(transitRows) {
     dailySeries: {
       id: "portwatch-daily-transit-calls-all",
       target: "portwatch_daily_transit_calls_all",
-      label: "PortWatch daily transit calls",
+      label: "PortWatch 日通行量",
       group: "traffic",
       color: "#0b66f6",
-      unit: "daily transit calls",
+      unit: "日通过船次",
       status: rows.length > 0 ? "active" : "pending_source",
       points,
       baseline_points: baselinePoints,
@@ -359,14 +481,37 @@ function buildTrafficSeries(transitRows) {
     rollingSeries: {
       id: "portwatch-7d-avg-transit-calls-all",
       target: "portwatch_7d_avg_transit_calls_all",
-      label: "PortWatch 7d avg",
+      label: "PortWatch 7日均值",
       group: "traffic",
       color: "#38bdf8",
-      unit: "daily transit calls",
+      unit: "日通过船次",
       status: rows.length > 0 ? "active" : "pending_source",
       points: rollingPoints,
       ...common,
     },
+    vesselSeries: TRAFFIC_VESSEL_META.map((meta) => {
+      const vesselRows = buildTrafficRows(transitRows, meta.vesselType);
+      const latestVessel = vesselRows.at(-1) ?? raw;
+      return {
+        id: `portwatch-daily-transit-calls-${meta.vesselType}`,
+        target: meta.target,
+        label: meta.label,
+        group: "traffic",
+        color: meta.color,
+        unit: "日通过船次",
+        status: vesselRows.length > 0 ? "active" : "pending_source",
+        source_id: "imf-portwatch-hormuz",
+        provider_id: "imf-portwatch",
+        license_status: "open",
+        retrieved_at: latestVessel.retrieved_at,
+        raw_path: latestVessel.raw_path || null,
+        source_hash: latestVessel.source_hash || null,
+        points: vesselRows.map((row) => ({ date: row.date, value: row.value })),
+        caveat:
+          `PortWatch chokepoint6 霍尔木兹海峡${meta.label.replace("PortWatch ", "")}，与总通行量同源；AIS/GNSS 局限同样适用。${coverageText}`,
+        evidenceEligible: false,
+      };
+    }),
     rows,
     baselinePoints,
   };
@@ -445,6 +590,66 @@ function buildTopicIndex(events) {
     .sort((a, b) => b.event_count - a.event_count || a.tag.localeCompare(b.tag));
 }
 
+function normalizeTopicKey(rawKey) {
+  const key = String(rawKey ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+  return TOPIC_KEY_ALIASES.get(key) ?? key;
+}
+
+function topicLabel(key) {
+  return TOPIC_LABELS.get(key) ?? key;
+}
+
+function addTopicCandidate(byKey, key, event, sourceTag) {
+  const normalizedKey = normalizeTopicKey(key);
+  if (!normalizedKey || TOPIC_STOP_KEYS.has(normalizedKey)) return;
+  const previous = byKey.get(normalizedKey) ?? {
+    key: normalizedKey,
+    label: topicLabel(normalizedKey),
+    eventIds: new Set(),
+    sourceTags: new Set(),
+  };
+  previous.eventIds.add(event.event_id);
+  previous.sourceTags.add(sourceTag ?? key);
+  byKey.set(normalizedKey, previous);
+}
+
+function buildTopicCloud(events) {
+  const byKey = new Map();
+  for (const event of events) {
+    for (const tag of event.tags ?? []) {
+      addTopicCandidate(byKey, tag, event, tag);
+    }
+
+    const searchableText = `${event.title ?? ""}\n${event.description ?? ""}`;
+    for (const candidate of TOPIC_PATTERNS) {
+      if (candidate.pattern.test(searchableText)) {
+        addTopicCandidate(byKey, candidate.key, event, "text");
+      }
+    }
+  }
+
+  const terms = [...byKey.values()]
+    .map((term) => ({
+      key: term.key,
+      label: term.label,
+      event_count: term.eventIds.size,
+      event_ids: [...term.eventIds].sort(),
+      source_tags: [...term.sourceTags].sort(),
+    }))
+    .filter((term) => term.event_count > 0)
+    .sort((a, b) => b.event_count - a.event_count || a.label.localeCompare(b.label))
+    .slice(0, TOPIC_CLOUD_LIMIT);
+
+  const maxCount = Math.max(...terms.map((term) => term.event_count), 1);
+  return terms.map((term) => ({
+    ...term,
+    weight: Number(Math.sqrt(term.event_count / maxCount).toFixed(3)),
+  }));
+}
+
 function isCoreTimelineEvent(event) {
   return event.source_id === "events-curated" || event.tags?.includes("core_event");
 }
@@ -466,9 +671,10 @@ function buildEventOverlays(events) {
 }
 
 async function main() {
-  const [baseline, fredRows, transitRows, advisories, eventsRaw, polymarketRaw] = await Promise.all([
+  const [baseline, fredRows, goldRow, transitRows, advisories, eventsRaw, polymarketRaw] = await Promise.all([
     readJson(paths.baseline, []),
     readCsv(paths.fred),
+    readJson(paths.gold, null),
     readCsv(paths.transits),
     readJsonLines(paths.advisories),
     readJsonLines(paths.events),
@@ -480,6 +686,7 @@ async function main() {
   const displayEvents = coreEvents.length > 0 ? coreEvents : events;
   const traffic = buildTrafficSeries(transitRows);
   const fredSeries = await buildFredSeries(fredRows);
+  const goldSeries = await buildGoldSeries(goldRow);
   const polymarketRefs = buildPolymarketRefs(polymarketRaw);
   const dataAsOf = newestIso([
     ...baseline.map((fact) => fact.retrieved_at),
@@ -489,6 +696,7 @@ async function main() {
     ...events.map((event) => event.retrieved_at),
     ...polymarketRaw.map((ref) => ref.retrieved_at),
   ]);
+  const marketDataAsOf = newestIso([dataAsOf, goldRow?.retrieved_at]);
 
   const overview = {
     built_at: BUILT_AT,
@@ -507,17 +715,22 @@ async function main() {
     events: displayEvents,
     source_index: buildSourceIndex(displayEvents),
     topic_index: buildTopicIndex(displayEvents),
+    topic_cloud: buildTopicCloud(displayEvents),
   };
+
+  const marketSeries = [
+    traffic.dailySeries,
+    traffic.rollingSeries,
+    ...traffic.vesselSeries,
+    ...fredSeries,
+    goldSeries,
+    ...PENDING_MARKET_SERIES,
+  ].filter((series) => !MARKET_CHART_HIDDEN_TARGETS.has(series.target));
 
   const market = {
     built_at: BUILT_AT,
-    data_as_of: dataAsOf,
-    series: [
-      traffic.dailySeries,
-      traffic.rollingSeries,
-      ...fredSeries,
-      ...PENDING_MARKET_SERIES,
-    ],
+    data_as_of: marketDataAsOf,
+    series: marketSeries,
     event_overlays: buildEventOverlays(displayEvents),
   };
 

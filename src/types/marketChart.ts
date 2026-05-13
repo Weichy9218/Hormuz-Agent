@@ -26,7 +26,7 @@ export interface HormuzTransitObservation {
   date: string;
   value: number | null;
   direction?: "eastbound" | "westbound" | "both";
-  window?: "daily" | "7d_avg" | "monthly";
+  window?: "daily" | "7d_avg" | "monthly" | "source_snapshot" | "chart_image_snapshot";
   source_url: string;
   retrieved_at: string;
   license_status: "open";
@@ -98,7 +98,7 @@ export interface NewsTimelineBundle {
     tag: string;
     event_count: number;
   }>;
-  topic_cloud?: Array<{
+  topic_cloud: Array<{
     key: string;
     label: string;
     event_count: number;
@@ -117,6 +117,11 @@ export type MarketChartGroup =
 export interface MarketChartPoint {
   date: string;
   value: number;
+}
+
+export interface MarketChartMissingPoint {
+  date: string;
+  reason: string;
 }
 
 export interface MarketChartBundle {
@@ -138,6 +143,7 @@ export interface MarketChartBundle {
     source_hash?: `sha256:${string}` | null;
     points: MarketChartPoint[];
     baseline_points?: MarketChartPoint[];
+    missing_points?: MarketChartMissingPoint[];
     caveat: string;
     evidenceEligible: false;
   }>;

@@ -16,8 +16,10 @@ const PORTWATCH_DAILY_LAYER_URL =
 const PORTWATCH_METADATA_LAYER_URL =
   "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/PortWatch_chokepoints_database/FeatureServer/0";
 const PORTWATCH_PORT_ID = "chokepoint6";
-const PORTWATCH_MIN_DAILY_ROWS = 365;
-const PORTWATCH_QUERY_ROWS = 430;
+const PORTWATCH_MIN_DAILY_ROWS = 2_000;
+const PORTWATCH_PAGE_SIZE = 1_000;
+const PORTWATCH_OUT_FIELDS =
+  "date,portid,portname,n_total,n_tanker,n_cargo,capacity,n_container,n_dry_bulk,n_general_cargo,n_roro";
 const IMO_SOURCE_URL =
   "https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx";
 
@@ -148,30 +150,201 @@ function parseJsonResponse(result, label) {
   }
 }
 
-function portWatchQueryUrl(resultRecordCount) {
+function portWatchQueryUrl(extraParams = {}) {
   const params = new URLSearchParams({
     f: "json",
     where: `portid='${PORTWATCH_PORT_ID}'`,
-    outFields:
-      "date,portid,portname,n_total,n_tanker,n_cargo,capacity,n_container,n_dry_bulk,n_general_cargo,n_roro",
     returnGeometry: "false",
-    orderByFields: "date DESC",
-    resultRecordCount: String(resultRecordCount),
+    ...extraParams,
   });
   return `${PORTWATCH_DAILY_LAYER_URL}/query?${params.toString()}`;
 }
 
+function portWatchRowsUrl(resultOffset) {
+  return portWatchQueryUrl({
+    outFields: PORTWATCH_OUT_FIELDS,
+    orderByFields: "date ASC",
+    resultOffset: String(resultOffset),
+    resultRecordCount: String(PORTWATCH_PAGE_SIZE),
+  });
+}
+
+function portWatchCountUrl() {
+  return portWatchQueryUrl({
+    returnCountOnly: "true",
+  });
+}
+
+function portWatchStatsUrl() {
+  return portWatchQueryUrl({
+    outStatistics: JSON.stringify([
+      { statisticType: "count", onStatisticField: "date", outStatisticFieldName: "row_count" },
+      { statisticType: "min", onStatisticField: "date", outStatisticFieldName: "min_date" },
+      { statisticType: "max", onStatisticField: "date", outStatisticFieldName: "max_date" },
+    ]),
+  });
+}
+
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function dateOnly(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "number") return new Date(value).toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function statsAttributes(statsJson) {
+  const attributes = statsJson.features?.[0]?.attributes ?? {};
+  return {
+    row_count: finiteNumber(attributes.row_count),
+    min_date: dateOnly(attributes.min_date),
+    max_date: dateOnly(attributes.max_date),
+  };
+}
+
+function metricRowsForDailyAttributes(row, rawInfo, coverage) {
+  const portname = row.portname || "Strait of Hormuz";
+  const date = dateOnly(row.date);
+  if (!date) return [];
+
+  const nCargo = finiteNumber(row.n_cargo);
+  const nContainer = finiteNumber(row.n_container);
+  const nDryBulk = finiteNumber(row.n_dry_bulk);
+  const nGeneralCargo = finiteNumber(row.n_general_cargo);
+  const nRoro = finiteNumber(row.n_roro);
+  const other =
+    nCargo == null || nContainer == null || nDryBulk == null || nGeneralCargo == null || nRoro == null
+      ? null
+      : nCargo - nContainer - nDryBulk - nGeneralCargo - nRoro;
+
+  const metrics = [
+    ["all", row.n_total],
+    ["tanker", row.n_tanker],
+    ["container", row.n_container],
+    ["dry_bulk", row.n_dry_bulk],
+    ["other", other != null && other >= 0 ? other : null],
+  ];
+
+  return metrics
+    .map(([vesselType, rawValue]) => {
+      const value = finiteNumber(rawValue);
+      if (value == null) return null;
+      return {
+        source_id: "imf-portwatch-hormuz",
+        metric: "daily_transit_calls",
+        vessel_type: vesselType,
+        date,
+        value,
+        direction: "both",
+        window: "daily",
+        source_url: PORTWATCH_SOURCE_URL,
+        retrieved_at: RETRIEVED_AT,
+        license_status: "open",
+        fetch_status: rawInfo.status,
+        content_type: rawInfo.contentType,
+        raw_path: rawInfo.rawPath,
+        source_hash: rawInfo.sourceHash,
+        caveat:
+          `PortWatch ${PORTWATCH_PORT_ID} ${portname} daily ${vesselType} transit calls; ` +
+          `AIS/GNSS caveat applies. coverage=${coverage.min_date ?? "unknown"}-${coverage.max_date ?? "unknown"}; ` +
+          `n_total=${row.n_total}; n_tanker=${row.n_tanker}; n_cargo=${row.n_cargo}; capacity=${row.capacity}.`,
+      };
+    })
+    .filter(Boolean);
+}
+
 async function snapshotPortWatch(rawDir) {
   const metaResult = await fetchJson(`${PORTWATCH_METADATA_LAYER_URL}/query?f=json&where=portid%3D%27${PORTWATCH_PORT_ID}%27&outFields=*&returnGeometry=false&resultRecordCount=5`);
-  const dailyResult = await fetchJson(portWatchQueryUrl(PORTWATCH_QUERY_ROWS));
+  const countResult = await fetchJson(portWatchCountUrl());
+  const statsResult = await fetchJson(portWatchStatsUrl());
   const metaPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-chokepoint-metadata.json`);
-  const dailyPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-daily-chokepoint6.json`);
+  const countPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-daily-chokepoint6-count.json`);
+  const statsPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-daily-chokepoint6-stats.json`);
   await writeFile(metaPath, metaResult.text);
-  await writeFile(dailyPath, dailyResult.text);
+  await writeFile(countPath, countResult.text);
+  await writeFile(statsPath, statsResult.text);
 
-  const dailyJson = parseJsonResponse(dailyResult, "PortWatch daily chokepoint data");
-  const features = dailyJson.features ?? [];
-  if (!dailyResult.ok || dailyJson.error || features.length === 0) {
+  const countJson = parseJsonResponse(countResult, "PortWatch daily chokepoint row count");
+  const statsJson = parseJsonResponse(statsResult, "PortWatch daily chokepoint coverage stats");
+  if (!countResult.ok || countJson.error) {
+    throw new Error(`PortWatch daily count query failed: ${countJson.error?.message ?? countResult.status}`);
+  }
+  if (!statsResult.ok || statsJson.error) {
+    throw new Error(`PortWatch daily stats query failed: ${statsJson.error?.message ?? statsResult.status}`);
+  }
+
+  const expectedCount = finiteNumber(countJson.count) ?? 0;
+  const coverage = statsAttributes(statsJson);
+  const features = [];
+  const pageRecords = [];
+  let resultOffset = 0;
+  let lastPageStatus = countResult.status;
+  let lastPageContentType = countResult.contentType;
+
+  while (expectedCount === 0 || features.length < expectedCount) {
+    const pageResult = await fetchJson(portWatchRowsUrl(resultOffset));
+    lastPageStatus = pageResult.status;
+    lastPageContentType = pageResult.contentType;
+    const pageJson = parseJsonResponse(pageResult, `PortWatch daily chokepoint page offset=${resultOffset}`);
+    const pageFeatures = pageJson.features ?? [];
+    const pagePath = resolve(
+      rawDir,
+      `${SAFE_RETRIEVED_AT}-portwatch-daily-chokepoint6-page-${pageRecords.length + 1}.json`,
+    );
+    await writeFile(pagePath, pageResult.text);
+    pageRecords.push({
+      label: `portwatch_daily_page_${pageRecords.length + 1}`,
+      path: relativeRawPath(pagePath),
+      hash: `sha256:${sha256(pageResult.text)}`,
+      status: pageResult.status,
+      contentType: pageResult.contentType,
+      resultOffset,
+      featureCount: pageFeatures.length,
+      exceededTransferLimit: Boolean(pageJson.exceededTransferLimit),
+    });
+
+    if (!pageResult.ok || pageJson.error || pageFeatures.length === 0) {
+      throw new Error(`PortWatch daily page offset=${resultOffset} returned no usable features.`);
+    }
+
+    features.push(...pageFeatures);
+    resultOffset += pageFeatures.length;
+    if (!pageJson.exceededTransferLimit && features.length >= expectedCount) break;
+    if (!pageJson.exceededTransferLimit && pageFeatures.length < PORTWATCH_PAGE_SIZE) break;
+  }
+
+  const byDate = new Map();
+  for (const feature of features) {
+    const attributes = feature.attributes ?? {};
+    const date = dateOnly(attributes.date);
+    if (attributes.portid === PORTWATCH_PORT_ID && date) {
+      byDate.set(date, { ...attributes, date });
+    }
+  }
+  const dailyAttributes = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+
+  const mergedPayload = {
+    source_id: "imf-portwatch-hormuz",
+    layer_url: PORTWATCH_DAILY_LAYER_URL,
+    port_id: PORTWATCH_PORT_ID,
+    source_url: PORTWATCH_SOURCE_URL,
+    retrieved_at: RETRIEVED_AT,
+    expected_count: expectedCount,
+    fetched_feature_count: features.length,
+    normalized_daily_count: dailyAttributes.length,
+    stats: coverage,
+    pages: pageRecords,
+    features: dailyAttributes,
+  };
+  const mergedText = `${JSON.stringify(mergedPayload, null, 2)}\n`;
+  const dailyPath = resolve(rawDir, `${SAFE_RETRIEVED_AT}-portwatch-daily-chokepoint6-merged.json`);
+  await writeFile(dailyPath, mergedText);
+  const mergedHash = `sha256:${sha256(mergedText)}`;
+
+  if (dailyAttributes.length === 0) {
     return {
       rows: [{
         source_id: "imf-portwatch-hormuz",
@@ -184,10 +357,10 @@ async function snapshotPortWatch(rawDir) {
         source_url: PORTWATCH_SOURCE_URL,
         retrieved_at: RETRIEVED_AT,
         license_status: "open",
-        fetch_status: dailyResult.status,
-        content_type: dailyResult.contentType,
+        fetch_status: lastPageStatus,
+        content_type: lastPageContentType,
         raw_path: relativeRawPath(dailyPath),
-        source_hash: `sha256:${sha256(dailyResult.text)}`,
+        source_hash: mergedHash,
         caveat:
           "PortWatch daily chokepoint query did not return numeric rows; keep as source-health status only.",
       }],
@@ -199,39 +372,44 @@ async function snapshotPortWatch(rawDir) {
           status: metaResult.status,
           contentType: metaResult.contentType,
         },
+        {
+          label: "portwatch_daily_count",
+          path: relativeRawPath(countPath),
+          hash: `sha256:${sha256(countResult.text)}`,
+          status: countResult.status,
+          contentType: countResult.contentType,
+        },
+        {
+          label: "portwatch_daily_stats",
+          path: relativeRawPath(statsPath),
+          hash: `sha256:${sha256(statsResult.text)}`,
+          status: statsResult.status,
+          contentType: statsResult.contentType,
+        },
+        ...pageRecords,
       ],
     };
   }
 
-  const rows = features
-    .map((feature) => feature.attributes)
-    .filter((row) => row?.portid === PORTWATCH_PORT_ID && row.date)
-    .map((row) => ({
-      source_id: "imf-portwatch-hormuz",
-      metric: "daily_transit_calls",
-      vessel_type: "all",
-      date: row.date,
-      value: row.n_total,
-      direction: "both",
-      window: "daily",
-      source_url: PORTWATCH_SOURCE_URL,
-      retrieved_at: RETRIEVED_AT,
-      license_status: "open",
-      fetch_status: dailyResult.status,
-      content_type: dailyResult.contentType,
-      raw_path: relativeRawPath(dailyPath),
-      source_hash: `sha256:${sha256(dailyResult.text)}`,
-      caveat:
-        `PortWatch ${PORTWATCH_PORT_ID} ${row.portname}; AIS/GNSS caveat applies. ` +
-        `n_tanker=${row.n_tanker}; n_cargo=${row.n_cargo}; capacity=${row.capacity}.`,
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  if (rows.length < PORTWATCH_MIN_DAILY_ROWS) {
+  if (expectedCount > 0 && dailyAttributes.length < expectedCount) {
     throw new Error(
-      `PortWatch daily chokepoint query returned ${rows.length} rows; need at least ${PORTWATCH_MIN_DAILY_ROWS} for 1y baseline derivation.`,
+      `PortWatch daily pagination normalized ${dailyAttributes.length} rows but upstream count is ${expectedCount}.`,
     );
   }
+
+  if (dailyAttributes.length < PORTWATCH_MIN_DAILY_ROWS) {
+    throw new Error(
+      `PortWatch daily chokepoint query returned ${dailyAttributes.length} rows; need at least ${PORTWATCH_MIN_DAILY_ROWS} for historical event windows.`,
+    );
+  }
+
+  const rawInfo = {
+    status: lastPageStatus,
+    contentType: "application/json",
+    rawPath: relativeRawPath(dailyPath),
+    sourceHash: mergedHash,
+  };
+  const rows = dailyAttributes.flatMap((row) => metricRowsForDailyAttributes(row, rawInfo, coverage));
 
   return {
     rows,
@@ -243,6 +421,28 @@ async function snapshotPortWatch(rawDir) {
         status: metaResult.status,
         contentType: metaResult.contentType,
       },
+      {
+        label: "portwatch_daily_count",
+        path: relativeRawPath(countPath),
+        hash: `sha256:${sha256(countResult.text)}`,
+        status: countResult.status,
+        contentType: countResult.contentType,
+      },
+      {
+        label: "portwatch_daily_stats",
+        path: relativeRawPath(statsPath),
+        hash: `sha256:${sha256(statsResult.text)}`,
+        status: statsResult.status,
+        contentType: statsResult.contentType,
+      },
+      {
+        label: "portwatch_daily_merged",
+        path: relativeRawPath(dailyPath),
+        hash: mergedHash,
+        status: lastPageStatus,
+        contentType: "application/json",
+      },
+      ...pageRecords,
     ],
   };
 }
