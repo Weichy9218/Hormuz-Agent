@@ -98,6 +98,14 @@ export interface NewsTimelineBundle {
     tag: string;
     event_count: number;
   }>;
+  topic_cloud?: Array<{
+    key: string;
+    label: string;
+    event_count: number;
+    weight: number;
+    event_ids: string[];
+    source_tags: string[];
+  }>;
 }
 
 export type MarketChartGroup =
