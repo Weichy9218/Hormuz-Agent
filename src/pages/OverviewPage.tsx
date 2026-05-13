@@ -3,14 +3,12 @@ import {
   Activity,
   ArrowRight,
   BarChart3,
-  ExternalLink,
   Newspaper,
 } from "lucide-react";
 import { CaseMap } from "../components/map/CaseMap";
 import { InfoTitle } from "../components/shared/InfoTitle";
 import snapshotJson from "../../data/generated/overview_snapshot.json";
 import type { OverviewSnapshot } from "../types/marketChart";
-import type { PolymarketQuestionOutcome, PolymarketQuestionRef } from "../types/polymarket";
 import type { TimelineEvent } from "../types/timeline";
 
 const snapshot = snapshotJson as OverviewSnapshot;
@@ -19,50 +17,50 @@ const pageLinks = [
   {
     href: "/forecast",
     icon: Activity,
-    label: "Forecast Agent",
-    meta: "dynamic run trace",
-    title: "看一次真实 forecast agent 怎么跑完",
-    body: "从问题设置、web evidence、tool calls 到最终 record_forecast，Forecast 是唯一的预测 truth surface。",
+    label: "进入 Forecast Agent",
+    meta: "动态推理链",
+    title: "看 agent 怎样形成预测",
+    body: "从 target、resolution source、证据检索到 record_forecast，Forecast 是唯一的预测结果页面。",
   },
   {
     href: "/market",
     icon: BarChart3,
-    label: "Market",
-    meta: "dynamic data",
-    title: "看市场和 traffic 背景",
-    body: "Traffic transit calls、Brent / WTI / VIX / Broad USD 与事件 overlay，只展示原始市场背景。",
+    label: "查看市场背景",
+    meta: "动态市场数据",
+    title: "看市场是否已经有反应",
+    body: "Brent / WTI / VIX / Broad USD 与 traffic snapshot 只展示原始背景，不替 agent 下判断。",
   },
   {
     href: "/news",
     icon: Newspaper,
-    label: "News",
-    meta: "curated timeline",
-    title: "看事件时间线",
-    body: "官方 advisory 与 promoted media events，按 source、severity、topic 可过滤，可回到原始来源。",
+    label: "打开事件时间线",
+    meta: "人工整理时间线",
+    title: "追溯事件如何走到这里",
+    body: "官方 advisory 与 curated media events 按来源、严重度和 topic 组织，保留 source_url 和 retrieved_at。",
   },
 ];
 
 const exampleQuestions = [
-  "这次 Hormuz 相关事件是否足以改变 Brent 近一周高点预测？",
-  "Traffic 是否已经回到历史同窗口水平？",
-  "同一条 advisory 在 News timeline、Market overlay 和 Forecast evidence 中如何被复核？",
+  "未来 7 天，霍尔木兹通航状态是否已经恢复到正常窗口？",
+  "未来 5 个交易日，Brent 会不会出现超过 5% 的上行？",
+  "同一条官方 advisory 如何在事件时间线、市场曲线和 agent evidence 中被交叉复核？",
 ];
 
 const staticDynamicRows = [
   {
-    label: "Static",
-    title: "Case context",
-    body: "网站定位、Hormuz baseline、地图轮廓和页面导航是静态解释层。",
+    label: "静态",
+    title: "问题边界",
+    body: "网站定位、结构性 baseline、页面导航和解释文字，不代表实时证据。",
   },
   {
-    label: "Dynamic",
-    title: "Local snapshots",
-    body: "Traffic、market rows、events timeline 来自 data/generated，显示 built_at / retrieved_at。",
+    label: "动态",
+    title: "本地快照",
+    body: "Traffic、market rows、events timeline 来自 data/generated，必须显示 built_at / retrieved_at。",
   },
   {
-    label: "External",
-    title: "Polymarket reference",
-    body: "外部市场只作参考，不进入 forecast pipeline；live fetch 不稳定时显式 pending。",
+    label: "外部",
+    title: "外部参考",
+    body: "第三方新闻和 AIS 参考站只作对照；没有稳定入库的数据不在主界面出数。",
   },
 ];
 
@@ -112,62 +110,41 @@ function deltaDirection(value: number | null | undefined) {
   return value > 0 ? "positive" : "negative";
 }
 
-function truncateText(value: string, maxLength = 115) {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength).trimEnd()}…`;
-}
-
-function cleanOutcomeId(outcomeId: string) {
-  const suffix = outcomeId.includes(":") ? outcomeId.split(":").at(-1) : outcomeId;
-  return String(suffix ?? outcomeId).replace(/_/g, " ").toUpperCase();
-}
-
-function sortedOutcomes(ref: PolymarketQuestionRef) {
-  const outcomes = [...ref.outcomes];
-  return outcomes.sort((a, b) => Number(b.last_price ?? -1) - Number(a.last_price ?? -1));
-}
-
-function outcomePercent(outcome: PolymarketQuestionOutcome) {
-  return outcome.last_price === null || outcome.last_price === undefined
-    ? null
-    : Math.max(0, Math.min(100, outcome.last_price * 100));
-}
-
 function staticTrafficSummary(snapshot: OverviewSnapshot) {
   const traffic = snapshot.traffic_snapshot;
-  if (!traffic) return "Traffic snapshot pending";
-  return `${formatNumber(traffic.latest_value, 0)} daily transit calls · ${formatDelta(traffic.delta_vs_baseline_pct, "%")} vs 1y avg`;
+  if (!traffic) return "通航快照 pending";
+  return `${formatNumber(traffic.latest_value, 0)} 次日通航记录 · 较 1y 均值 ${formatDelta(traffic.delta_vs_baseline_pct, "%")}`;
 }
 
 function HeroPanel({ snapshot }: { snapshot: OverviewSnapshot }) {
   return (
     <section className="console-card overview-product-hero">
       <div className="overview-hero-copy">
-        <span className="overview-page-kicker">Single-case reviewer console</span>
-        <h1>Hormuz Risk Interface shows what the case is, what the market says, and how the forecast agent reasons.</h1>
+        <span className="overview-page-kicker">单案例预测工作台</span>
+        <h1>用霍尔木兹这个深度 case，看事件、市场和预测 agent 如何被放在一起复核。</h1>
         <p>
-          This site is a compact review surface for one high-dimensional geopolitical forecasting case.
-          Use Overview to orient yourself, then jump into the live agent trace, market background, or event timeline.
+          这里不是新闻聚合页、交易面板或实时 AIS 系统。Overview 只帮 reviewer 在 30 秒内建立语境：
+          发生了什么、哪些是本地动态快照、哪些只是解释层。真正的预测过程在 Forecast Agent。
         </p>
         <div className="overview-hero-actions" aria-label="primary overview links">
           <a href="/forecast">
-            Open Forecast Agent <ArrowRight size={15} />
+            打开 Forecast Agent <ArrowRight size={15} />
           </a>
-          <a href="/market">Market background</a>
-          <a href="/news">Event timeline</a>
+          <a href="/market">市场背景</a>
+          <a href="/news">事件时间线</a>
         </div>
       </div>
       <aside className="overview-hero-status" aria-label="static and dynamic data boundary">
         <div>
-          <span>Static frame</span>
-          <strong>Website guide + Hormuz context</strong>
+          <span>静态说明</span>
+          <strong>网站定位 + 案例边界</strong>
         </div>
         <div>
-          <span>Dynamic snapshot</span>
+          <span>动态快照</span>
           <strong>{staticTrafficSummary(snapshot)}</strong>
         </div>
         <div>
-          <span>Data built</span>
+          <span>数据构建时间</span>
           <strong>{formatDateTime(snapshot.built_at)}</strong>
         </div>
       </aside>
@@ -201,7 +178,7 @@ function NavigationCards() {
 function ExampleQuestions() {
   return (
     <section className="console-card overview-questions-card">
-      <InfoTitle title="Example questions" subtitle="What this demo is good for asking" />
+      <InfoTitle title="可以问什么" subtitle="这个 demo 适合复核的问题类型" />
       <ol>
         {exampleQuestions.map((question) => (
           <li key={question}>{question}</li>
@@ -213,17 +190,15 @@ function ExampleQuestions() {
 
 function StaticDynamicCard({ snapshot }: { snapshot: OverviewSnapshot }) {
   const sourceIds = [
-    "source ids",
     "eia-iea-hormuz",
     snapshot.traffic_snapshot?.source_id,
     "fred-market",
     "events-curated",
-    "polymarket-curated",
   ].filter(Boolean).join(" · ");
 
   return (
     <section className="console-card overview-boundary-card">
-      <InfoTitle title="Static vs dynamic" subtitle="Do not mix context with live evidence" />
+      <InfoTitle title="静态信息 vs 动态信息" subtitle="不要把解释层误当成实时证据" />
       <div className="overview-boundary-list">
         {staticDynamicRows.map((row) => (
           <article key={row.label}>
@@ -234,7 +209,7 @@ function StaticDynamicCard({ snapshot }: { snapshot: OverviewSnapshot }) {
         ))}
       </div>
       <p className="overview-card-caveat">
-        Current local snapshot: built {formatDateTime(snapshot.built_at)} · data as-of {formatDateTime(snapshot.data_as_of)} · {sourceIds}.
+        当前本地快照：构建 {formatDateTime(snapshot.built_at)} · data as-of {formatDateTime(snapshot.data_as_of)} · source ids {sourceIds}.
       </p>
     </section>
   );
@@ -243,7 +218,7 @@ function StaticDynamicCard({ snapshot }: { snapshot: OverviewSnapshot }) {
 function ContextMapCard() {
   return (
     <div className="overview-context-map">
-      <CaseMap compact variant="context" />
+      <CaseMap compact variant="traffic" />
     </div>
   );
 }
@@ -251,7 +226,7 @@ function ContextMapCard() {
 function LatestEventsPreview({ events }: { events: TimelineEvent[] }) {
   return (
     <section className="console-card overview-preview-card">
-      <InfoTitle title="Latest sourced events" subtitle="Dynamic · from generated news timeline" />
+      <InfoTitle title="最新事件" subtitle="动态 · 来自 generated news_timeline" />
       <ul className="overview-event-preview-list">
         {events.slice(0, 3).map((event) => (
           <li key={event.event_id}>
@@ -266,7 +241,7 @@ function LatestEventsPreview({ events }: { events: TimelineEvent[] }) {
         ))}
       </ul>
       <a className="overview-inline-link" href="/news">
-        Open full timeline <ArrowRight size={14} />
+        查看完整时间线 <ArrowRight size={14} />
       </a>
     </section>
   );
@@ -280,17 +255,17 @@ function MarketPreview({ snapshot }: { snapshot: OverviewSnapshot }) {
 
   return (
     <section className="console-card overview-preview-card">
-      <InfoTitle title="Market and traffic preview" subtitle="Dynamic · local generated snapshot" />
+      <InfoTitle title="市场与通航预览" subtitle="动态 · 本地 generated 快照" />
       <div className="overview-traffic-preview">
-        <span>Traffic</span>
+        <span>通航</span>
         <strong>{traffic ? formatNumber(traffic.latest_value, 0) : "—"}</strong>
         <small>
-          daily transit calls
+          日通航记录
           {traffic ? ` · ${formatDate(traffic.latest_date)}` : ""}
         </small>
         {traffic ? (
           <b data-direction={deltaDirection(traffic.delta_vs_baseline_pct)}>
-            {formatDelta(traffic.delta_vs_baseline_pct, "%")} vs 1y avg
+            较 1y 均值 {formatDelta(traffic.delta_vs_baseline_pct, "%")}
           </b>
         ) : null}
       </div>
@@ -306,62 +281,40 @@ function MarketPreview({ snapshot }: { snapshot: OverviewSnapshot }) {
         ))}
       </ul>
       <a className="overview-inline-link" href="/market">
-        Open market background <ArrowRight size={14} />
+        查看市场背景 <ArrowRight size={14} />
       </a>
     </section>
   );
 }
 
-function PolymarketCard({ refs }: { refs: PolymarketQuestionRef[] }) {
+function ProjectPurposeCard() {
   return (
-    <section className="console-card overview-polymarket-card">
-      <div className="overview-polymarket-banner">External market, not our forecast</div>
-      <div className="overview-polymarket-heading">
-        <InfoTitle
-          title="Polymarket-style external reference"
-          subtitle="Dynamic only when curated odds are available; otherwise visibly pending"
-        />
+    <section className="console-card overview-purpose-card">
+      <div>
+        <InfoTitle title="这个网站的初衷" subtitle="把预测 agent 放入具体场景，观察、复核、再迭代" />
+        <p>
+          本项目选择霍尔木兹海峡作为单一深度 case，是因为它同时牵涉能源供给、航运安全、战争风险、
+          通胀预期、避险资产、美元和风险资产。方向可能互相冲突，正适合观察 agent 怎样处理真实世界里的信息噪声。
+        </p>
+        <p>
+          因此这个界面重点不是“直接给结论”，而是把事件时间线、市场背景和通航数据组织成可复核材料，
+          再让 Forecast 页展示一次真实 agent run 如何搜证据、调用工具、形成判断并落到 forecast。
+          后续迭代会继续改进 agent 行为可视化和 reviewer 体验。
+        </p>
       </div>
-      <div className="overview-polymarket-grid">
-        {refs.map((ref) => {
-          const outcomes = sortedOutcomes(ref);
-          const hasOdds = outcomes.some((outcome) => outcomePercent(outcome) !== null);
-          return (
-            <article key={ref.question_id} title={ref.caveat}>
-              <div className="overview-polymarket-card-head">
-                <span>{ref.topic_tags.join(" / ")}</span>
-                <a href={ref.question_url} rel="noreferrer" target="_blank">
-                  Polymarket <ExternalLink size={13} />
-                </a>
-              </div>
-              <strong>{ref.title}</strong>
-              <div className="overview-polymarket-outcomes">
-                {outcomes.slice(0, 4).map((outcome) => {
-                  const pct = outcomePercent(outcome);
-                  return (
-                    <div key={outcome.outcome_id}>
-                      <span>{cleanOutcomeId(outcome.outcome_id)}</span>
-                      <b>{pct === null ? "pending" : `${pct.toFixed(0)}%`}</b>
-                      <i style={{ width: `${pct ?? 0}%` }} />
-                    </div>
-                  );
-                })}
-              </div>
-              {!hasOdds ? (
-                <p className="overview-polymarket-pending">
-                  odds pending · external page may have live odds, but local curated snapshot has not captured them.
-                </p>
-              ) : null}
-              <p className="overview-polymarket-resolution" title={ref.resolution_criteria}>
-                {truncateText(ref.resolution_criteria)}
-              </p>
-              <small>
-                {ref.total_volume_usd ? `volume $${formatNumber(ref.total_volume_usd, 0)} · ` : ""}
-                retrieved {formatDateTime(ref.retrieved_at)}
-              </small>
-            </article>
-          );
-        })}
+      <div className="overview-purpose-points" aria-label="project goals">
+        <article>
+          <span>01</span>
+          <strong>让 agent 行为可见</strong>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>把场景信息结构化</strong>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>持续迭代复核界面</strong>
+        </article>
       </div>
     </section>
   );
@@ -372,10 +325,10 @@ export function OverviewPage() {
     <section className="page-grid overview-page">
       <div className="overview-guide-layout">
         <HeroPanel snapshot={snapshot} />
-        <NavigationCards />
 
         <div className="overview-guide-main">
           <div className="overview-guide-left">
+            <NavigationCards />
             <ExampleQuestions />
             <ContextMapCard />
           </div>
@@ -387,7 +340,7 @@ export function OverviewPage() {
           </aside>
         </div>
 
-        <PolymarketCard refs={snapshot.polymarket_refs} />
+        <ProjectPurposeCard />
       </div>
     </section>
   );
