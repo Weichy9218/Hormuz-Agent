@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-05-13T04:50:53.359Z",
+  "built_at": "2026-05-13T06:12:20.927Z",
   "data_as_of": "2026-05-13T04:09:50.720Z",
   "baseline": [
     {
@@ -268,7 +268,7 @@
       "provider_id": "pending",
       "license_status": "pending",
       "source_url": null,
-      "retrieved_at": "2026-05-13T04:50:53.359Z",
+      "retrieved_at": "2026-05-13T06:12:20.927Z",
       "status": "pending_source",
       "caveat": "Pending offshore CNH source."
     }

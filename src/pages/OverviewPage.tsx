@@ -110,6 +110,19 @@ function deltaDirection(value: number | null | undefined) {
   return value > 0 ? "positive" : "negative";
 }
 
+function uniqueSourceIds(snapshot: OverviewSnapshot) {
+  return [
+    ...snapshot.baseline.map((fact) => fact.source_id),
+    snapshot.traffic_snapshot?.source_id,
+    ...snapshot.market_snapshot.map((item) => item.source_id),
+    ...snapshot.latest_events.map((event) => event.source_id),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .filter((value) => !value.endsWith("-pending"))
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join(" · ");
+}
+
 function staticTrafficSummary(snapshot: OverviewSnapshot) {
   const traffic = snapshot.traffic_snapshot;
   if (!traffic) return "通航快照 pending";
@@ -189,12 +202,7 @@ function ExampleQuestions() {
 }
 
 function StaticDynamicCard({ snapshot }: { snapshot: OverviewSnapshot }) {
-  const sourceIds = [
-    "eia-iea-hormuz",
-    snapshot.traffic_snapshot?.source_id,
-    "fred-market",
-    "events-curated",
-  ].filter(Boolean).join(" · ");
+  const sourceIds = uniqueSourceIds(snapshot);
 
   return (
     <section className="console-card overview-boundary-card">
@@ -250,8 +258,8 @@ function LatestEventsPreview({ events }: { events: TimelineEvent[] }) {
 function MarketPreview({ snapshot }: { snapshot: OverviewSnapshot }) {
   const traffic = snapshot.traffic_snapshot;
   const marketRows = snapshot.market_snapshot
-    .filter((item) => ["brent", "wti", "vix", "broad_usd"].includes(item.target))
-    .slice(0, 4);
+    .filter((item) => ["brent", "wti", "vix", "broad_usd", "gold"].includes(item.target))
+    .slice(0, 5);
 
   return (
     <section className="console-card overview-preview-card">
@@ -276,10 +284,17 @@ function MarketPreview({ snapshot }: { snapshot: OverviewSnapshot }) {
             <strong>
               {formatNumber(item.value, 2)} {item.unit}
             </strong>
-            <b data-direction={deltaDirection(item.delta_1d)}>{formatDelta(item.delta_1d)} 1d</b>
+            <b data-direction={deltaDirection(item.delta_1d)}>
+              {item.delta_1d === null || item.delta_1d === undefined
+                ? item.source_id
+                : `${formatDelta(item.delta_1d)} 1d`}
+            </b>
           </li>
         ))}
       </ul>
+      <p className="overview-card-caveat">
+        Gold 使用 Stooq XAU/USD Close proxy；offshore RMB FX 仍缺少 source-bound provider，因此 pending 不出数。
+      </p>
       <a className="overview-inline-link" href="/market">
         查看市场背景 <ArrowRight size={14} />
       </a>

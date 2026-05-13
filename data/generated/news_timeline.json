@@ -1,6 +1,11 @@
 {
-  "built_at": "2026-05-13T04:50:53.359Z",
+  "built_at": "2026-05-13T06:12:20.927Z",
   "data_as_of": "2026-05-13T04:09:50.720Z",
+  "source_event_count": 43,
+  "rendered_event_count": 26,
+  "candidate_count": 1053,
+  "render_policy": "core_events_preferred",
+  "candidate_policy": "held_until_promoted",
   "events": [
     {
       "event_id": "evt-history-bunker-fuel-shortage-warning-2026",

@@ -312,6 +312,25 @@ const newsPageUi = {
     fontSize: "0.72rem",
     fontWeight: 850,
   },
+  boundaryGrid: {
+    display: "grid",
+    gap: 10,
+  },
+  boundaryItem: {
+    display: "grid",
+    gap: 5,
+    minWidth: 0,
+    padding: 11,
+    border: "1px solid #dbe7f5",
+    borderRadius: "var(--radius)",
+    background: "#fbfdff",
+  },
+  boundaryNumber: {
+    color: "var(--text)",
+    fontSize: "1.18rem",
+    fontWeight: 920,
+    lineHeight: 1.05,
+  },
   entryButton: {
     display: "grid",
     width: "100%",
@@ -1224,6 +1243,51 @@ function SourceIndexCard() {
   );
 }
 
+function TimelineBoundaryCard({
+  trafficSeries,
+}: {
+  trafficSeries: MarketChartBundle["series"][number] | undefined;
+}) {
+  const coverage = trafficCoverage(trafficSeries);
+  const sourceEventCount = newsTimeline.source_event_count ?? newsTimeline.events.length;
+  const renderedEventCount = newsTimeline.rendered_event_count ?? newsTimeline.events.length;
+  const candidateCount = newsTimeline.candidate_count ?? 0;
+
+  return (
+    <section className="console-card news-source-card" style={newsPageUi.sideCard}>
+      <InfoTitle title="展示边界" subtitle="解释未展示数据与 raw snapshot 缺口" />
+      <div style={newsPageUi.boundaryGrid}>
+        <article style={newsPageUi.boundaryItem}>
+          <strong style={newsPageUi.boundaryNumber}>{renderedEventCount}/{sourceEventCount}</strong>
+          <small style={newsPageUi.mutedNote}>
+            页面渲染 core timeline；其余 timeline rows 保留在 curated data 中，不直接进入主轴。
+          </small>
+        </article>
+        <article style={newsPageUi.boundaryItem}>
+          <strong style={newsPageUi.boundaryNumber}>{candidateCount}</strong>
+          <small style={newsPageUi.mutedNote}>
+            GDELT rows 仍是 candidates；只有 promote 后才会进入 timeline。
+          </small>
+        </article>
+        <article style={newsPageUi.boundaryItem}>
+          <strong style={newsPageUi.indexTitle}>raw_path 是可选快照</strong>
+          <small style={newsPageUi.mutedNote}>
+            官方 mirror 通常有 raw snapshot；人工 media 条目可能只保留 source_url 与 cross-check。
+          </small>
+        </article>
+        <article style={newsPageUi.boundaryItem}>
+          <strong style={newsPageUi.indexTitle}>PortWatch 覆盖</strong>
+          <small style={newsPageUi.mutedNote}>
+            {coverage
+              ? `${compactDate(coverage.start)}-${compactDate(coverage.end)}；覆盖期外事件不会强行补通行窗口。`
+              : "当前 generated bundle 没有 active PortWatch daily series。"}
+          </small>
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function TopicIndexCard() {
   return (
     <section className="console-card news-source-card" style={newsPageUi.sideCard}>
@@ -1337,6 +1401,7 @@ export function NewsPage() {
       />
 
       <aside className="news-side-stack">
+        <TimelineBoundaryCard trafficSeries={trafficSeries} />
         <SourceIndexCard />
         <TopicIndexCard />
       </aside>

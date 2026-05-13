@@ -117,6 +117,7 @@ const marketPageCss = `
 }
 
 .market-m8-controls,
+.market-m8-data-boundary-card,
 .market-m8-notes-card,
 .market-m8-chart-card,
 .market-m8-section,
@@ -179,6 +180,52 @@ const marketPageCss = `
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border-color: #d5e4f6;
   background: #fbfdff;
+}
+
+.market-m8-data-boundary-card {
+  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1fr);
+  align-items: start;
+  border-color: #d9e7f6;
+  background: #ffffff;
+}
+
+.market-m8-boundary-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.market-m8-boundary-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-m8-boundary-list li {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.market-m8-boundary-list strong {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.market-m8-boundary-list span,
+.market-m8-boundary-list p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .market-m8-note-item {
@@ -600,6 +647,7 @@ const marketPageCss = `
 
 @media (max-width: 980px) {
   .market-m8-controls,
+  .market-m8-data-boundary-card,
   .market-m8-notes-card,
   .market-m8-section-head,
   .market-m8-chart-head,
@@ -616,10 +664,15 @@ const marketPageCss = `
   .market-m8-section-grid {
     grid-template-columns: 1fr;
   }
+
+  .market-m8-boundary-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
   .market-m8-controls,
+  .market-m8-data-boundary-card,
   .market-m8-notes-card,
   .market-m8-chart-card,
   .market-m8-section,
@@ -854,6 +907,10 @@ function getSeries(id: string) {
 
 function isHiddenMarketSeries(series: MarketSeriesItem) {
   return series.surface === "hidden" || series.coverage_visible === false;
+}
+
+function latestPointDate(series: MarketSeriesItem | undefined) {
+  return series?.points?.at(-1)?.date ?? null;
 }
 
 function chartSeriesFrom(series: MarketSeriesItem, range: WindowRange): ChartSeries {
@@ -1224,6 +1281,52 @@ function IndicatorNotes() {
   );
 }
 
+function DataBoundaryCard({ series }: { series: MarketSeriesItem[] }) {
+  const hiddenSeries = series.filter(isHiddenMarketSeries);
+  const hiddenActiveCount = hiddenSeries.filter((item) => item.status === "active").length;
+  const hiddenPendingCount = hiddenSeries.filter((item) => item.status === "pending_source").length;
+  const trafficSeries = series.find((item) => item.target === "portwatch_daily_transit_calls_all");
+  const trafficLatest = latestPointDate(trafficSeries);
+  const trafficLagDays = trafficLatest ? Math.max(0, daysBetween(toDayMs(bundle.data_as_of), toDayMs(trafficLatest))) : null;
+  const cpiSeries = series.find((item) => item.target === "us_cpi");
+  const cpiMissing = cpiSeries?.missing_points?.find((point) => point.reason === "official_missing");
+
+  return (
+    <section className="console-card market-m8-data-boundary-card" aria-label="Market data boundary">
+      <div className="market-m8-boundary-copy">
+        <InfoTitle title="缺口说明" subtitle="缺数据先解释来源边界，不用替代值补线" />
+        <p className="market-m8-card-note">
+          本页只渲染 source-bound active series。隐藏或 pending 的序列仍保留在 generated bundle 中，供 audit 和未来接入复核。
+        </p>
+      </div>
+      <ul className="market-m8-boundary-list">
+        <li>
+          <strong>{hiddenSeries.length} 条未展示序列</strong>
+          <span>
+            {hiddenActiveCount} 条 active lineage · {hiddenPendingCount} 条 pending source
+          </span>
+          <p>
+            人民币双边 FX 序列保留在 generated bundle 供 audit 复核；可见 chart 与 coverage 不渲染，offshore source 接入前不出数。
+          </p>
+        </li>
+        <li>
+          <strong>PortWatch 最新观测</strong>
+          <span>
+            {trafficLatest ? formatDate(trafficLatest) : "pending"}
+            {trafficLagDays !== null ? ` · 距 data_as_of ${trafficLagDays} 天` : ""}
+          </span>
+          <p>这是上游 ArcGIS layer 的最新日行；只能随上游发布刷新，不能本地插补。</p>
+        </li>
+        <li>
+          <strong>FRED 官方空值</strong>
+          <span>{cpiMissing ? `${cpiMissing.date} · ${cpiMissing.reason}` : "无 active CPI 缺值标记"}</span>
+          <p>CPI 缺值保留为 missing marker，不转成 0、不插值；金融日线周末缺口不生成 marker。</p>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
 function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
   const coverageRows = series.filter((item) => !isHiddenMarketSeries(item));
 
@@ -1422,6 +1525,7 @@ export function MarketPage() {
       />
 
       <IndicatorNotes />
+      <DataBoundaryCard series={bundle.series} />
 
       <MarketLineChart
         events={visibleEvents}

@@ -18,6 +18,7 @@ const paths = {
   transits: resolve(root, "data", "normalized", "maritime", "hormuz_transits.csv"),
   advisories: resolve(root, "data", "normalized", "maritime", "advisories.jsonl"),
   events: resolve(root, "data", "events", "events_timeline.jsonl"),
+  eventCandidates: resolve(root, "data", "events", "events_candidates.jsonl"),
   polymarket: resolve(root, "data", "external", "polymarket_questions.json"),
   generatedDir: resolve(root, "data", "generated"),
 };
@@ -818,13 +819,14 @@ function buildRegimeOverlays(events) {
 }
 
 async function main() {
-  const [baseline, fredRows, goldRow, transitRows, advisories, eventsRaw, polymarketRaw] = await Promise.all([
+  const [baseline, fredRows, goldRow, transitRows, advisories, eventsRaw, eventCandidates, polymarketRaw] = await Promise.all([
     readJson(paths.baseline, []),
     readCsv(paths.fred),
     readJson(paths.gold, null),
     readCsv(paths.transits),
     readJsonLines(paths.advisories),
     readJsonLines(paths.events),
+    readJsonLines(paths.eventCandidates),
     readJson(paths.polymarket, []),
   ]);
 
@@ -841,6 +843,7 @@ async function main() {
     ...transitRows.map((row) => row.retrieved_at),
     ...advisories.map((row) => row.retrieved_at),
     ...events.map((event) => event.retrieved_at),
+    ...eventCandidates.map((candidate) => candidate.retrieved_at),
     ...polymarketRaw.map((ref) => ref.retrieved_at),
   ]);
   const marketDataAsOf = newestIso([dataAsOf, goldRow?.retrieved_at]);
@@ -859,6 +862,11 @@ async function main() {
   const news = {
     built_at: BUILT_AT,
     data_as_of: dataAsOf,
+    source_event_count: events.length,
+    rendered_event_count: displayEvents.length,
+    candidate_count: eventCandidates.length,
+    render_policy: coreEvents.length > 0 ? "core_events_preferred" : "all_events_fallback",
+    candidate_policy: "held_until_promoted",
     events: displayEvents,
     source_index: buildSourceIndex(displayEvents),
     topic_index: buildTopicIndex(displayEvents),

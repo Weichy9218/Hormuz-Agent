@@ -470,6 +470,13 @@ interface OverviewSnapshot {
 interface NewsTimelineBundle {
   built_at: string;
   data_as_of: string;
+  source_event_count: number;            // events_timeline.jsonl raw rows before display policy
+  rendered_event_count: number;          // events.length after display policy
+  candidate_count: number;               // events_candidates.jsonl rows held out of UI
+  render_policy:
+    | "core_events_preferred"            // render source_id=events-curated / core_event rows when present
+    | "all_events_fallback";             // otherwise render all timeline rows
+  candidate_policy: "held_until_promoted"; // GDELT candidates do not render until promoted
   events: TimelineEvent[];              // 全量按 event_at desc
   source_index: Array<{
     source_id: string;
@@ -491,6 +498,8 @@ interface NewsTimelineBundle {
   }>;
 }
 ```
+
+`source_event_count`、`rendered_event_count`、`candidate_count` 是页面解释“为什么有数据未展示”的契约：News 默认展示 core timeline（人工 curated 或 `core_event`）而不是把 GDELT candidate pool 直接推上 UI。`events_candidates.jsonl` 只能作为候选池；只有 promote 到 `events_timeline.jsonl` 且满足 render policy 后才进入页面。
 
 `topic_index` 保留为兼容字段和 audit 计数；News filter UI 不应再把所有 raw tags 渲染成按钮墙。`topic_cloud` 是推荐入口：
 
@@ -665,6 +674,7 @@ npm run audit
 - 同一 `event_id` 出现多次；
 - `events_timeline.jsonl` entry 的 `description` 含 forecast 解读关键词（"scenario", "judgement", "probability", "概率", "支持", "agent"）；
 - `events_candidates.jsonl` 中 `status="promoted"` 的 candidate 找不到对应 `events_timeline.jsonl` entry（双向一致性）；
+- `data/generated/news_timeline.json` 的 `source_event_count` / `rendered_event_count` / `candidate_count` 与原始 timeline / candidate 文件不一致，或缺少 `render_policy` / `candidate_policy`；
 - `polymarket_questions.json` 任一 entry 缺 `question_url` / `resolution_criteria` / `retrieved_at` / `caveat`；
 - `caveat` 不含 "External market, not our forecast" 子串；
 - 任一 `EvidenceClaim` 或 `canonical_inputs.json` 引用 `polymarket-curated` 或 `events-curated` 或 `gdelt-news` 任一 source_id；

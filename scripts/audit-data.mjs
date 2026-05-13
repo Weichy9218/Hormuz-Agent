@@ -17,6 +17,8 @@ const generatedMarketUrl = new URL("../data/generated/market_series.json", impor
 const generatedMarketChartUrl = new URL("../data/generated/market_chart.json", import.meta.url);
 const generatedOverviewUrl = new URL("../data/generated/overview_snapshot.json", import.meta.url);
 const generatedNewsTimelineUrl = new URL("../data/generated/news_timeline.json", import.meta.url);
+const eventsTimelineRawUrl = new URL("../data/events/events_timeline.jsonl", import.meta.url);
+const eventsCandidatesUrl = new URL("../data/events/events_candidates.jsonl", import.meta.url);
 const baselineUrl = new URL("../data/normalized/baseline/hormuz_baseline.json", import.meta.url);
 const sourceRegistryJsonUrl = new URL("../data/registry/sources.json", import.meta.url);
 const advisoriesUrl = new URL("../data/normalized/maritime/advisories.jsonl", import.meta.url);
@@ -876,9 +878,28 @@ async function auditNoHardcodedBackgroundRegimeDates() {
   }
 }
 
-function auditGeneratedNewsTimeline(bundle) {
+function auditGeneratedNewsTimeline(bundle, rawTimelineEvents, eventCandidates) {
   if (!bundle || !Array.isArray(bundle.events)) {
     throw new Error("news_timeline.json must expose an events array.");
+  }
+  if (!Number.isInteger(bundle.source_event_count) || bundle.source_event_count !== rawTimelineEvents.length) {
+    throw new Error(
+      `news_timeline.json source_event_count must match events_timeline.jsonl (${rawTimelineEvents.length}).`,
+    );
+  }
+  if (!Number.isInteger(bundle.rendered_event_count) || bundle.rendered_event_count !== bundle.events.length) {
+    throw new Error("news_timeline.json rendered_event_count must match rendered events length.");
+  }
+  if (!Number.isInteger(bundle.candidate_count) || bundle.candidate_count !== eventCandidates.length) {
+    throw new Error(
+      `news_timeline.json candidate_count must match events_candidates.jsonl (${eventCandidates.length}).`,
+    );
+  }
+  if (!["core_events_preferred", "all_events_fallback"].includes(bundle.render_policy)) {
+    throw new Error("news_timeline.json render_policy must explain why not all raw timeline rows render.");
+  }
+  if (bundle.candidate_policy !== "held_until_promoted") {
+    throw new Error("news_timeline.json candidate_policy must keep GDELT candidates out of rendered pages.");
   }
   if (!Array.isArray(bundle.topic_cloud) || bundle.topic_cloud.length === 0) {
     throw new Error("news_timeline.json must expose a non-empty topic_cloud.");
@@ -917,6 +938,8 @@ const generatedMarketSeries = JSON.parse(await readFile(generatedMarketUrl, "utf
 const generatedMarketChart = JSON.parse(await readFile(generatedMarketChartUrl, "utf8"));
 const generatedOverview = JSON.parse(await readFile(generatedOverviewUrl, "utf8"));
 const generatedNewsTimeline = JSON.parse(await readFile(generatedNewsTimelineUrl, "utf8"));
+const rawTimelineEvents = parseJsonl(await readFile(eventsTimelineRawUrl, "utf8"));
+const eventCandidates = parseJsonl(await readFile(eventsCandidatesUrl, "utf8"));
 const baselineFacts = JSON.parse(await readFile(baselineUrl, "utf8"));
 const sourceRegistry = JSON.parse(await readFile(sourceRegistryJsonUrl, "utf8"));
 const advisoryRecords = parseJsonl(await readFile(advisoriesUrl, "utf8"));
@@ -933,7 +956,7 @@ await auditAdvisories(advisoryRecords);
 await auditTraffic(transitRows);
 await auditGeneratedMarketChart(generatedMarketChart, generatedNewsTimeline);
 auditGeneratedOverviewSnapshot(generatedOverview, generatedMarketChart);
-auditGeneratedNewsTimeline(generatedNewsTimeline);
+auditGeneratedNewsTimeline(generatedNewsTimeline, rawTimelineEvents, eventCandidates);
 await auditNoHardcodedBackgroundRegimeDates();
 auditGeneratedCanonicalArtifacts({
   observations: sourceObservations,

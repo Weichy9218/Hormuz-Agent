@@ -90,6 +90,11 @@ export interface OverviewSnapshot {
 export interface NewsTimelineBundle {
   built_at: string;
   data_as_of: string;
+  source_event_count?: number;
+  rendered_event_count?: number;
+  candidate_count?: number;
+  render_policy?: "core_events_preferred" | "all_events_fallback";
+  candidate_policy?: "held_until_promoted";
   events: TimelineEvent[];
   source_index: Array<{
     source_id: string;
