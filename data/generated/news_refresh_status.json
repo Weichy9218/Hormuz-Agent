@@ -1,0 +1,76 @@
+{
+  "started_at": "2026-05-13T04:09:50.671Z",
+  "finished_at": "2026-05-13T04:12:24.554Z",
+  "ok": true,
+  "mode": "local-daily-news-refresh",
+  "notes": "News page is served from local generated bundles. External fetch failures are recorded here; previous local timeline data is preserved unless generation/audit fails.",
+  "counts": {
+    "timeline_events": 43,
+    "gdelt_candidates": 1053
+  },
+  "generated": {
+    "built_at": "2026-05-13T04:12:23.284Z",
+    "data_as_of": "2026-05-13T04:09:50.720Z",
+    "event_count": 26,
+    "topic_cloud_count": 18,
+    "event_date_min": "2022-05-27",
+    "event_date_max": "2026-05-13"
+  },
+  "steps": [
+    {
+      "label": "fetch advisory snapshots",
+      "command": "node scripts/fetch-advisories.mjs",
+      "started_at": "2026-05-13T04:09:50.671Z",
+      "finished_at": "2026-05-13T04:10:06.386Z",
+      "ok": true,
+      "exit_code": 0,
+      "allowed_failure": true,
+      "stdout": "fetch:advisories wrote 21 advisory snapshot records.",
+      "stderr": ""
+    },
+    {
+      "label": "refresh GDELT candidates",
+      "command": "node scripts/curate-events.mjs --gdelt-only --prune-candidates",
+      "started_at": "2026-05-13T04:10:06.386Z",
+      "finished_at": "2026-05-13T04:12:23.210Z",
+      "ok": true,
+      "exit_code": 1,
+      "allowed_failure": true,
+      "stdout": "curate:events mirrored=0 mirror_updated=0 history_seed=0 gdelt_success=3/9 candidate_added=0 candidate_updated=0 candidate_pruned=0 promoted=0 gdelt_status=lagging",
+      "stderr": "curate:events failed query: \"Strait of Hormuz\": GDELT \"Strait of Hormuz\": request timed out after 10000ms\ncurate:events failed query: \"Hormuz\" AND (tanker OR vessel OR ship): GDELT \"Hormuz\" AND (tanker OR vessel OR ship): request timed out after 10000ms\ncurate:events failed query: \"Strait of Hormuz\" AND (AIS OR GNSS OR insurance OR \"bunker fuel\"): GDELT \"Strait of Hormuz\" AND (AIS OR GNSS OR insurance OR \"bunker fuel\"): request timed out after 10000ms\ncurate:events failed query: \"Gulf of Oman\" AND (incident OR attack OR seized): GDELT \"Gulf of Oman\" AND (incident OR attack OR seized): request timed out after 10000ms\ncurate:events failed query: Iran \"US Navy\" \"Persian Gulf\": GDELT Iran \"US Navy\" \"Persian Gulf\": request timed out after 10000ms\ncurate:events failed query: \"Bandar Abbas\" AND (navy OR drill OR missile OR tanker): GDELT \"Bandar Abbas\" AND (navy OR drill OR missile OR tanker): request timed out after 10000ms"
+    },
+    {
+      "label": "merge advisories and history seed",
+      "command": "node scripts/curate-events.mjs --skip-gdelt",
+      "started_at": "2026-05-13T04:12:23.210Z",
+      "finished_at": "2026-05-13T04:12:23.258Z",
+      "ok": true,
+      "exit_code": 0,
+      "allowed_failure": true,
+      "stdout": "curate:events mirrored=0 mirror_updated=0 history_seed=0 gdelt_success=0/9 candidate_added=0 candidate_updated=0 candidate_pruned=0 promoted=0 gdelt_status=unchanged",
+      "stderr": ""
+    },
+    {
+      "label": "build generated bundles",
+      "command": "node scripts/build-generated.mjs",
+      "started_at": "2026-05-13T04:12:23.258Z",
+      "finished_at": "2026-05-13T04:12:24.519Z",
+      "ok": true,
+      "exit_code": 0,
+      "allowed_failure": false,
+      "stdout": "build:generated wrote overview_snapshot.json news_timeline.json market_chart.json (events=26/43, market_series=15, polymarket_refs=1)",
+      "stderr": ""
+    },
+    {
+      "label": "audit events",
+      "command": "node scripts/audit-events.mjs",
+      "started_at": "2026-05-13T04:12:24.519Z",
+      "finished_at": "2026-05-13T04:12:24.554Z",
+      "ok": true,
+      "exit_code": 0,
+      "allowed_failure": false,
+      "stdout": "audit:events passed: 43 timeline events and 1053 GDELT candidates have valid fields and promote linkage.",
+      "stderr": ""
+    }
+  ]
+}

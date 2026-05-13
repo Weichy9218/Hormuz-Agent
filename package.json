@@ -14,6 +14,7 @@
     "fetch:p0": "npm run fetch:fred && npm run fetch:advisories && npm run fetch:traffic",
     "curate:events": "node scripts/curate-events.mjs",
     "curate:polymarket": "node scripts/curate-polymarket.mjs",
+    "refresh:news": "node scripts/refresh-news.mjs",
     "build:evidence": "node scripts/build-local-evidence.mjs",
     "build:generated": "node scripts/build-generated.mjs",
     "build:data": "npm run fetch:p0 && (npm run fetch:gold || echo '[WARN] gold fetch failed, using latest local snapshot') && npm run curate:events && (npm run curate:polymarket || echo '[WARN] polymarket fetch failed, using seed') && npm run build:evidence && npm run build:generated",

@@ -1,6 +1,6 @@
 {
-  "built_at": "2026-05-12T20:14:16.369Z",
-  "data_as_of": "2026-05-13T00:00:00Z",
+  "built_at": "2026-05-13T04:12:23.284Z",
+  "data_as_of": "2026-05-13T04:09:50.720Z",
   "baseline": [
     {
       "fact_id": "oil-flow",
@@ -59,102 +59,28 @@
       "caveat": "结构性 LNG relevance；不是 live cargo count。"
     }
   ],
-  "current_severity": "severe",
+  "current_severity": "elevated",
   "latest_events": [
     {
-      "event_id": "evt-history-us-disables-iranian-tankers-2026",
-      "event_at": "2026-05-08T00:00:00Z",
-      "title": "美国击停两艘伊朗油轮",
-      "description": "AP 报道称，美军在 Strait of Hormuz 与伊朗方面交火后，开火并使两艘伊朗油轮失去行动能力。",
+      "event_id": "evt-history-bunker-fuel-shortage-warning-2026",
+      "event_at": "2026-05-13T00:00:00Z",
+      "title": "航运业担忧 bunker fuel 供应短缺",
+      "description": "AP 报道称，Strait of Hormuz 封锁挤压航运燃料供应，船舶运营商开始担忧 bunker fuel 短缺，Singapore 等主要加油枢纽库存下降、价格上升。",
       "source_type": "media",
       "source_id": "events-curated",
       "source_name": "Associated Press",
-      "source_url": "https://apnews.com/article/6490db55a65880a61a6233eff7acc68b",
+      "source_url": "https://apnews.com/article/db0ba1dbc0bd3ff2179a84118d0064d0",
       "retrieved_at": "2026-05-13T00:00:00Z",
       "raw_path": null,
       "source_hash": null,
-      "severity_hint": "severe",
+      "severity_hint": "elevated",
       "geography": [
         "Strait of Hormuz",
+        "Singapore",
         "Persian Gulf"
       ],
       "cross_check_source_urls": [
-        "https://apnews.com/article/0c25b2ca53ee90bc19bfbf6c44a66e6e"
-      ],
-      "related_advisory_ids": [],
-      "related_market_targets": [
-        "brent",
-        "wti",
-        "vix",
-        "traffic"
-      ],
-      "tags": [
-        "core_event",
-        "us-iran",
-        "tankers",
-        "naval",
-        "hormuz"
-      ],
-      "curated_by": "manual",
-      "curated_at": "2026-05-13T00:00:00Z"
-    },
-    {
-      "event_id": "evt-history-us-intercepts-iranian-attacks-ships-2026",
-      "event_at": "2026-05-07T00:00:00Z",
-      "title": "美国称拦截伊朗对美军舰攻击",
-      "description": "AP 报道称，美国军方表示在 Strait of Hormuz 拦截了伊朗对三艘 US Navy ships 的攻击，并打击相关伊朗军事设施。",
-      "source_type": "media",
-      "source_id": "events-curated",
-      "source_name": "Associated Press",
-      "source_url": "https://apnews.com/article/fdc6d2ae9396377919c967746fa9996b",
-      "retrieved_at": "2026-05-13T00:00:00Z",
-      "raw_path": null,
-      "source_hash": null,
-      "severity_hint": "severe",
-      "geography": [
-        "Strait of Hormuz",
-        "Bandar Abbas",
-        "Iran"
-      ],
-      "cross_check_source_urls": [
-        "https://apnews.com/article/73fd3ca47f6c19a736993b45310afcac"
-      ],
-      "related_advisory_ids": [],
-      "related_market_targets": [
-        "brent",
-        "wti",
-        "vix",
-        "traffic"
-      ],
-      "tags": [
-        "core_event",
-        "us-iran",
-        "naval",
-        "attack",
-        "hormuz"
-      ],
-      "curated_by": "manual",
-      "curated_at": "2026-05-13T00:00:00Z"
-    },
-    {
-      "event_id": "evt-history-persian-gulf-seafarers-stranded-2026",
-      "event_at": "2026-04-27T00:00:00Z",
-      "title": "大量船员滞留 Persian Gulf",
-      "description": "AP 报道称，约 20,000 名船员和数百艘船滞留 Persian Gulf，无法穿越 Strait of Hormuz。",
-      "source_type": "media",
-      "source_id": "events-curated",
-      "source_name": "Associated Press",
-      "source_url": "https://apnews.com/article/b1b22b26312c7ea2b70b3f542f235e77",
-      "retrieved_at": "2026-05-13T00:00:00Z",
-      "raw_path": null,
-      "source_hash": null,
-      "severity_hint": "severe",
-      "geography": [
-        "Strait of Hormuz",
-        "Persian Gulf"
-      ],
-      "cross_check_source_urls": [
-        "https://apnews.com/article/374d81d1aac6d8f19c21e1d1e10ab103"
+        "https://www.shipxy.com/special/hormuz"
       ],
       "related_advisory_ids": [],
       "related_market_targets": [
@@ -164,10 +90,85 @@
       ],
       "tags": [
         "core_event",
-        "hormuz",
+        "bunker_fuel",
         "shipping_disruption",
-        "seafarers",
+        "hormuz"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-iran-expands-hormuz-zone-2026",
+      "event_at": "2026-05-12T00:00:00Z",
+      "title": "IRGCN 称 Hormuz 作战范围扩大",
+      "description": "Press TV 报道称，IRGCN 官员 Mohammad Akbarzadeh 表示，伊朗对 Strait of Hormuz 的定义已从有限水域扩大为从 Jask 和 Sirik 海岸延伸至 Greater Tunb Island 以外的战略区域。",
+      "source_type": "media",
+      "source_id": "events-curated",
+      "source_name": "Press TV",
+      "source_url": "https://www.presstv.ir/Detail/2026/05/12/768480/Strait-of-Hormuz-now-a-500-kilometer-operational-%E2%80%98crescent%E2%80%99--IRGC-Navy-",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "elevated",
+      "geography": [
+        "Strait of Hormuz",
+        "Jask",
+        "Sirik",
+        "Greater Tunb Island"
+      ],
+      "cross_check_source_urls": [
+        "https://3g.fx678.com/news/detail/202605121759142280",
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "brent",
+        "wti",
+        "traffic",
+        "vix"
+      ],
+      "tags": [
+        "core_event",
+        "irgc",
+        "hormuz",
+        "operational_zone",
         "iran"
+      ],
+      "curated_by": "manual",
+      "curated_at": "2026-05-13T00:00:00Z"
+    },
+    {
+      "event_id": "evt-history-uk-joins-hormuz-mission-2026",
+      "event_at": "2026-05-12T00:00:00Z",
+      "title": "英国宣布加入 Hormuz 多国防御任务",
+      "description": "英国政府宣布，将为 Strait of Hormuz 多国防御任务投入 autonomous mine-hunting equipment、counter-drone systems、Typhoon jets 和 HMS Dragon。",
+      "source_type": "official",
+      "source_id": "events-curated",
+      "source_name": "GOV.UK",
+      "source_url": "https://www.gov.uk/government/news/uk-to-contribute-drones-jets-and-warship-to-multinational-mission-to-secure-the-strait-of-hormuz",
+      "retrieved_at": "2026-05-13T00:00:00Z",
+      "raw_path": null,
+      "source_hash": null,
+      "severity_hint": "watch",
+      "geography": [
+        "Strait of Hormuz",
+        "United Kingdom",
+        "Persian Gulf"
+      ],
+      "cross_check_source_urls": [
+        "https://www.shipxy.com/special/hormuz"
+      ],
+      "related_advisory_ids": [],
+      "related_market_targets": [
+        "traffic",
+        "vix"
+      ],
+      "tags": [
+        "core_event",
+        "naval",
+        "uk",
+        "escort",
+        "hormuz"
       ],
       "curated_by": "manual",
       "curated_at": "2026-05-13T00:00:00Z"
@@ -181,8 +182,8 @@
     "delta_vs_baseline_pct": -96.27,
     "vessel_type": "all",
     "source_id": "imf-portwatch-hormuz",
-    "retrieved_at": "2026-05-12T15:33:10.060Z",
-    "caveat": "PortWatch chokepoint6 Strait of Hormuz; AIS/GNSS caveat applies. n_tanker=2; n_cargo=2; capacity=450300."
+    "retrieved_at": "2026-05-13T01:37:59.886Z",
+    "caveat": "PortWatch chokepoint6 Strait of Hormuz daily all transit calls; AIS/GNSS caveat applies. coverage=2019-01-01-2026-05-10; n_total=4; n_tanker=2; n_cargo=2; capacity=450300."
   },
   "market_snapshot": [
     {
@@ -239,7 +240,7 @@
       "value": null,
       "unit": "USD/oz",
       "source_id": "gold-pending",
-      "retrieved_at": "2026-05-12T20:14:16.369Z",
+      "retrieved_at": "2026-05-13T04:12:23.284Z",
       "status": "pending_source",
       "caveat": "Pending stable daily source."
     },
@@ -249,7 +250,7 @@
       "value": null,
       "unit": "CNH per USD",
       "source_id": "usdcnh-pending",
-      "retrieved_at": "2026-05-12T20:14:16.369Z",
+      "retrieved_at": "2026-05-13T04:12:23.284Z",
       "status": "pending_source",
       "caveat": "Pending offshore CNH source."
     }

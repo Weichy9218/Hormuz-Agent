@@ -391,7 +391,11 @@ function GalaxyRunHeader({
           ) : (
             <div className="galaxy-question-preview">
               <span>当前目标</span>
-              <p>{questionSummary(projection)}</p>
+              <p>
+                {artifactQuestionKind === "brent_weekly_high"
+                  ? questionSummary(projection)
+                  : "预测目标：本交易周 Brent 原油最高日价，分辨率来源 FRED DCOILBRENTEU，单位 USD/bbl。"}
+              </p>
             </div>
           )}
         </div>

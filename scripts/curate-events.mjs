@@ -17,25 +17,28 @@ const root = resolve(here, "..");
 const RETRIEVED_AT = new Date().toISOString();
 const SAFE_RETRIEVED_AT = RETRIEVED_AT.replace(/[:.]/g, "-");
 const GDELT_ENDPOINT = "https://api.gdeltproject.org/api/v2/doc/doc";
-const GDELT_MAX_RECORDS = "75";
-const GDELT_TIMESPAN = "14d";
+const GDELT_MAX_RECORDS = String(process.env.GDELT_MAX_RECORDS ?? "75");
+const GDELT_TIMESPAN = String(process.env.GDELT_TIMESPAN ?? "14d");
 const GDELT_FETCH_ATTEMPTS = Number(process.env.GDELT_FETCH_ATTEMPTS ?? 3);
 const GDELT_RETRY_DELAY_MS = 1500;
 const GDELT_REQUEST_TIMEOUT_MS = Number(process.env.GDELT_REQUEST_TIMEOUT_MS ?? 60000);
-const GDELT_QUERY_DELAY_MS = 3000;
+const GDELT_QUERY_DELAY_MS = Number(process.env.GDELT_QUERY_DELAY_MS ?? 3000);
+const CANDIDATE_MIN_RELEVANCE = Number(process.env.CANDIDATE_MIN_RELEVANCE ?? 5);
+const AUTO_PROMOTE_MIN_RELEVANCE = Number(process.env.AUTO_PROMOTE_MIN_RELEVANCE ?? 8);
 const GDELT_RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
 const GDELT_QUERIES = [
   { sourceQuery: "\"Strait of Hormuz\"" },
   { sourceQuery: "\"Hormuz\" AND (tanker OR vessel OR ship)" },
   { sourceQuery: "\"Hormuz\" AND (advisory OR incident OR attack)" },
+  { sourceQuery: "\"Strait of Hormuz\" AND (blockade OR closed OR reopened OR transit)" },
+  { sourceQuery: "\"Strait of Hormuz\" AND (AIS OR GNSS OR insurance OR \"bunker fuel\")" },
   {
     sourceQuery: "IRGC OR \"Revolutionary Guard\" \"Hormuz\"",
     apiQuery: "(IRGC OR \"Revolutionary Guard\") \"Hormuz\"",
   },
   { sourceQuery: "\"Gulf of Oman\" AND (incident OR attack OR seized)" },
   { sourceQuery: "Iran \"US Navy\" \"Persian Gulf\"" },
-  { sourceQuery: "\"Bandar Abbas\" AND (navy OR drill OR missile)" },
-  { sourceQuery: "Iran sanctions oil export" },
+  { sourceQuery: "\"Bandar Abbas\" AND (navy OR drill OR missile OR tanker)" },
 ];
 const ALLOWLIST_DOMAINS = new Set([
   "reuters.com",
@@ -51,11 +54,27 @@ const ALLOWLIST_DOMAINS = new Set([
   "nytimes.com",
 ]);
 const OFFICIAL_DOMAINS = new Set(["state.gov", "defense.gov"]);
+const HIGH_SIGNAL_DOMAINS = new Set([
+  ...ALLOWLIST_DOMAINS,
+  "gov.uk",
+  "maritime.dot.gov",
+  "navy.mil",
+  "spglobal.com",
+  "worldoil.com",
+  "tradewindsnews.com",
+  "gcaptain.com",
+  "maritime-executive.com",
+  "lloydslist.com",
+  "shipandbunker.com",
+  "insurancejournal.com",
+]);
 
 const args = new Set(process.argv.slice(2));
 const autoPromote = args.has("--auto-promote");
 const interactive = args.has("--interactive");
 const gdeltOnly = args.has("--gdelt-only");
+const skipGdelt = args.has("--skip-gdelt") || args.has("--local-only");
+const pruneCandidates = args.has("--prune-candidates");
 
 const paths = {
   advisories: resolve(root, "data", "normalized", "maritime", "advisories.jsonl"),
@@ -105,6 +124,42 @@ function truncateTitle(title) {
 
 function eventDatePrefix(isoLike) {
   return parseGdeltSeenDate(isoLike).slice(0, 10).replaceAll("-", "");
+}
+
+function relevanceScore(article, domain, sourceQuery) {
+  const articleText = [
+    article.title,
+    article.url,
+    article.sourcecountry,
+    article.language,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const queryText = String(sourceQuery ?? "").toLowerCase();
+  const text = `${articleText} ${queryText}`;
+  const articleHasCoreSignal =
+    /\bhormuz\b|\bstrait of hormuz\b|\bgulf of oman\b|\bpersian gulf\b|\bbandar abbas\b|\bkhasab\b|\birgc\b|\brevolutionary guard\b|\bus navy\b|\bcentcom\b|\btanker\b|\bvessel\b|\bshipping\b|\bblockade\b|\bclosed\b|\breopened\b|\bbunker fuel\b|\bais\b|\bgnss\b/.test(
+      articleText,
+    );
+  let score = 0;
+  if (!articleHasCoreSignal && !HIGH_SIGNAL_DOMAINS.has(domain)) return 0;
+  if (/\bstrait of hormuz\b|\bhormuz\b/.test(articleText)) score += 6;
+  else if (/\bstrait of hormuz\b|\bhormuz\b/.test(queryText)) score += 1;
+  if (/\bgulf of oman\b|\bpersian gulf\b|\bbandar abbas\b|\bkhasab\b/.test(articleText)) score += 3;
+  else if (/\bgulf of oman\b|\bpersian gulf\b|\bbandar abbas\b|\bkhasab\b/.test(queryText)) score += 1;
+  if (/\birgc\b|\brevolutionary guard\b|\bus navy\b|\bcentcom\b|\bmarad\b|\bukmto\b|\bjmic\b/.test(articleText)) score += 3;
+  else if (/\birgc\b|\brevolutionary guard\b|\bus navy\b|\bcentcom\b|\bmarad\b|\bukmto\b|\bjmic\b/.test(queryText)) score += 1;
+  if (/\btanker\b|\bvessel\b|\bship\b|\bshipping\b|\btransit\b|\bport\b|\bbunker fuel\b/.test(articleText)) score += 3;
+  else if (/\btanker\b|\bvessel\b|\bship\b|\bshipping\b|\btransit\b|\bport\b|\bbunker fuel\b/.test(queryText)) score += 1;
+  if (/\bseized\b|\bseize\b|\bseizure\b|\battack\b|\bmissile\b|\bdrone\b|\bmine\b|\bblockade\b|\bclosed\b|\breopened\b|\badvisory\b|\bais\b|\bgnss\b|\bspoof/.test(articleText)) {
+    score += 3;
+  }
+  if (/\boil\b|\bbrent\b|\bwti\b|\bsanction\b|\bnuclear\b|\biaea\b/.test(articleText)) score += 1;
+  if (HIGH_SIGNAL_DOMAINS.has(domain)) score += 2;
+  if (/\bcruise ship\b/.test(articleText) && !/\bhormuz\b|\bstrait of hormuz\b/.test(articleText)) score -= 5;
+  if (/radio|podcast|sports|celebrity|recipe|weather|lottery|horoscope/i.test(articleText)) score -= 3;
+  return score;
 }
 
 async function readJson(path, fallback) {
@@ -362,6 +417,8 @@ function candidateFromArticle(article, sourceQuery) {
   } catch {
     return null;
   }
+  const relevance_score = relevanceScore(article, domain, sourceQuery);
+  if (relevance_score < CANDIDATE_MIN_RELEVANCE) return null;
   return {
     candidate_id: sha1(url).slice(0, 16),
     source_query: sourceQuery,
@@ -372,6 +429,7 @@ function candidateFromArticle(article, sourceQuery) {
     language: article.language,
     sourcecountry: article.sourcecountry ?? article.sourceCountry,
     tone: Number.isFinite(Number(article.tone)) ? Number(article.tone) : undefined,
+    relevance_score,
     retrieved_at: RETRIEVED_AT,
     status: "candidate",
   };
@@ -400,6 +458,7 @@ async function upsertCandidates(results) {
           language: incoming.language,
           sourcecountry: incoming.sourcecountry,
           tone: incoming.tone,
+          relevance_score: incoming.relevance_score,
           retrieved_at: incoming.retrieved_at,
           status: previous.status,
           promoted_event_id: previous.promoted_event_id,
@@ -422,10 +481,70 @@ async function upsertCandidates(results) {
   return { rows, added, updated };
 }
 
+function refreshCandidateRelevance(candidate) {
+  let domain = candidate.domain;
+  if (!domain && candidate.url) {
+    try {
+      domain = domainFromUrl(candidate.url);
+    } catch {
+      domain = "unknown";
+    }
+  }
+  const relevance_score = relevanceScore(
+    {
+      title: candidate.title,
+      url: candidate.url,
+      sourcecountry: candidate.sourcecountry,
+      language: candidate.language,
+    },
+    domain,
+    candidate.source_query,
+  );
+  return { ...candidate, domain, relevance_score };
+}
+
+function pruneLowRelevanceCandidates(candidates) {
+  let pruned = 0;
+  const rows = candidates.map((candidate) => {
+    const refreshed = refreshCandidateRelevance(candidate);
+    if (refreshed.status === "candidate" && refreshed.relevance_score < CANDIDATE_MIN_RELEVANCE) {
+      pruned += 1;
+      return {
+        ...refreshed,
+        status: "rejected",
+        rejected_reason: `low_relevance_score:${refreshed.relevance_score}`,
+        reviewed_at: RETRIEVED_AT,
+        reviewed_by: "curate-events.mjs:relevance-prune",
+      };
+    }
+    return refreshed;
+  });
+  return { rows, pruned };
+}
+
 function inferSeverity(title) {
-  if (/closed|sunk|fatal|missile strike|major attack/i.test(title)) return "severe";
-  if (/attack|seized|boarding|missile|drone|mine|explosion/i.test(title)) return "elevated";
+  if (/closed|sunk|fatal|blockade|shipping halt|near standstill|missile strike|major attack/i.test(title)) return "severe";
+  if (/attack|seized|seizure|boarding|missile|drone|mine|explosion|spoofing|interference/i.test(title)) return "elevated";
   return "watch";
+}
+
+function inferTags(candidate) {
+  const text = `${candidate.title} ${candidate.source_query}`.toLowerCase();
+  const tags = new Set(["media", "gdelt"]);
+  if (/\bhormuz\b|\bstrait of hormuz\b/.test(text)) tags.add("hormuz");
+  if (/\birgc\b|\brevolutionary guard\b/.test(text)) tags.add("irgc");
+  if (/\bus\b|u\.s\.|united states|centcom|us navy/.test(text)) tags.add("us-iran");
+  if (/seiz|boarding|captur/.test(text)) tags.add("vessel_seizure");
+  if (/blockade|closed|closure|reopened|shipping halt|transit/.test(text)) tags.add("shipping_disruption");
+  if (/tanker|oil/.test(text)) tags.add("tanker");
+  if (/navy|naval|warship|escort/.test(text)) tags.add("naval");
+  if (/missile/.test(text)) tags.add("missile");
+  if (/drone/.test(text)) tags.add("drone");
+  if (/ais|gnss|spoof|interference/.test(text)) tags.add("ais");
+  if (/bunker fuel/.test(text)) tags.add("bunker_fuel");
+  if (/nuclear|uranium|iaea/.test(text)) tags.add("nuclear");
+  if (!tags.has("hormuz") && /\bgulf of oman\b/.test(text)) tags.add("gulf_of_oman");
+  return [...tags];
 }
 
 function eventFromCandidate(candidate, severity, tags) {
@@ -465,16 +584,20 @@ async function promoteCandidates({ candidates, mode }) {
     if (mode === "auto" && !allowed) continue;
 
     let severity = inferSeverity(candidate.title);
-    let tags = ["media", "gdelt", candidate.domain];
+    if (mode === "auto" && (candidate.relevance_score ?? 0) < AUTO_PROMOTE_MIN_RELEVANCE) continue;
+
+    let tags = inferTags(candidate);
     if (mode === "interactive") {
       const rl = readline.createInterface({ input, output });
-      const answer = (await rl.question(`Promote ${candidate.candidate_id} ${candidate.domain} "${candidate.title}"? [y/N] `)).trim().toLowerCase();
+      const answer = (await rl.question(
+        `Promote ${candidate.candidate_id} score=${candidate.relevance_score ?? "?"} ${candidate.domain} "${candidate.title}"? [y/N] `,
+      )).trim().toLowerCase();
       if (answer !== "y" && answer !== "yes") {
         rl.close();
         continue;
       }
-      const severityAnswer = (await rl.question("severity_hint [watch]: ")).trim();
-      const tagsAnswer = (await rl.question("tags comma-separated [media,gdelt]: ")).trim();
+      const severityAnswer = (await rl.question(`severity_hint [${severity}]: `)).trim();
+      const tagsAnswer = (await rl.question(`tags comma-separated [${tags.join(",")}]: `)).trim();
       rl.close();
       if (["routine", "watch", "elevated", "severe", "deescalation"].includes(severityAnswer)) {
         severity = severityAnswer;
@@ -508,16 +631,26 @@ async function main() {
 
   const successes = [];
   const failures = [];
-  for (const query of GDELT_QUERIES) {
-    if (successes.length + failures.length > 0) await sleep(GDELT_QUERY_DELAY_MS);
-    try {
-      successes.push(await fetchGdeltQuery(query));
-    } catch (error) {
-      failures.push({ query, error });
+  if (!skipGdelt) {
+    for (const query of GDELT_QUERIES) {
+      if (successes.length + failures.length > 0) await sleep(GDELT_QUERY_DELAY_MS);
+      try {
+        successes.push(await fetchGdeltQuery(query));
+      } catch (error) {
+        failures.push({ query, error });
+      }
     }
   }
 
-  const { rows: candidates, added, updated } = await upsertCandidates(successes);
+  const candidateResult = await upsertCandidates(successes);
+  let candidates = candidateResult.rows;
+  let pruned = 0;
+  if (pruneCandidates) {
+    const prunedResult = pruneLowRelevanceCandidates(candidates);
+    candidates = prunedResult.rows;
+    pruned = prunedResult.pruned;
+    await writeJsonLines(paths.candidates, candidates);
+  }
   let promoted = 0;
   if (autoPromote) {
     promoted = await promoteCandidates({ candidates, mode: "auto" });
@@ -525,14 +658,15 @@ async function main() {
     promoted = await promoteCandidates({ candidates, mode: "interactive" });
   }
 
-  const status = failures.length === 0 ? "fresh" : successes.length > 0 ? "lagging" : "missing";
-  await updateSourceStatus("gdelt-news", status);
+  const status = skipGdelt ? "unchanged" : failures.length === 0 ? "fresh" : successes.length > 0 ? "lagging" : "missing";
+  if (!skipGdelt) await updateSourceStatus("gdelt-news", status);
 
   console.log(
     `curate:events mirrored=${mirrored.added} mirror_updated=${mirrored.updated} ` +
       `history_seed=${mirrored.historyAdded} ` +
       `gdelt_success=${successes.length}/${GDELT_QUERIES.length} ` +
-      `candidate_added=${added} candidate_updated=${updated} promoted=${promoted} gdelt_status=${status}`,
+      `candidate_added=${candidateResult.added} candidate_updated=${candidateResult.updated} ` +
+      `candidate_pruned=${pruned} promoted=${promoted} gdelt_status=${status}`,
   );
 
   if (failures.length > 0) {

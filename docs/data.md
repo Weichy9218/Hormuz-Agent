@@ -114,6 +114,35 @@ data/
 - UI 只读 `generated/` 与 `external/` 与 `galaxy/`；不直接读 `raw/` / `normalized/`。
 - TypeScript 文件只保存 schema、transforms、projections、labels，不保存事实数据。
 
+### 3.1 News 本地保存与每日更新
+
+News / 事件页是**本地 bundle 页面**，不是浏览器端 live news feed：
+
+- 页面运行时只读 `data/generated/news_timeline.json` 和 `data/generated/market_chart.json`。
+- 事件事实源保存在 `data/events/events_timeline.jsonl`；人工精选历史节点保存在 `data/events/history_seed.jsonl`；GDELT 自动发现先落 `data/events/events_candidates.jsonl`。
+- 官方网页、GDELT 返回、PortWatch 等 remote inputs 必须先保存到 `data/raw/**` 或 normalized 文件，再由脚本重建 `generated/**`。UI 不直接调用外部 API。
+
+每日更新入口：
+
+```bash
+npm run refresh:news
+```
+
+该命令面向 daily job：
+
+1. snapshot 官方 maritime advisory 页面；
+2. 用较短时间窗刷新 GDELT candidate pool；
+3. `curate-events.mjs --skip-gdelt` mirror advisories + merge `history_seed.jsonl`；
+4. 重建 `data/generated/{overview_snapshot,news_timeline,market_chart}.json`；
+5. 跑 `audit:events`；
+6. 写出 `data/generated/news_refresh_status.json`，记录成功/失败、事件数、candidate 数和每步日志摘要。
+
+刷新语义：
+
+- 外部抓取失败不能清空已有 timeline；失败只记录在 refresh status，页面继续使用上一份本地可用 bundle。
+- GDELT 默认只产生 candidate，不直接进入主 timeline；只有 `--interactive` 或明确 `--auto-promote` 才会 promote。
+- Daily refresh 的目标是“补充新候选 + 保持本地 bundle 新鲜”，不是每天自动改写人工 title / description / severity。
+
 ## 4. Schemas
 
 ### 4.1 `data/registry/sources.json` 条目
@@ -290,6 +319,7 @@ interface EventCandidate {
   language?: string;
   sourcecountry?: string;
   tone?: number;                         // GDELT tone score
+  relevance_score?: number;              // local keyword/domain score for reviewer triage
   retrieved_at: string;
   status: "candidate" | "promoted" | "rejected";
   promoted_event_id?: string;
@@ -301,10 +331,11 @@ interface EventCandidate {
 
 Promote 规则（`curate-events.mjs --promote <candidate_id>` 或 `--auto-promote`）：
 
-1. `--auto-promote` 仅在 `domain` 命中 allowlist 时自动入库（reuters.com / apnews.com / bloomberg.com / aljazeera.com / wsj.com / ft.com / state.gov / defense.gov / cnn.com / bbc.co.uk / nytimes.com）；其他必须 `--interactive` 人工 review。
-2. Promote 时生成 `events_timeline.jsonl` 一条 entry：`event_id = "evt-" + seendate(YYYYMMDD) + "-" + slug(title 前 6 词)`，`source_type="media"`（除非 domain 是官方机构则 `"official"`），`severity_hint` 必须手填或由 keyword 规则给 `"watch"`（GDELT 不提供该字段）。
-3. Promote 后 candidate `status="promoted"`，记 `promoted_event_id`；拒绝则 `status="rejected"` + `rejected_reason`。
-4. 一旦 promoted，timeline entry 与 candidate 解耦；后续 timeline edit 不影响 candidate 历史记录。
+1. GDELT 抓取先按本地 `relevance_score` 降噪：标题 / URL 本身必须命中 Hormuz / Gulf of Oman / Persian Gulf / IRGC / maritime / blockade / AIS 等核心信号；query 关键词只能提供弱加分，不能单独把宏观泛新闻放进候选池。低分 candidate 不写入池。
+2. `--auto-promote` 仅在 `domain` 命中 allowlist 且 `relevance_score >= AUTO_PROMOTE_MIN_RELEVANCE` 时自动入库（reuters.com / apnews.com / bloomberg.com / aljazeera.com / wsj.com / ft.com / state.gov / defense.gov / cnn.com / bbc.co.uk / nytimes.com）；其他必须 `--interactive` 人工 review。
+3. Promote 时生成 `events_timeline.jsonl` 一条 entry：`event_id = "evt-" + seendate(YYYYMMDD) + "-" + slug(title 前 6 词)`，`source_type="media"`（除非 domain 是官方机构则 `"official"`），`severity_hint` 必须手填或由 keyword 规则给 `"watch"`（GDELT 不提供该字段）。
+4. Promote 后 candidate `status="promoted"`，记 `promoted_event_id`；拒绝则 `status="rejected"` + `rejected_reason`。
+5. 一旦 promoted，timeline entry 与 candidate 解耦；后续 timeline edit 不影响 candidate 历史记录。
 
 ### 4.7 `data/events/events_timeline.jsonl` *(NEW, P0)*
 
@@ -574,6 +605,7 @@ curate 脚本设计原则：
 - 任何 entry 一旦人工 curate 过，自动 refresh 不覆盖人工字段；记录 `curated_at`。
 - `npm run curate:events -- --gdelt-only`：只跑 GDELT 抓取与 candidate 灌入，不 promote。
 - `npm run curate:events -- --auto-promote`：仅 allowlist domain 自动入 timeline。
+- `npm run curate:events -- --gdelt-only --prune-candidates`：刷新 candidate relevance score，并把低相关、未 promote 的旧 candidate 标记为 `rejected`；不删除历史记录。
 
 ## 6. Audit Rules
 
