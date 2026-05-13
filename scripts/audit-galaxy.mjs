@@ -60,14 +60,25 @@ if (questionRows.length !== 1) {
 const question = questionRows[0];
 const questionKind = question?.metadata?.question_kind || "hormuz_traffic_risk";
 const isBrentWeeklyHigh = questionKind === "brent_weekly_high";
+const isCustomQuestion = questionKind === "custom";
+const isNumericQuestion =
+  isBrentWeeklyHigh ||
+  (isCustomQuestion &&
+    !/\\boxed\{letter\}|single letter|scenario|A\.\s|B\.\s|C\.\s|D\.\s/i.test(
+      `${question?.task_question ?? ""} ${question?.task_description ?? ""}`,
+    ));
 const validTaskId = isDemoArtifact
   ? question?.task_id === "hormuz-brent-weekly-high-demo"
-  : /^hormuz-(traffic-risk|brent-weekly-high)-\d{4}-\d{2}-\d{2}$/.test(question?.task_id ?? "");
+  : /^hormuz-(traffic-risk|brent-weekly-high)-\d{4}-\d{2}-\d{2}$/.test(question?.task_id ?? "") ||
+    /^hormuz-custom-\d{4}-\d{2}-\d{2}$/.test(question?.task_id ?? "");
 if (!validTaskId) {
   violations.push("question.task_id must use a dated Hormuz task id, except explicit hormuz-brent-weekly-high-demo fixtures");
 }
-if (!question?.task_question?.includes(isBrentWeeklyHigh ? "\\boxed{number}" : "\\boxed{letter}")) {
+if (!question?.task_question?.includes(isNumericQuestion ? "\\boxed{number}" : "\\boxed{letter}") && !isCustomQuestion) {
   violations.push("question must preserve boxed final answer format");
+}
+if (isCustomQuestion && !question?.task_question?.includes("\\boxed{your answer}")) {
+  violations.push("custom question must preserve generic boxed final answer format");
 }
 if (
   isBrentWeeklyHigh &&
@@ -94,10 +105,9 @@ if (isBrentWeeklyHigh) {
     violations.push("demo Brent weekly-high question must declare metadata.resolution_window = weekly");
   }
 }
-if (!question?.task_description?.includes("Market data is evidence input only")) {
+if (!isCustomQuestion && !question?.task_description?.includes("Market data is evidence input only")) {
   violations.push("question description must state market-data boundary");
 }
-
 if (artifact.schemaVersion !== "hormuz-galaxy-run/v1") {
   violations.push("latest-run.json has wrong schemaVersion");
 }
@@ -180,6 +190,12 @@ if (!artifact.actionTrace || !Array.isArray(artifact.actionTrace.actions)) {
   }
   if (isBrentWeeklyHigh && !Number.isFinite(parseFinalPrediction(artifact, recordForecast))) {
     violations.push("Brent weekly-high final prediction must parse as a finite number");
+  }
+  if (isNumericQuestion && recordForecast?.rawPreview?.boxedAnswer) {
+    const boxed = String(recordForecast.rawPreview.boxedAnswer);
+    if (/\\boxed\{[A-D]\}/i.test(boxed)) {
+      violations.push("numeric record_forecast boxedAnswer must not be collapsed to a scenario letter");
+    }
   }
   const graph = artifact.actionTrace.graph;
   if (!graph || !Array.isArray(graph.nodes) || graph.nodes.length === 0) {

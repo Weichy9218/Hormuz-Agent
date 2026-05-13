@@ -50,6 +50,19 @@ interface GalaxyRunRecord {
   error?: string;
 }
 
+interface GalaxyRunHistoryItem {
+  runId: string;
+  taskId: string;
+  questionKind: string;
+  questionTitle: string;
+  status: string;
+  finalPrediction: string;
+  completedAt: string;
+  durationSeconds: number | null;
+  artifactPath: string;
+  runDir: string;
+}
+
 interface ForecastAgentRunRecord {
   runId: string;
   taskId: string;
@@ -308,7 +321,7 @@ async function callApihy(body: AgentRequestBody) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-5.4",
+      model: "glm-4-flash",
       messages: buildAgentMessages(body),
       temperature: 0.2,
       max_completion_tokens: 900,
@@ -405,6 +418,57 @@ function readJsonIfExists(filePath: string) {
   } catch {
     return null;
   }
+}
+
+function summarizeQuestionText(question: unknown) {
+  if (!question || typeof question !== "object") return "Unknown question";
+  const row = question as Record<string, unknown>;
+  const text = String(row.task_question ?? row.task_description ?? "");
+  const eventBlock = text.match(/"""([\s\S]*?)"""/)?.[1]?.trim();
+  return compactText(eventBlock || text.replace(/IMPORTANT:[\s\S]*$/i, ""), 220);
+}
+
+function findGalaxyRunArtifacts() {
+  const artifacts: string[] = [];
+  const stack = [GALAXY_RUNS_ROOT];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || !fs.existsSync(current)) continue;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (entry.isFile() && entry.name === "run-artifact.json") {
+        artifacts.push(fullPath);
+      }
+    }
+  }
+  return artifacts;
+}
+
+function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
+  return findGalaxyRunArtifacts()
+    .map((artifactPath) => {
+      const artifact = readJsonIfExists(artifactPath);
+      const meta = artifact?.runMeta as Record<string, unknown> | undefined;
+      if (!meta?.runId || !meta?.taskId) return null;
+      const question = artifact?.question as Record<string, unknown> | undefined;
+      const metadata = question?.metadata as Record<string, unknown> | undefined;
+      return {
+        runId: String(meta.runId),
+        taskId: String(meta.taskId),
+        questionKind: String(metadata?.question_kind || "unknown"),
+        questionTitle: summarizeQuestionText(question),
+        status: String(meta.status || "unknown"),
+        finalPrediction: String(meta.finalPrediction || ""),
+        completedAt: String(meta.completedAt || meta.forecastedAt || meta.generatedAt || ""),
+        durationSeconds: typeof meta.durationSeconds === "number" ? meta.durationSeconds : null,
+        artifactPath: path.relative(process.cwd(), artifactPath),
+        runDir: String(meta.runDir || path.dirname(artifactPath)),
+      } satisfies GalaxyRunHistoryItem;
+    })
+    .filter((item): item is GalaxyRunHistoryItem => Boolean(item))
+    .sort((a, b) => Date.parse(b.completedAt || "0") - Date.parse(a.completedAt || "0"));
 }
 
 async function importForecastAgentRunner() {
@@ -685,6 +749,43 @@ function galaxyRunPlugin() {
         } catch (error) {
           sendJson(response, 404, {
             error: "latest galaxy artifact not found",
+            detail: error instanceof Error ? error.message : "unknown error",
+          });
+        }
+      });
+      server.middlewares.use("/api/galaxy-hormuz/history", async (request, response) => {
+        if (request.method !== "GET") {
+          sendJson(response, 405, { error: "method not allowed" });
+          return;
+        }
+        try {
+          sendJson(response, 200, { runs: galaxyHistoryItems() });
+        } catch (error) {
+          sendJson(response, 500, {
+            error: "galaxy history scan failed",
+            detail: error instanceof Error ? error.message : "unknown error",
+          });
+        }
+      });
+      server.middlewares.use("/api/galaxy-hormuz/artifact", async (request, response) => {
+        if (request.method !== "GET") {
+          sendJson(response, 405, { error: "method not allowed" });
+          return;
+        }
+        const url = new URL(request.url || "", "http://localhost");
+        const runId = url.searchParams.get("runId") || "";
+        const item = galaxyHistoryItems().find((entry) => entry.runId === runId);
+        if (!item) {
+          sendJson(response, 404, { error: "galaxy artifact not found" });
+          return;
+        }
+        try {
+          const artifactPath = path.resolve(process.cwd(), item.artifactPath);
+          const text = await fs.promises.readFile(artifactPath, "utf8");
+          sendJson(response, 200, JSON.parse(text));
+        } catch (error) {
+          sendJson(response, 500, {
+            error: "galaxy artifact read failed",
             detail: error instanceof Error ? error.message : "unknown error",
           });
         }

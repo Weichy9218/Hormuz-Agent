@@ -81,7 +81,7 @@ function parseArgs(argv) {
     traceOnly: false,
     agentName: "forecast_noskill",
     agentProfile: "forecast",
-    agentLlm: "codex_sub2api",
+    agentLlm: "apihy_glm51",
     agentTool: "default",
     questionKind: defaultQuestionKind,
   };
@@ -254,6 +254,27 @@ function truncateText(text, maxLength = 4096) {
   };
 }
 
+function questionAnswerKind(question) {
+  const kind = question?.metadata?.question_kind;
+  if (kind === "brent_weekly_high") return "numeric";
+  if (kind === "hormuz_traffic_risk" || !kind) return "letter";
+  const text = `${question?.task_question ?? ""} ${question?.task_description ?? ""}`;
+  if (/\\boxed\{letter\}|single letter|scenario|A\.\s|B\.\s|C\.\s|D\.\s/i.test(text)) {
+    return "letter";
+  }
+  return "numeric";
+}
+
+function formatBoxedAnswer(prediction, question) {
+  const value = String(prediction ?? "").trim();
+  if (!value) return undefined;
+  if (questionAnswerKind(question) === "letter") {
+    const letter = value.match(/^\s*([A-D])(?:\b|[\s:.)-])/i)?.[1]?.toUpperCase();
+    return letter ? `\\boxed{${letter}}` : `\\boxed{${value}}`;
+  }
+  return `\\boxed{${value}}`;
+}
+
 function prettyJson(value) {
   try {
     return JSON.stringify(value, null, 2);
@@ -295,6 +316,8 @@ function evidenceRoleForTool(toolName) {
   if (toolName === "search_web") return "source_search";
   if (toolName === "read_webpage" || toolName === "read_webpage_with_query") return "source_read";
   if (toolName === "read_artifact" || toolName === "browser_snapshot") return "evidence_extract";
+  if (toolName === "execute_python_code" || toolName === "calculate_technical_indicators") return "evidence_extract";
+  if (toolName === "sub_agent_factor" || toolName === "sub_agent_access") return "evidence_extract";
   if (toolName === "record_forecast") return "forecast_record";
   return "source_read";
 }
@@ -305,6 +328,10 @@ function toolTitle(toolName) {
   if (toolName === "read_webpage_with_query") return "Read webpage with query";
   if (toolName === "browser_snapshot") return "Browser snapshot";
   if (toolName === "read_artifact") return "Read artifact";
+  if (toolName === "execute_python_code") return "Compute with Python";
+  if (toolName === "calculate_technical_indicators") return "Calculate indicators";
+  if (toolName === "sub_agent_factor") return "Delegate factor check";
+  if (toolName === "sub_agent_access") return "Delegate access check";
   if (toolName === "record_forecast") return "Record forecast";
   return toolName;
 }
@@ -322,10 +349,25 @@ function extractToolSummary(toolName, args, result) {
   if (toolName === "read_artifact") {
     return compact(args.path || result?.artifact?.path || "Artifact read.");
   }
+  if (toolName === "execute_python_code") {
+    return compact(result?.data?.stdout || result?.stdout || "Python calculation ledger executed.");
+  }
+  if (toolName === "calculate_technical_indicators") {
+    return compact(result?.data?.summary || result?.summary || "Technical indicator calculation completed.");
+  }
+  if (toolName === "sub_agent_factor" || toolName === "sub_agent_access") {
+    return compact(result?.data?.summary || result?.content || args.request || `${toolName} completed.`);
+  }
   if (toolName === "record_forecast") {
     return compact(args.rationale || `Forecast recorded: ${args.prediction ?? "unknown"}`);
   }
   return compact(result?.data?.summary || result?.content || `${toolName} executed.`);
+}
+
+function questionSummary(question) {
+  const text = String(question?.task_question ?? "");
+  const eventBlock = text.match(/"""([\s\S]*?)"""/)?.[1];
+  return compact(eventBlock || text.replace(/IMPORTANT:[\s\S]*$/i, ""), 360);
 }
 
 function extractArtifactPath(result) {
@@ -371,6 +413,12 @@ function argsSummaryForTool(toolName, args) {
     return compact([args.url, args.query].filter(Boolean).join(" · "), 420);
   }
   if (toolName === "read_artifact") return compact(args.path, 420);
+  if (toolName === "execute_python_code") {
+    return compact(args.code, 420);
+  }
+  if (toolName === "sub_agent_factor" || toolName === "sub_agent_access") {
+    return compact(args.request || args.task || args.url, 420);
+  }
   if (toolName === "record_forecast") {
     const payload = normalizeForecastPayload(args);
     return compact(
@@ -411,6 +459,8 @@ function actionLaneFor(kind, toolName) {
   if (kind === "question") return "question";
   if (kind === "assistant_note" || kind === "supervisor") return "agent_turn";
   if (kind === "tool_call" && toolName === "search_web") return "search_batch";
+  if (toolName === "execute_python_code" || toolName === "calculate_technical_indicators") return "evidence_synthesis";
+  if (toolName === "sub_agent_factor" || toolName === "sub_agent_access") return "evidence_synthesis";
   if (kind === "tool_call") return "read_artifacts";
   if (kind === "tool_result" || kind === "artifact_read") return "read_artifacts";
   if (kind === "evidence_synthesis") return "evidence_synthesis";
@@ -422,6 +472,8 @@ function actionLaneFor(kind, toolName) {
 function graphLaneForAction(action) {
   if (action.kind === "question") return "question";
   if (action.kind === "tool_call" && action.toolName === "search_web") return "search";
+  if (action.toolName === "execute_python_code" || action.toolName === "calculate_technical_indicators") return "mechanism";
+  if (action.toolName === "sub_agent_factor" || action.toolName === "sub_agent_access") return "judgement";
   if (action.kind === "tool_call") return "read";
   if (action.kind === "tool_result" && action.toolName === "search_web") return "search";
   if (action.kind === "tool_result" || action.kind === "artifact_read") return "read";
@@ -505,10 +557,30 @@ function actionScoreForSignal(action, signal, signalIndex) {
   return score;
 }
 
+function reviewerCriticalReason(reason, action) {
+  const text = String(reason ?? "");
+  if (/forecast question/i.test(text)) return "问题定义";
+  if (/record_forecast \/ boxed answer/i.test(text)) return "最终预测";
+  if (/checkpoint/i.test(text)) return "运行检查点";
+  if (/parent of record_forecast/i.test(text)) return "最终综合";
+  if (/fallback/i.test(text)) return "近端证据";
+  if (/parent of evidence #/i.test(text)) {
+    if (action?.kind === "tool_call") return "证据检索";
+    if (action?.kind === "assistant_note" || action?.kind === "evidence_synthesis") return "证据综合";
+    return "证据链路";
+  }
+  if (/ref'd by record_forecast evidence #/i.test(text)) {
+    if (action?.kind === "tool_call") return "证据检索";
+    if (action?.kind === "tool_result" || action?.kind === "artifact_read") return "证据锚点";
+    return "支撑最终预测";
+  }
+  return text || "关键路径";
+}
+
 function markCritical(action, reason) {
   if (!action) return;
   action.criticalPath = true;
-  action.criticalReason ||= reason;
+  action.criticalReason ||= reviewerCriticalReason(reason, action);
 }
 
 function markCriticalAncestors(action, actionsById, reason) {
@@ -711,7 +783,7 @@ export async function buildActionTrace({
     actionId: "ga-question",
     kind: "question",
     title: "Question loaded",
-    summary: compact(question.task_question.split('"""')[1] || question.task_question, 360),
+    summary: questionSummary(question),
     status: "success",
     evidenceRole: "question_audit",
     rawRole: "user",
@@ -790,7 +862,7 @@ export async function buildActionTrace({
           const rawPreview =
             toolName === "record_forecast"
               ? makeRawPreview("record_forecast", "record_forecast payload", prettyJson(args), taskDir, rowIndex, {
-                  boxedAnswer: args.prediction ? `\\boxed{${String(args.prediction).trim().match(/[A-D]/i)?.[0] ?? args.prediction}}` : undefined,
+                  boxedAnswer: formatBoxedAnswer(args.prediction, question),
                 })
               : makeRawPreview("tool_call", `${toolName} arguments`, argsText, taskDir, rowIndex);
           const action = addAction({
@@ -865,9 +937,7 @@ export async function buildActionTrace({
         title: "finalize payload",
         ...truncateText(prettyJson(finalPayload), 4096),
         rawFilePath: relative(root, resolve(taskDir, "main_agent.jsonl")),
-        boxedAnswer: finalPayload.prediction
-          ? `\\boxed{${String(finalPayload.prediction).trim().match(/[A-D]/i)?.[0] ?? finalPayload.prediction}}`
-          : undefined,
+        boxedAnswer: formatBoxedAnswer(finalPayload.prediction, question),
       },
     });
   }

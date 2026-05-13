@@ -1,6 +1,6 @@
 # Forecast Agent Live Viewer Plan
 
-Last updated: 2026-05-13 (rev 4)
+Last updated: 2026-05-13 (rev 5)
 
 只优化 Forecast / Galaxy visualization。Overview / Market / News 是背景页，
 本计划不改它们。
@@ -50,6 +50,13 @@ Last updated: 2026-05-13 (rev 4)
 | **UI Round 3**：lane strip auto-fill（7/9 列自适应） | rev4 | `forecast.css` repeat(auto-fill, ...) |
 | **UI Round 3**：sparkline 显示实际日期范围 | rev4 | `NumericForecastCard.tsx`，显示起止日 + 天数 |
 | **UI Round 3**：现货 vs 期货说明（黄色注释栏） | rev4 | DCOILBRENTEU 为现货，期货差 ±$1–3/bbl |
+| **默认模型换 GLM5.1** | rev5 | `vite.config.ts` gpt-5.4→glm-4-flash；`run-galaxy-hormuz.mjs` codex_sub2api→apihy_glm51；`hormuz_test.yaml` 同步 |
+| **导航后运行任务断连修复** | rev5 | mount-only useEffect 重连 `/api/galaxy-hormuz/run/status`；sessionStorage 保持 questionPreset + customQuestionText |
+| **节点卡片 HTML tooltip** | rev5 | `GalaxyActionGraph.tsx` `title={tooltip}` attribute，拼接 title + summary + criticalReason |
+| **边标签 hover-only 显示** | rev5 | `forecast.css` `.galaxy-action-edge .react-flow__edge-textwrapper { opacity: 0 }` → hover opacity: 1 |
+| **critical-path 节点保留类型 border-top 颜色** | rev5 | CSS 级联：`.critical-path` border-color 被后置的各 tone 类 border-top-color 覆盖 |
+| **Story mode 节点上限** | rev5 | `STORY_NODE_LIMIT = 15`；`addIfRoom` 约束证据对；anchor 节点（question/forecast/checkpoint）恒保留 |
+| **toolChipLabel 子 Agent 名称** | rev5 | `GalaxyActionGraph.tsx` toolChipLabel() 识别 sub_agent_factor / sub_agent_access / Python |
 
 ### 关键数据说明（2026-05-13 核查）
 
@@ -70,12 +77,12 @@ Last updated: 2026-05-13 (rev 4)
 
 **现状**：节点排布和视觉分层基本可用，但有以下不足：
 
-- [ ] **节点卡片信息密度**：title 截断时无 tooltip；summary 3 行 clamp 导致关键信息丢失
-- [ ] **边标签可读性差**：`returns / calls / records / continues` 字体太小，边和标签颜色混淆
-- [ ] **节点类型色彩区分不足**：tool_call（蓝）和 tool_result（绿）在 critical path 下全被橙色覆盖，失去类型辨识
+- [x] **节点卡片信息密度**：title 截断时无 tooltip；summary 3 行 clamp 导致关键信息丢失
+- [x] **边标签可读性差**：`returns / calls / records / continues` 字体太小，边和标签颜色混淆
+- [x] **节点类型色彩区分不足**：tool_call（蓝）和 tool_result（绿）在 critical path 下全被橙色覆盖，失去类型辨识
 - [ ] **lane strip 与节点位置不对齐**：lane strip 是 label 行，但实际 dagre X 坐标与 lane 不严格对应，容易产生误导
 - [ ] **minimap 噪声**：minimap 在节点多时难以辨认，可考虑只在 Full mode 显示
-- [ ] **Story mode 节点数仍偏多（26 个）**：应进一步精简到 12–15 个，强调"推理链"而非"所有高亮步骤"
+- [x] **Story mode 节点数仍偏多（26 个）**：应进一步精简到 12–15 个，强调"推理链"而非"所有高亮步骤"
 
 **建议方向**：
 - 节点卡片 title 加 `title` attribute（HTML tooltip）

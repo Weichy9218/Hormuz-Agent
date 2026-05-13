@@ -67,7 +67,11 @@ Market    "市场对这一串事件作出了什么反应？"
 | 模块 | 状态 |
 | --- | --- |
 | 四页 IA (Overview / News / Market / Forecast) | `[implemented]` |
-| Forecast 页：真实 galaxy live viewer | `[P0]`（详见 PLANS.md） |
+| Forecast 页：真实 galaxy live viewer | `[implemented]`（详见 PLANS.md rev 5） |
+| Forecast 页：节点卡片 tooltip + 边 hover 标签 + critical-path 类型色 | `[implemented]` |
+| Forecast 页：Story mode ≤15 节点 + sub-agent 芯片标签 | `[implemented]` |
+| Forecast 页：导航后运行任务重连（sessionStorage + mount useEffect） | `[implemented]` |
+| Forecast 页：默认模型 GLM5.1（apihy_glm51） | `[implemented]` |
 | `data/galaxy/runs/...` artifact 采集 | `[implemented]` |
 | FRED 9 series fetch + normalize + generated `market_series.json` | `[implemented]` |
 | `hormuz_baseline.json`（≈20 mb/d、bypass、LNG、Asia exposure） | `[implemented]` |

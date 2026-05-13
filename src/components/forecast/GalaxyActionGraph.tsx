@@ -16,6 +16,7 @@ import {
 } from "@xyflow/react";
 import {
   Bot,
+  Calculator,
   CheckCircle2,
   Database,
   FileSearch,
@@ -37,6 +38,7 @@ import type {
 type GraphMode = "summary" | "full";
 type GraphNodeInput = ForecastAgentGraphNode;
 type GraphEdgeInput = ForecastAgentGraphEdge;
+type GraphStage = "question" | "evidence" | "decision";
 const STORY_NODE_LIMIT = 15;
 const NODE_WIDTH = 242;
 const NODE_HEIGHT = 126;
@@ -66,6 +68,8 @@ const forecastAgentLaneLabel: Record<ForecastAgentGraphNode["lane"], string> = {
 };
 
 const keyEvidenceThemes = [
+  { key: "resolution", pattern: /\b(Investing\.com|XAU\/USD|LBMA|daily high|historical data|resolution source|source boundary)\b|黄金|金价|现货/i },
+  { key: "trajectory", pattern: /\b(FXEmpire|resistance|support|momentum|sideways|technical|RSI|MA20|GC=F|futures)\b/i },
   { key: "official", pattern: /\b(UKMTO|JMIC|MARAD|advisory|maritime security)\b/i },
   { key: "traffic", pattern: /\b(PortWatch|AIS|tanker|shipping|ship|traffic|transit|closure)\b|通航|停摆/i },
   { key: "market", pattern: /\b(Brent|WTI|FRED|DCOILBRENTEU|crude|oil price|market)\b/i },
@@ -73,7 +77,36 @@ const keyEvidenceThemes = [
   { key: "counter", pattern: /\b(reopen|resume|restore|ceasefire|talks|negotiation)\b|恢复|缓和|谈判/i },
 ] as const;
 
-function actionTone(kind: GalaxyActionKind) {
+function displayCriticalReason(reason?: string, action?: Pick<GalaxyActionTraceItem, "kind">) {
+  const text = String(reason ?? "");
+  if (!text) return action?.kind === "final_forecast" ? "最终预测" : "关键路径";
+  if (/forecast question/i.test(text)) return "问题定义";
+  if (/record_forecast \/ boxed answer/i.test(text)) return "最终预测";
+  if (/checkpoint/i.test(text)) return "运行检查点";
+  if (/parent of record_forecast/i.test(text)) return "最终综合";
+  if (/fallback/i.test(text)) return "近端证据";
+  if (/parent of evidence #/i.test(text)) {
+    if (action?.kind === "tool_call") return "证据检索";
+    if (action?.kind === "assistant_note" || action?.kind === "evidence_synthesis") return "证据综合";
+    return "证据链路";
+  }
+  if (/ref'd by record_forecast evidence #/i.test(text)) {
+    if (action?.kind === "tool_call") return "证据检索";
+    if (action?.kind === "tool_result" || action?.kind === "artifact_read") return "证据锚点";
+    return "支撑最终预测";
+  }
+  return text;
+}
+
+function actionStage(kind: GalaxyActionKind): GraphStage {
+  if (kind === "question" || kind === "supervisor") return "question";
+  if (kind === "final_forecast" || kind === "checkpoint") return "decision";
+  return "evidence";
+}
+
+function actionTone(kind: GalaxyActionKind, toolName?: string) {
+  if (toolName === "execute_python_code" || toolName === "calculate_technical_indicators") return "calculation";
+  if (toolName === "sub_agent_factor" || toolName === "sub_agent_access") return "delegation";
   if (kind === "question") return "question";
   if (kind === "tool_call") return "tool";
   if (kind === "tool_result" || kind === "artifact_read") return "result";
@@ -84,6 +117,8 @@ function actionTone(kind: GalaxyActionKind) {
 }
 
 function nodeColor(node: Node<GalaxyNodeData>) {
+  if (node.data.toolName === "execute_python_code" || node.data.toolName === "calculate_technical_indicators") return "#fde68a";
+  if (node.data.toolName === "sub_agent_factor" || node.data.toolName === "sub_agent_access") return "#c4b5fd";
   if (node.data.kind === "question") return "#7dd3fc";
   if (node.data.kind === "tool_call") return "#93c5fd";
   if (node.data.kind === "tool_result" || node.data.kind === "artifact_read") return "#99f6e4";
@@ -96,6 +131,8 @@ function nodeColor(node: Node<GalaxyNodeData>) {
 function iconFor(kind: GalaxyActionKind, toolName?: string) {
   if (kind === "question") return HelpCircle;
   if (kind === "tool_call" && toolName === "search_web") return Search;
+  if (toolName === "execute_python_code" || toolName === "calculate_technical_indicators") return Calculator;
+  if (toolName === "sub_agent_factor" || toolName === "sub_agent_access") return Bot;
   if (kind === "tool_call") return Wrench;
   if (kind === "artifact_read") return Database;
   if (kind === "tool_result") return FileSearch;
@@ -105,16 +142,25 @@ function iconFor(kind: GalaxyActionKind, toolName?: string) {
   return FileText;
 }
 
+function toolChipLabel(toolName?: string, lane?: string, kind?: GalaxyActionKind) {
+  if (toolName === "execute_python_code") return "Python";
+  if (toolName === "calculate_technical_indicators") return "Indicators";
+  if (toolName === "sub_agent_factor") return "Factor sub-agent";
+  if (toolName === "sub_agent_access") return "Access sub-agent";
+  return toolName ?? lane ?? kind;
+}
+
 function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
   const Icon = iconFor(data.kind, data.toolName);
+  const criticalReason = displayCriticalReason(data.criticalReason, { kind: data.kind });
   const tooltip = [
     data.title,
     data.summary,
-    data.criticalPath ? `Critical path: ${data.criticalReason ?? "record_forecast support"}` : "",
+    data.criticalPath ? `Critical path: ${criticalReason}` : "",
   ].filter(Boolean).join("\n\n");
   return (
     <article
-      className={`galaxy-action-node ${actionTone(data.kind)} ${data.status} ${data.criticalPath ? "critical-path" : ""} ${data.selected ? "selected" : ""}`}
+      className={`galaxy-action-node ${actionTone(data.kind, data.toolName)} ${data.status} ${data.criticalPath ? "critical-path" : ""} ${data.selected ? "selected" : ""}`}
       aria-label={tooltip}
       tabIndex={0}
       title={tooltip}
@@ -122,10 +168,10 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
       <Handle className="graph-handle" type="target" position={Position.Left} />
       <span>
         <Icon size={14} />
-        {data.toolName ?? data.lane ?? data.kind}
+        {toolChipLabel(data.toolName, data.lane, data.kind)}
       </span>
       <strong>{data.title}</strong>
-      {data.criticalPath ? <em>{data.criticalReason ?? "critical path"}</em> : null}
+      {data.criticalPath ? <em>{criticalReason}</em> : null}
       <p>{data.summary}</p>
       <Handle className="graph-handle" type="source" position={Position.Right} />
     </article>
@@ -207,7 +253,7 @@ function keyEvidenceActions(actions: GalaxyActionTraceItem[]) {
         action.index +
         (action.kind === "tool_result" || action.kind === "artifact_read" ? 1000 : 0) +
         (action.toolName === "read_webpage" || action.toolName === "read_webpage_with_query" ? 120 : 0) +
-        (/\b(Reuters|AP|Bloomberg|UKMTO|JMIC|MARAD|FRED|EIA|IEA)\b/i.test(text) ? 80 : 0);
+        (/\b(Investing\.com|FXEmpire|Reuters|AP|Bloomberg|UKMTO|JMIC|MARAD|FRED|EIA|IEA)\b/i.test(text) ? 80 : 0);
       if (!best || score > best.score) best = { action, score };
     }
     if (best && !selectedIds.has(best.action.actionId)) {
@@ -357,7 +403,7 @@ function dagreLayout(
         status: node.data.current ? "running" : node.data.status,
         selected: selectedActionId === node.id,
         criticalPath: Boolean(node.data.criticalPath ?? action?.criticalPath),
-        criticalReason: node.data.criticalReason ?? action?.criticalReason,
+        criticalReason: displayCriticalReason(node.data.criticalReason ?? action?.criticalReason, { kind }),
         toolName: node.data.toolName ?? action?.toolName,
         lane: nodeLaneLabel(node),
       },
@@ -411,7 +457,7 @@ function graphFromActions(actions: GalaxyActionTraceItem[], mode: GraphMode, sel
       toolName: action.toolName,
       current: action.status === "running",
       criticalPath: Boolean(action.criticalPath),
-      criticalReason: action.criticalReason,
+      criticalReason: displayCriticalReason(action.criticalReason, action),
     },
   }));
   const edges: GraphEdgeInput[] = [];
@@ -535,14 +581,23 @@ export function GalaxyActionGraph({
     { key: "question", label: "问题", tone: "question" },
     { key: "tool", label: "工具调用", tone: "tool" },
     { key: "result", label: "证据返回", tone: "result" },
+    { key: "calculation", label: "计算", tone: "calculation" },
+    { key: "delegation", label: "委派", tone: "delegation" },
     { key: "synthesis", label: "证据综合", tone: "synthesis" },
     { key: "final", label: "最终预测", tone: "final" },
     { key: "checkpoint", label: "检查点", tone: "checkpoint" },
     { key: "critical", label: "关键路径", tone: "critical" },
   ];
   const criticalCount = stableLayout.nodes.filter((n) => (n.data as GalaxyNodeData).criticalPath).length;
+  const stageCounts = stableLayout.nodes.reduce<Record<GraphStage, number>>(
+    (acc, node) => {
+      acc[actionStage((node.data as GalaxyNodeData).kind)] += 1;
+      return acc;
+    },
+    { question: 0, evidence: 0, decision: 0 },
+  );
   const graphCaption = mode === "summary"
-    ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 琥珀边框表示直接支撑最终预测`
+    ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 读法：问题 → 证据锚点 → 最终预测`
     : `完整审计 · ${stableLayout.nodes.length} 个动作 · ${stableLayout.edges.length} 条依赖边 · 其中 ${criticalCount} 个关键路径节点`;
 
   return (
@@ -572,6 +627,23 @@ export function GalaxyActionGraph({
         {graphLegend.map((item) => (
           <span className={`legend-${item.tone}`} key={item.key}>{item.label}</span>
         ))}
+      </div>
+      <div className="galaxy-story-rail" aria-label="Story graph reading order">
+        <span>
+          <b>01</b>
+          问题定义
+          <small>{stageCounts.question} 节点</small>
+        </span>
+        <span>
+          <b>02</b>
+          证据锚点
+          <small>{stageCounts.evidence} 节点</small>
+        </span>
+        <span>
+          <b>03</b>
+          最终预测
+          <small>{stageCounts.decision} 节点</small>
+        </span>
       </div>
       <div className="galaxy-action-graph-shell" ref={graphShell.ref}>
         {stableLayout.nodes.length > 0 && graphShell.ready ? (

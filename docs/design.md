@@ -1,6 +1,6 @@
 # Hormuz Risk Intelligence Interface — Design
 
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 唯一产品总纲。README 是入口；[`PLANS.md`](../PLANS.md) 规定 Forecast 页的实时可视化实现细节；[`docs/data.md`](data.md) 规定本地数据契约与采集 pipeline。本文件覆盖：产品定位、信息架构、背景三页设计、与 Forecast 页的边界、数据消费契约、视觉规范、evaluation 与 audit。
 
@@ -347,6 +347,34 @@ Forecast 页 pipeline (online, on demand)
 ```
 
 新增的 `scripts/build-generated.mjs` 负责把 `normalized/` + `events/` + `external/` 编译成前端直接消费的 `generated/` JSON。背景三页不在运行时再做 normalize / join。
+
+### 8.1 Forecast 页 DAG 可视化架构（@xyflow/react）
+
+`src/components/forecast/GalaxyActionGraph.tsx` 使用 `@xyflow/react`（React Flow）渲染 galaxy action trace 为交互式 DAG。
+
+**核心数据流**：
+
+```text
+GalaxyActionTraceItem[]   (来自 ForecastPage poll)
+  → visibleActions(mode)  (story 模式取 ≤15 关键节点；full 模式取全部)
+  → dagreLayout()         (dagre LR 自动布局，nodesep=44，ranksep=96)
+  → Node<GalaxyNodeData>[]  + Edge[]
+  → <ReactFlow nodeTypes={{ galaxyAction: GalaxyActionNode }} />
+```
+
+**节点类型**：唯一自定义节点类型 `galaxyAction`，对应 `GalaxyActionNode` 组件。每个节点通过 `actionTone(kind, toolName)` 决定 CSS tone class（question / tool / result / synthesis / calculation / delegation / final / checkpoint / note），影响边框颜色和背景渐变。
+
+**布局**：Dagre `rankdir: "LR"`，节点固定尺寸 242×126px。`useStableNodePositions` hook 缓存 dagre 输出坐标，仅在模式切换时重排；避免增量追加节点时跳动。
+
+**Story vs Full 模式**：
+- **Story**（`STORY_NODE_LIMIT = 15`）：`storyActionIds()` 选取 question、开头推理 turn、最终综合、所有 final_forecast / checkpoint、以及最多 5 条主题化 key evidence（通过正则匹配 FRED/UKMTO/MARAD/Reuters 等关键词）；`addIfRoom` 约束证据 source pair 不超过总上限。
+- **Full**：全部 action，通常 ~100 节点。
+
+**Critical path**：`criticalPath: true` 节点加 `critical-path` CSS class；`criticalReason` 由 `displayCriticalReason()` 翻译成中文标签（"最终预测" / "证据检索" / "证据综合"等），作为节点内 `<em>` 徽标展示。CSS 级联确保 critical-path 橙色 glow 不覆盖节点 border-top 的类型颜色。
+
+**边标签**：edge label 默认 `opacity: 0`，`:hover` 时淡入显示；critical-path edge 始终显示（stroke: amber，stroke-width: 3）。
+
+**交互**：`FlowViewportFitter` 自定义 hook 在模式切换后触发 `fitView`；节点 `title` attribute 提供完整 tooltip（title + summary + critical reason）；点击节点通过 `onNodeClick` 回调更新 `ForecastPage` 的 `selectedActionId`，联动右侧 Inspector。
 
 ## 9. Source Freshness 状态
 
