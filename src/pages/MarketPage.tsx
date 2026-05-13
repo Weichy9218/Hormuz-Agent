@@ -57,29 +57,54 @@ type MarketSection = {
 
 const marketSections: MarketSection[] = [
   {
-    title: "Energy",
-    subtitle: "Brent and WTI spot proxies, native USD/bbl scale",
+    title: "能源价格",
+    subtitle: "Brent / WTI 是原油现货代理，用原始 USD/bbl 单位展示",
     ids: ["brent-spot", "wti-spot"],
   },
   {
-    title: "Safe-haven / FX",
-    subtitle: "USD/CNY and broad dollar index, each on its own native scale",
+    title: "美元 / 汇率",
+    subtitle: "USD/CNY 看人民币即期压力，Broad USD 看美元整体避险强弱",
     ids: ["usd-cny", "broad-usd"],
   },
   {
-    title: "Rates / Vol",
-    subtitle: "Rates, volatility, and equity rows shown separately",
-    ids: ["us10y", "vix", "nasdaq", "sp500"],
+    title: "利率 / 波动 / 风险资产",
+    subtitle: "保留 VIX，不画 NASDAQ：VIX 更直接反映风险外溢；NASDAQ 与 S&P 500 信息重叠较高",
+    ids: ["us10y", "vix", "sp500"],
   },
   {
-    title: "US CPI",
-    subtitle: "Monthly FRED row; sparse points are shown with line plus markers",
+    title: "美国 CPI",
+    subtitle: "月度、滞后发布的通胀背景指标；只作为宏观背景，不解释事件当日价格",
     ids: ["us-cpi"],
     wide: true,
   },
 ];
 
 const pendingIds = ["gold-pending", "usd-cnh-pending"];
+
+const indicatorNotes = [
+  {
+    title: "Gold",
+    detail:
+      "黄金是典型避险资产，但 LBMA benchmark 与主流 futures 数据涉及 licence / vendor 边界；没有可审计授权源前保持 pending，不画假走势。",
+  },
+  {
+    title: "USD/CNH",
+    detail:
+      "USD/CNH 是离岸人民币汇率，不等于 FRED DEXCHUS 的 USD/CNY。Alpha Vantage / Twelve Data 可做 token 候选源，但需要 raw snapshot、source_hash 和审计后才能上线。",
+  },
+  {
+    title: "VIX vs NASDAQ",
+    detail:
+      "本页主图保留 VIX，隐藏 NASDAQ。VIX 更适合观察油价与航运风险是否扩散到全球风险偏好；NASDAQ 仍保留在 coverage table 里作数据溯源。",
+  },
+];
+
+const pendingChineseNotes: Record<string, string> = {
+  "gold-pending":
+    "候选方向：LBMA / ICE benchmark 或 licensed futures vendor。当前未满足 licence 与 raw lineage 要求，因此不生成 live 金价。",
+  "usd-cnh-pending":
+    "候选方向：Alpha Vantage / Twelve Data 等 FX API。必须确认是 offshore CNH，并完成 token、raw snapshot、source_hash 审计后才可提升为 active。",
+};
 
 const marketPageCss = `
 .market-m8-page {
@@ -92,6 +117,7 @@ const marketPageCss = `
 }
 
 .market-m8-controls,
+.market-m8-notes-card,
 .market-m8-chart-card,
 .market-m8-section,
 .market-m8-pending-section,
@@ -129,6 +155,33 @@ const marketPageCss = `
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.market-m8-notes-card {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-color: #d5e4f6;
+  background: #fbfdff;
+}
+
+.market-m8-note-item {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.market-m8-note-item strong {
+  color: #0f172a;
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.market-m8-note-item p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 
 .market-m8-range-tabs {
@@ -536,6 +589,7 @@ const marketPageCss = `
 
 @media (max-width: 980px) {
   .market-m8-controls,
+  .market-m8-notes-card,
   .market-m8-section-head,
   .market-m8-chart-head,
   .market-m8-coverage-head {
@@ -556,6 +610,7 @@ const marketPageCss = `
 
 @media (max-width: 640px) {
   .market-m8-controls,
+  .market-m8-notes-card,
   .market-m8-chart-card,
   .market-m8-section,
   .market-m8-pending-section,
@@ -990,6 +1045,19 @@ function MarketSectionCharts({
   );
 }
 
+function IndicatorNotes() {
+  return (
+    <section className="console-card market-m8-notes-card" aria-label="Market indicator notes">
+      {indicatorNotes.map((item) => (
+        <div className="market-m8-note-item" key={item.title}>
+          <strong>{item.title}</strong>
+          <p>{item.detail}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function PendingSection() {
   const pendingRows = pendingIds
     .map(getSeries)
@@ -998,7 +1066,7 @@ function PendingSection() {
   return (
     <section className="console-card market-m8-pending-section">
       <div className="market-m8-section-head">
-        <InfoTitle title="Pending" subtitle="Rows retained for coverage, without drawing invented data" />
+        <InfoTitle title="待接入指标" subtitle="保留数据契约和审计入口，但不画未经验证的 live 曲线" />
         <span className="market-m8-pill">{pendingRows.length} placeholders</span>
       </div>
       <div className="market-m8-pending-grid">
@@ -1006,7 +1074,7 @@ function PendingSection() {
           <article className="market-m8-pending-card" key={series.id}>
             <b>数据待接入</b>
             <strong>{series.label}</strong>
-            <p>{series.caveat}</p>
+            <p>{pendingChineseNotes[series.id] ?? series.caveat}</p>
             <span className="market-m8-muted">
               {series.source_id} · {series.unit}
             </span>
@@ -1023,7 +1091,7 @@ function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
   return (
     <section className="console-card market-m8-coverage-card">
       <div className="market-m8-coverage-head">
-        <InfoTitle title="Coverage table" subtitle="Source lineage, freshness, status, and caveats for every series" />
+        <InfoTitle title="数据覆盖表" subtitle="每条 series 的来源、许可、刷新时间、raw_path 与 caveat" />
         <span className="market-m8-pill">
           <Database size={14} />&nbsp;{pendingCount} pending
         </span>
@@ -1034,9 +1102,9 @@ function CoverageTable({ series }: { series: MarketSeriesItem[] }) {
           <thead>
             <tr>
               <th>series</th>
-              <th>source</th>
-              <th>status</th>
-              <th>license</th>
+              <th>来源</th>
+              <th>状态</th>
+              <th>许可</th>
               <th>retrieved_at</th>
               <th>raw_path</th>
               <th>caveat</th>
@@ -1090,10 +1158,10 @@ function MarketControls({
   return (
     <section className="console-card market-m8-controls">
       <div className="market-m8-control-copy">
-        <InfoTitle title="Market background" subtitle="Raw traffic and market rows from generated local snapshots" />
+        <InfoTitle title="市场背景" subtitle="原始交通与跨资产市场数据，只做背景展示，不做 forecast 解读" />
         <p>
-          Built {formatDateTime(bundle.built_at)} · data as of {formatDateTime(bundle.data_as_of)} · {bundle.series.length} series ·{" "}
-          {bundle.event_overlays.length} event overlays
+          生成时间 {formatDateTime(bundle.built_at)} · 数据截至 {formatDateTime(bundle.data_as_of)} · {bundle.series.length} 条
+          series · {bundle.event_overlays.length} 条事件标注
         </p>
       </div>
       <div className="market-m8-control-actions">
@@ -1174,6 +1242,8 @@ export function MarketPage() {
         rangeKey={rangeKey}
         showEvents={showEvents}
       />
+
+      <IndicatorNotes />
 
       <MarketLineChart
         events={visibleEvents}
