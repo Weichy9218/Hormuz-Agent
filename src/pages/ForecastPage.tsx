@@ -29,9 +29,9 @@ import type {
 
 type ForecastProjection = ReturnType<typeof projectForecastState>;
 type RunStatus = "idle" | "running" | "completed" | "failed";
-type QuestionPreset = "brent_weekly_high" | "custom";
+type QuestionPreset = "brent_weekly_high" | "gold_weekly_high" | "hormuz_traffic" | "custom";
 type GalaxyQuestionKind = NonNullable<GalaxyQuestionRow["metadata"]>["question_kind"];
-type SidePanelTab = "result" | "inspector";
+type TimelineFilter = "all" | "critical";
 type FinalSource = "current run" | "last completed" | "history";
 type AgentActionStats = Record<NonNullable<GalaxyActionTraceItem["evidenceRole"]>, number> & {
   calculation: number;
@@ -63,6 +63,46 @@ const customQuestionExamples = [
     label: "Hormuz traffic risk",
     text:
       "By 2026-05-15 23:59 UTC, will public maritime reporting indicate a material disruption to Strait of Hormuz traffic? Answer yes/no, name the resolution sources, and separate direct traffic evidence from market context.",
+  },
+] as const;
+
+interface PresetExample {
+  id: Exclude<QuestionPreset, "custom">;
+  runId: string;
+  label: string;
+  prediction: string;
+  confidence: string;
+  blurb: string;
+  unitHint: string;
+}
+
+const presetExamples: readonly PresetExample[] = [
+  {
+    id: "brent_weekly_high",
+    runId: "2026-05-13-20260513042113__hormuz-brent-weekly-high-2026-05-13",
+    label: "Brent 周高",
+    prediction: "109.50 USD/bbl",
+    confidence: "low confidence",
+    blurb: "FRED DCOILBRENTEU 价格锚 + Hormuz risk premium 证据链。",
+    unitHint: "本周最高日价 · USD/bbl",
+  },
+  {
+    id: "gold_weekly_high",
+    runId: "2026-05-13-20260513002954__hormuz-custom-2026-05-13",
+    label: "黄金周高",
+    prediction: "4742 USD/troy oz",
+    confidence: "medium",
+    blurb: "Safe-haven proxy；custom 问题 schema 的示例 run。",
+    unitHint: "本周最高现货价 · USD/troy oz",
+  },
+  {
+    id: "hormuz_traffic",
+    runId: "2026-05-12-20260512094335__hormuz-traffic-risk-2026-05-12",
+    label: "Hormuz 通行风险",
+    prediction: "D 类（明显但短暂）",
+    confidence: "medium",
+    blurb: "多类别 ABCD 判断；PortWatch + advisory + market context。",
+    unitHint: "类别 · ABCD",
   },
 ] as const;
 
@@ -417,6 +457,61 @@ function actionIcon(kind: GalaxyActionKind, toolName?: string) {
   return <Clock3 size={15} />;
 }
 
+type TimelinePhase = "problem" | "evidence" | "thinking" | "synthesis" | "final";
+
+const timelinePhaseMeta: Record<TimelinePhase, { label: string; detail: string }> = {
+  problem: {
+    label: "问题定义",
+    detail: "锁定 target、单位和 resolution boundary",
+  },
+  evidence: {
+    label: "证据收集",
+    detail: "工具调用、网页读取和 artifact 证据返回",
+  },
+  thinking: {
+    label: "规划与思考",
+    detail: "agent 在工具调用之间整理下一步计划",
+  },
+  synthesis: {
+    label: "证据综合",
+    detail: "把证据压缩为可用于最终预测的判断",
+  },
+  final: {
+    label: "最终预测",
+    detail: "record_forecast 与 checkpoint",
+  },
+};
+
+function timelinePhaseForAction(action: GalaxyActionTraceItem, firstToolIndex: number): TimelinePhase {
+  if (action.index < firstToolIndex || action.kind === "question") return "problem";
+  if (action.kind === "assistant_note") return "thinking";
+  if (action.kind === "evidence_synthesis") return "synthesis";
+  if (action.kind === "final_forecast" || action.kind === "checkpoint") return "final";
+  return "evidence";
+}
+
+function actionKindClass(kind: GalaxyActionKind) {
+  return `kind-${kind.replace(/_/g, "-")}`;
+}
+
+function timelineRows(actions: GalaxyActionTraceItem[]) {
+  const firstToolIndex = actions.find((action) => action.kind === "tool_call")?.index ?? Number.POSITIVE_INFINITY;
+  const rows: Array<
+    | { type: "phase"; phase: TimelinePhase; key: string }
+    | { type: "action"; action: GalaxyActionTraceItem }
+  > = [];
+  let previousPhase: TimelinePhase | null = null;
+  for (const action of actions) {
+    const phase = timelinePhaseForAction(action, firstToolIndex);
+    if (phase !== previousPhase) {
+      rows.push({ type: "phase", phase, key: `${phase}-${action.actionId}` });
+      previousPhase = phase;
+    }
+    rows.push({ type: "action", action });
+  }
+  return rows;
+}
+
 function roleCounts(actions: GalaxyActionTraceItem[]) {
   return actions.reduce(
     (acc, action) => {
@@ -454,6 +549,7 @@ function GalaxyRunHeader({
   activeQuestionKind,
   customQuestionText,
   onSelectHistoryRun,
+  onSelectPreset,
   onQuestionPresetChange,
   onCustomQuestionTextChange,
   onRun,
@@ -471,6 +567,7 @@ function GalaxyRunHeader({
   activeQuestionKind?: GalaxyQuestionKind;
   customQuestionText: string;
   onSelectHistoryRun: (runId: string) => void;
+  onSelectPreset: (preset: PresetExample) => void;
   onQuestionPresetChange: (preset: QuestionPreset) => void;
   onCustomQuestionTextChange: (text: string) => void;
   onRun: () => void;
@@ -486,22 +583,24 @@ function GalaxyRunHeader({
     liveStatus?.runDir ?? meta?.runDir ?? meta?.outputDir ?? "not loaded";
   const taskId = liveStatus?.taskId ?? meta?.taskId ?? projection.runId;
   const command = liveStatus?.command ?? meta?.command;
-  const activePreset =
+  const activePreset: QuestionPreset =
     isRunning && activeQuestionKind === "brent_weekly_high"
       ? "brent_weekly_high"
       : isRunning && activeQuestionKind === "custom"
         ? "custom"
         : questionPreset;
   const isCustomPreset = activePreset === "custom";
+  const isRunnablePreset = activePreset === "brent_weekly_high" || activePreset === "custom";
   const customQuestionReady = customQuestionText.trim().length > 0;
   const customTopic = inferCustomQuestionTopic(customQuestionText);
-  const canRun = !isRunning && (!isCustomPreset || customQuestionReady);
+  const canRun = !isRunning && isRunnablePreset && (!isCustomPreset || customQuestionReady);
   const lastAction = actions.at(-1);
   const runButtonLabel = isRunning
     ? "运行中..."
     : isCustomPreset
       ? "运行自定义问题"
       : "运行 Brent 预测";
+  const activePresetExample = presetExamples.find((preset) => preset.id === activePreset) ?? null;
   const finalMetricLabel =
     finalSource === "current run" ? "当前预测" : finalSource === "history" ? "历史预测" : "最新预测";
   const selectedHistoryRun = historyRuns.find((run) => run.runId === selectedHistoryRunId);
@@ -522,24 +621,36 @@ function GalaxyRunHeader({
         <div className="galaxy-question-config">
           <div className="galaxy-question-config-head">
             <span>问题设置</span>
-            <div className="galaxy-preset-toggle" role="group" aria-label="问题预设">
+            <small>前三项为本地已跑完的示例 artifact，点击即载入。</small>
+          </div>
+          <div className="galaxy-preset-card-grid" role="group" aria-label="问题预设">
+            {presetExamples.map((preset) => (
               <button
+                key={preset.id}
                 type="button"
-                className={activePreset === "brent_weekly_high" ? "selected" : ""}
+                className={`galaxy-preset-card ${activePreset === preset.id ? "selected" : ""}`}
                 disabled={isRunning}
-                onClick={() => onQuestionPresetChange("brent_weekly_high")}
+                onClick={() => onSelectPreset(preset)}
               >
-                Brent 周高
+                <span>{preset.label}</span>
+                <strong>{preset.prediction}</strong>
+                <em>{preset.confidence}</em>
+                <small>{preset.blurb}</small>
+                <b>{preset.unitHint}</b>
               </button>
-              <button
-                type="button"
-                className={activePreset === "custom" ? "selected" : ""}
-                disabled={isRunning}
-                onClick={() => onQuestionPresetChange("custom")}
-              >
-                自定义问题
-              </button>
-            </div>
+            ))}
+            <button
+              type="button"
+              className={`galaxy-preset-card custom ${activePreset === "custom" ? "selected" : ""}`}
+              disabled={isRunning}
+              onClick={() => onQuestionPresetChange("custom")}
+            >
+              <span>自定义问题</span>
+              <strong>自由输入</strong>
+              <em>需 agent 运行</em>
+              <small>写清楚时间窗口、单位、resolution source 后点击运行。</small>
+              <b>question-defined</b>
+            </button>
           </div>
           {isCustomPreset ? (
             <div className="galaxy-custom-question">
@@ -576,9 +687,9 @@ function GalaxyRunHeader({
             <div className="galaxy-question-preview">
               <span>当前目标</span>
               <p>
-                {activeQuestionKind === "brent_weekly_high"
-                  ? questionSummaryFromQuestion(activeQuestion)
-                  : "预测目标：本交易周 Brent 原油最高日价，分辨率来源 FRED DCOILBRENTEU，单位 USD/bbl。"}
+                {activePresetExample
+                  ? `${activePresetExample.label} · ${activePresetExample.blurb}`
+                  : questionSummaryFromQuestion(activeQuestion)}
               </p>
             </div>
           )}
@@ -603,11 +714,11 @@ function GalaxyRunHeader({
             <dd>{elapsed != null && elapsed > 0 ? `${elapsed}s` : "pending"}</dd>
           </div>
         </dl>
-        <div className="galaxy-discipline-panel" aria-label="Source discipline">
-          <div className="galaxy-discipline-head">
+        <details className="galaxy-discipline-panel" aria-label="Source discipline">
+          <summary className="galaxy-discipline-head">
             <span>Source discipline</span>
             <strong>FRED anchor → proxy context → record_forecast</strong>
-          </div>
+          </summary>
           <div className="galaxy-discipline-grid">
             {disciplineItems.map((item) => (
               <div className={`galaxy-discipline-item ${item.status}`} key={item.id}>
@@ -620,7 +731,7 @@ function GalaxyRunHeader({
               </div>
             ))}
           </div>
-        </div>
+        </details>
         {meta?.demo ? <span className="galaxy-demo-note">当前 artifact 是 demo，不应作为真实 forecast truth。</span> : null}
       </div>
       <div className="galaxy-agent-command">
@@ -639,7 +750,16 @@ function GalaxyRunHeader({
           <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
         </details>
         <div className="galaxy-run-actions">
-          <button type="button" onClick={onRun} disabled={!canRun} title={!canRun ? "请先输入自定义预测问题" : undefined}>
+          <button
+            type="button"
+            onClick={onRun}
+            disabled={!canRun}
+            title={
+              !isRunnablePreset
+                ? "该预设为只读演示；如需 rerun 请用 npm run galaxy:hormuz"
+                : !canRun ? "请先输入自定义预测问题" : undefined
+            }
+          >
             {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
             {runButtonLabel}
           </button>
@@ -648,6 +768,12 @@ function GalaxyRunHeader({
             刷新最新结果
           </button>
         </div>
+        {!isRunnablePreset && !isRunning ? (
+          <p className="galaxy-run-hint">
+            <FileText size={14} />
+            当前预设为本地已跑完的演示 artifact，不重复消耗 LLM。如需新一次 rerun 请用 `npm run galaxy:hormuz`。
+          </p>
+        ) : null}
         <div className="galaxy-history-picker">
           <label htmlFor="galaxy-history-run">历史完成题目</label>
           <select
@@ -800,12 +926,23 @@ function ActionTimeline({
   actions,
   selectedActionId,
   onSelectAction,
+  timelineFilter,
+  onTimelineFilterChange,
 }: {
   actions: GalaxyActionTraceItem[];
   selectedActionId: string | null;
   onSelectAction: (actionId: string | null) => void;
+  timelineFilter: TimelineFilter;
+  onTimelineFilterChange: (filter: TimelineFilter) => void;
 }) {
   const itemRefs = useRef(new Map<string, HTMLButtonElement>());
+  const criticalCount = actions.filter((action) => action.criticalPath).length;
+  const visibleActions = useMemo(
+    () => timelineFilter === "critical" ? actions.filter((action) => action.criticalPath) : actions,
+    [actions, timelineFilter],
+  );
+  const rows = useMemo(() => timelineRows(visibleActions), [visibleActions]);
+  const filterLabel = timelineFilter === "critical" ? "显示全部" : "只看关键路径";
   useEffect(() => {
     if (!selectedActionId) return;
     const node = itemRefs.current.get(selectedActionId);
@@ -819,34 +956,85 @@ function ActionTimeline({
 
   return (
     <section className="console-card galaxy-action-timeline">
-      <InfoTitle title="动作时间线" subtitle={`events.jsonl → 脱敏动作追踪（共 ${actions.length} 步）`} />
-      <div className="galaxy-action-list">
-        {actions.map((action) => (
-          <button
-            className={[
-              selectedActionId === action.actionId ? "selected" : "",
-              action.criticalPath ? "critical-path" : "",
-            ].filter(Boolean).join(" ")}
-            key={action.actionId}
-            onClick={() => onSelectAction(action.actionId)}
-            ref={(node) => {
-              if (node) {
-                itemRefs.current.set(action.actionId, node);
-              } else {
-                itemRefs.current.delete(action.actionId);
-              }
-            }}
-            type="button"
-          >
-            <i>{actionIcon(action.kind, action.toolName)}</i>
-            <span>
-              <em>{String(action.index + 1).padStart(2, "0")} · {action.at} · {kindLabel[action.kind]}</em>
-              <strong>{action.title}</strong>
-              <small>{action.summary}</small>
-            </span>
-          </button>
-        ))}
+      <div className="galaxy-timeline-head">
+        <InfoTitle
+          title="审计时间线"
+          subtitle={`动作级追踪 · 可回放每一步工具与思考（${visibleActions.length}/${actions.length} 步）`}
+        />
+        <button
+          type="button"
+          className={timelineFilter === "critical" ? "selected" : ""}
+          onClick={() => onTimelineFilterChange(timelineFilter === "critical" ? "all" : "critical")}
+          disabled={criticalCount === 0}
+        >
+          {filterLabel}
+          <span>{criticalCount}</span>
+        </button>
       </div>
+      <ol className="galaxy-action-list">
+        {rows.length ? rows.map((row) => {
+          if (row.type === "phase") {
+            const phase = timelinePhaseMeta[row.phase];
+            return (
+              <li className={`phase-label phase-${row.phase}`} key={row.key}>
+                <span>{phase.label}</span>
+                <small>{phase.detail}</small>
+              </li>
+            );
+          }
+          const action = row.action;
+          return (
+            <li key={action.actionId}>
+              <button
+                className={[
+                  selectedActionId === action.actionId ? "selected" : "",
+                  action.criticalPath ? "critical-path" : "",
+                  actionKindClass(action.kind),
+                ].filter(Boolean).join(" ")}
+                onClick={() => onSelectAction(action.actionId)}
+                ref={(node) => {
+                  if (node) {
+                    itemRefs.current.set(action.actionId, node);
+                  } else {
+                    itemRefs.current.delete(action.actionId);
+                  }
+                }}
+                type="button"
+              >
+                <i>{actionIcon(action.kind, action.toolName)}</i>
+                <span>
+                  <em>{String(action.index + 1).padStart(2, "0")} · {action.at} · {kindLabel[action.kind]}</em>
+                  <strong>{action.title}</strong>
+                  <small>{action.summary}</small>
+                </span>
+              </button>
+            </li>
+          );
+        }) : (
+          <li className="timeline-empty">
+            <strong>{timelineFilter === "critical" ? "暂无关键路径动作" : "等待 agent 开始行动"}</strong>
+            <small>{timelineFilter === "critical" ? "切回全部时间线可查看非 critical-path 动作。" : "运行开始后，动作会按阶段进入这里。"}</small>
+          </li>
+        )}
+      </ol>
+    </section>
+  );
+}
+
+function ResultPendingCard({
+  finalSource,
+  actions,
+}: {
+  finalSource: FinalSource;
+  actions: GalaxyActionTraceItem[];
+}) {
+  return (
+    <section className="console-card forecast-result-empty">
+      <InfoTitle title="预测结果" subtitle={`${displaySource(finalSource)} · 等待 record_forecast`} />
+      <strong>尚未形成可展示的结果卡</strong>
+      <p>
+        当前 trace 有 {actions.length} 步；如果问题不是 Brent 数值预测或自定义问题，结果会在 record_forecast 写入后显示为通用最终预测卡。
+      </p>
     </section>
   );
 }
@@ -1025,7 +1213,7 @@ export function ForecastPage({
   const [customQuestionText, setCustomQuestionText] = useState(
     () => sessionStorage.getItem("galaxyCustomQuestion") ?? "",
   );
-  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>("result");
+  const [timelineFilter, setTimelineFilter] = useState<TimelineFilter>("all");
 
   const handleQuestionPresetChange = useCallback((preset: QuestionPreset) => {
     setQuestionPreset(preset);
@@ -1072,10 +1260,18 @@ export function ForecastPage({
   const final = finalPayload(projection, actions, finalSource, runtimeLiveStatus?.runId);
   const artifactQuestion = projection.galaxyRun?.question ?? null;
   const liveQuestionKind = questionKindFromTaskId(runtimeLiveStatus?.taskId ?? runtimeLiveStatus?.runId);
-  const activeQuestionKind =
+  const presetQuestionKind: GalaxyQuestionKind | undefined =
+    questionPreset === "brent_weekly_high"
+      ? "brent_weekly_high"
+      : questionPreset === "hormuz_traffic"
+        ? "hormuz_traffic_risk"
+        : questionPreset === "gold_weekly_high"
+          ? "custom"
+          : "custom";
+  const activeQuestionKind: GalaxyQuestionKind | undefined =
     runtimeLiveStatus?.status === "running" && liveQuestionKind
       ? liveQuestionKind
-      : artifactQuestion?.metadata?.question_kind ?? questionPreset;
+      : artifactQuestion?.metadata?.question_kind ?? presetQuestionKind;
   const liveQuestionText =
     actions.find((action) => action.kind === "question")?.rawPreview?.text ??
     actions.find((action) => action.kind === "question")?.summary ??
@@ -1096,7 +1292,6 @@ export function ForecastPage({
   const showNumericForecast = !showCustomForecast && isNumericForecastQuestion(activeQuestion, final.prediction);
   const handleSelectAction = useCallback((actionId: string | null) => {
     setSelectedActionId(actionId);
-    if (actionId) setSidePanelTab("inspector");
   }, []);
 
   const refreshGalaxyArtifact = useCallback(async (message = "已加载最新 artifact。") => {
@@ -1135,6 +1330,14 @@ export function ForecastPage({
     setLiveStatus(null);
     setGalaxyRunMessage("已加载历史完成题目。");
   }, [refreshGalaxyArtifact]);
+
+  const handleSelectPreset = useCallback(async (preset: PresetExample) => {
+    setQuestionPreset(preset.id);
+    sessionStorage.setItem("galaxyQuestionPreset", preset.id);
+    setSelectedActionId(null);
+    await handleSelectHistoryRun(preset.runId);
+    setGalaxyRunMessage(`已加载预设示例 · ${preset.label} · ${preset.prediction}`);
+  }, [handleSelectHistoryRun]);
 
   const mergeTrace = useCallback((incoming: GalaxyActionTrace) => {
     setLiveTrace((previous) => {
@@ -1352,11 +1555,42 @@ export function ForecastPage({
         onSelectHistoryRun={(runId) => {
           void handleSelectHistoryRun(runId);
         }}
+        onSelectPreset={(preset) => {
+          void handleSelectPreset(preset);
+        }}
         onQuestionPresetChange={handleQuestionPresetChange}
         onCustomQuestionTextChange={handleCustomQuestionTextChange}
         onRun={handleRunGalaxy}
         onRefresh={handleRefreshGalaxyArtifact}
       />
+
+      <section className="galaxy-result-row" aria-label="预测结果">
+        {showNumericForecast ? (
+          <NumericForecastCard
+            question={activeQuestion}
+            final={final}
+            brentSeries={brentDailySeries}
+            finalSource={finalSource}
+            runtime="galaxy"
+          />
+        ) : showCustomForecast ? (
+          <CustomForecastCard
+            projection={projection}
+            question={activeQuestion}
+            actions={actions}
+            finalSource={finalSource}
+            customQuestionText={runtimeLiveStatus?.status === "running" ? liveQuestionText : customQuestionText}
+          />
+        ) : final.prediction === "pending" && actions.length === 0 ? (
+          <ResultPendingCard finalSource={finalSource} actions={actions} />
+        ) : (
+          <FinalForecastCard
+            projection={projection}
+            actions={actions}
+            finalSource={finalSource}
+          />
+        )}
+      </section>
 
       <section className="galaxy-agent-workbench">
         <main className="galaxy-agent-main">
@@ -1373,56 +1607,12 @@ export function ForecastPage({
             actions={actions}
             selectedActionId={selectedActionId}
             onSelectAction={handleSelectAction}
+            timelineFilter={timelineFilter}
+            onTimelineFilterChange={setTimelineFilter}
           />
         </main>
         <aside className="galaxy-agent-side">
-          <div className="galaxy-side-tabs" role="tablist" aria-label="右侧面板">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sidePanelTab === "result"}
-              className={sidePanelTab === "result" ? "selected" : ""}
-              onClick={() => setSidePanelTab("result")}
-            >
-              Result
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sidePanelTab === "inspector"}
-              className={sidePanelTab === "inspector" ? "selected" : ""}
-              onClick={() => setSidePanelTab("inspector")}
-            >
-              Inspector
-            </button>
-          </div>
-          {sidePanelTab === "result" ? (
-            showNumericForecast ? (
-              <NumericForecastCard
-                question={activeQuestion}
-                final={final}
-                brentSeries={brentDailySeries}
-                finalSource={finalSource}
-                runtime="galaxy"
-              />
-            ) : showCustomForecast ? (
-              <CustomForecastCard
-                projection={projection}
-                question={activeQuestion}
-                actions={actions}
-                finalSource={finalSource}
-                customQuestionText={runtimeLiveStatus?.status === "running" ? liveQuestionText : customQuestionText}
-              />
-            ) : (
-              <FinalForecastCard
-                projection={projection}
-                actions={actions}
-                finalSource={finalSource}
-              />
-            )
-          ) : (
-            <ActionInspector action={selectedAction} />
-          )}
+          <ActionInspector action={selectedAction} />
         </aside>
       </section>
     </section>

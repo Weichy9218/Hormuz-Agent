@@ -155,6 +155,12 @@ function toolChipLabel(toolName?: string, lane?: string, kind?: GalaxyActionKind
   return toolName ?? lane ?? kind;
 }
 
+function compactSummary(text: string, limit = 100) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= limit) return clean;
+  return `${clean.slice(0, limit).trim()}...`;
+}
+
 function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
   const Icon = iconFor(data.kind, data.toolName);
   const criticalReason = displayCriticalReason(data.criticalReason, { kind: data.kind });
@@ -166,7 +172,7 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
   ].filter(Boolean).join("\n\n");
   return (
     <article
-      className={`galaxy-action-node ${actionTone(data.kind, data.toolName)} ${data.status} ${data.criticalPath ? "critical-path" : ""} ${data.selected ? "selected" : ""}`}
+      className={`galaxy-action-node ${actionTone(data.kind, data.toolName)} ${data.kind === "evidence_synthesis" ? "ring-synthesis" : ""} ${data.status} ${data.criticalPath ? "critical-path" : ""} ${data.selected ? "selected" : ""}`}
       aria-label={tooltip}
       tabIndex={0}
       title={tooltip}
@@ -177,9 +183,9 @@ function GalaxyActionNode({ data }: NodeProps<Node<GalaxyNodeData>>) {
         {toolChipLabel(data.toolName, data.lane, data.kind)}
       </span>
       <strong>{data.title}</strong>
-      {data.criticalPath ? <em>{criticalReason}</em> : null}
       {data.boxedAnswer ? <code className="galaxy-node-prediction">{data.boxedAnswer}</code> : null}
       <p>{data.summary}</p>
+      {data.criticalPath ? <em>{criticalReason}</em> : null}
       <Handle className="graph-handle" type="source" position={Position.Right} />
     </article>
   );
@@ -271,6 +277,11 @@ function storyActionIds(actions: GalaxyActionTraceItem[], selectedActionId?: str
   addActionId(ids, actions.find((action) => action.kind === "question")?.actionId);
   addActionId(ids, selectedActionId ?? undefined);
 
+  const firstNote = actions.find((action) => action.kind === "assistant_note");
+  const lastNote = [...actions].reverse().find((action) => action.kind === "assistant_note");
+  addActionId(ids, firstNote?.actionId);
+  addActionId(ids, lastNote?.actionId);
+
   const finalSynthesis = [...actions].reverse().find((action) => action.kind === "evidence_synthesis");
   addActionId(ids, finalSynthesis?.actionId);
 
@@ -357,6 +368,10 @@ function dagreLayout(
   const isSummaryLike = mode === "summary" || mode === "critical";
   const nodeWidth = isSummaryLike ? SUMMARY_NODE_WIDTH : FULL_NODE_WIDTH;
   const nodeHeight = isSummaryLike ? SUMMARY_NODE_HEIGHT : FULL_NODE_HEIGHT;
+  const dimensionsForKind = (kind: GalaxyActionKind) => ({
+    width: nodeWidth,
+    height: kind === "evidence_synthesis" ? Math.max(nodeHeight, 148) : nodeHeight,
+  });
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({
@@ -368,7 +383,9 @@ function dagreLayout(
     marginy: isSummaryLike ? 18 : 32,
   });
   for (const node of graph.nodes) {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    const action = actionsById.get(node.id);
+    const kind = nodeKind(node, action);
+    dagreGraph.setNode(node.id, dimensionsForKind(kind));
   }
   for (const edge of graph.edges) {
     dagreGraph.setEdge(edge.source, edge.target);
@@ -379,12 +396,13 @@ function dagreLayout(
     const layout = dagreGraph.node(node.id) as { x?: number; y?: number } | undefined;
     const action = actionsById.get(node.id);
     const kind = nodeKind(node, action);
+    const dimensions = dimensionsForKind(kind);
     return {
       id: node.id,
       type: "galaxyAction",
       position: {
-        x: (layout?.x ?? 0) - nodeWidth / 2,
-        y: (layout?.y ?? 0) - nodeHeight / 2,
+        x: (layout?.x ?? 0) - dimensions.width / 2,
+        y: (layout?.y ?? 0) - dimensions.height / 2,
       },
       data: {
         kind,
@@ -596,10 +614,11 @@ export function GalaxyActionGraph({
     },
     { question: 0, evidence: 0, decision: 0 },
   );
+  const synthesisSummary = [...actions].reverse().find((action) => action.kind === "evidence_synthesis")?.summary;
   const graphCaption = mode === "summary"
     ? `故事路径 · ${stableLayout.nodes.length} 个关键节点 / ${actions.length} 个全节点 · 读法：问题 → 证据锚点 → 最终预测`
     : mode === "critical"
-      ? `关键路径 · ${stableLayout.nodes.length} 个 critical-path 节点 · galaxy 算法标注推理链路`
+      ? `关键路径 · ${stableLayout.nodes.length} 个节点 · 推理摘要：${synthesisSummary ? compactSummary(synthesisSummary) : "等待 evidence_synthesis"}`
       : `完整审计 · ${stableLayout.nodes.length} 个动作 · ${stableLayout.edges.length} 条依赖边 · 其中 ${criticalCount} 个关键路径节点`;
 
   return (
@@ -625,6 +644,11 @@ export function GalaxyActionGraph({
           ))}
         </div>
       </div>
+      {mode === "critical" ? (
+        <p className="critical-path-hint">
+          橙色节点为 galaxy 算法标注的推理链；箭头方向 = 信息流向；最右侧节点为最终预测。
+        </p>
+      ) : null}
       <div className="galaxy-lane-strip galaxy-graph-legend" aria-label="Galaxy graph node legend">
         {graphLegend.map((item) => (
           <span className={`legend-${item.tone}`} key={item.key}>{item.label}</span>
@@ -650,7 +674,7 @@ export function GalaxyActionGraph({
       <div className="galaxy-action-graph-shell" ref={graphShell.ref}>
         {stableLayout.nodes.length > 0 && graphShell.ready ? (
           <ReactFlow
-            className={mode === "summary" ? "galaxy-flow-summary" : "galaxy-flow-full"}
+            className={mode === "full" ? "galaxy-flow-full" : "galaxy-flow-summary"}
             nodes={stableLayout.nodes}
             edges={stableLayout.edges}
             nodeTypes={nodeTypes}

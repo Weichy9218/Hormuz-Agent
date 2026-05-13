@@ -158,7 +158,7 @@ export function NumericForecastCard({
         <span><Activity size={14} /> FRED 抓取 {brentSeries.retrievedAt || "待定"}</span>
         <span className="numeric-forecast-note">现货说明：DCOILBRENTEU 为 ICE Brent 现货日价，非期货；ICE M1 期货通常与现货差 ±$1–3/bbl。</span>
       </div>
-      <details className="galaxy-final-lists compact" open={false}>
+      <details className="galaxy-final-lists compact numeric-evidence-list" open>
         <summary>证据列表 · {keyEvidenceItems.length + counterEvidenceItems.length + openConcerns.length} 条</summary>
         <strong>关键证据</strong>
         {keyEvidenceItems.map((item) => <p key={item}>{item}</p>)}

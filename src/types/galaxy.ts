@@ -34,6 +34,13 @@ export interface GalaxyQuestionRow {
     };
     scenario_options?: Record<string, string>;
     source_boundary?: string[];
+    secondary_targets?: Array<{
+      target_id: string;
+      label: string;
+      unit: string;
+      horizon: string;
+      role: "primary" | "secondary";
+    }>;
   };
 }
 
@@ -108,6 +115,23 @@ export interface GalaxyActionTraceItem {
     counterEvidenceItems?: string[];
     openConcerns?: string[];
     temporalNotes?: string[];
+    targetForecasts?: Array<{
+      targetId: string;
+      label?: string;
+      prediction: string;
+      unit?: string;
+      horizon?: string;
+      direction?: "up" | "down" | "flat" | "mixed" | "uncertain";
+      confidence?: "low" | "medium" | "high";
+      rationale?: string;
+      keyEvidence?: string[];
+      sourceBoundary?: string[];
+    }>;
+    reasoningChain?: Array<{
+      step: string;
+      conclusion: string;
+      evidence?: string[];
+    }>;
   };
   evidenceRole?: "question_audit" | "source_search" | "source_read" | "evidence_extract" | "forecast_record";
   rawRole?: "user" | "assistant" | "tool" | "system";

@@ -167,6 +167,13 @@ export function buildQuestion(dateText, questionKind = defaultQuestionKind) {
         `4. In the final rationale, separate the latest FRED anchor, proxy market context, and uncertainty from unreleased FRED observations.\n\n` +
         `5. Do not substitute another calendar year in searches or reasoning. If a search needs a year, use ${dateText.slice(0, 4)}; otherwise search for current/latest data without a year.\n\n` +
         `Search budget discipline: after you have one FRED/EIA anchor and at most three proxy context sources, stop searching and forecast. Do not keep looking for additional analyst commentary unless it changes the numeric range.\n\n` +
+        `Viewer output contract:\n` +
+        `- record_forecast.prediction remains the primary answer: Brent weekly high in USD/bbl.\n` +
+        `- In record_forecast.target_forecasts, include exactly these three targets when the tool schema supports them: brent_weekly_high, brent_weekly_trend, gold_weekly_high.\n` +
+        `- brent_weekly_trend should describe the one-week Brent direction/trajectory implied by the evidence, not a second resolved high value.\n` +
+        `- gold_weekly_high is a secondary safe-haven forecast in USD/troy oz; name the public resolution/proxy source boundary in source_boundary and keep it separate from the Brent resolution source.\n` +
+        `- In record_forecast.reasoning_chain, include 4-6 concise steps that connect source anchor, proxy context, Hormuz risk channel, counterevidence, and final forecast.\n` +
+        `- Keep key_evidence as the first-class evidence list for the reviewer; do not bury the decisive facts only in rationale.\n\n` +
         `Your goal is to make a numeric prediction.\n\n` +
         `IMPORTANT: Your final answer MUST end with this exact format:\n` +
         `\\boxed{number}\n\n` +
@@ -199,6 +206,29 @@ export function buildQuestion(dateText, questionKind = defaultQuestionKind) {
           "official-advisory",
           "public-news-context",
           "ais-flow-pending",
+        ],
+        secondary_targets: [
+          {
+            target_id: "brent_weekly_high",
+            label: "Brent weekly high",
+            unit: "USD/bbl",
+            horizon: "this_week",
+            role: "primary",
+          },
+          {
+            target_id: "brent_weekly_trend",
+            label: "Brent one-week trend",
+            unit: "direction",
+            horizon: "this_week",
+            role: "secondary",
+          },
+          {
+            target_id: "gold_weekly_high",
+            label: "Gold weekly high",
+            unit: "USD/troy oz",
+            horizon: "this_week",
+            role: "secondary",
+          },
         ],
       },
     };
@@ -391,6 +421,8 @@ function normalizeForecastPayload(value) {
   if (!value || typeof value !== "object") return undefined;
   const payload = value;
   const counterEvidencePayload = payload[["counter", "evidence"].join("")];
+  const targetForecastPayload = payload.target_forecasts ?? payload.targetForecasts;
+  const reasoningChainPayload = payload.reasoning_chain ?? payload.reasoningChain;
   return {
     prediction: payload.prediction,
     confidence: confidence(payload.confidence),
@@ -407,7 +439,47 @@ function normalizeForecastPayload(value) {
     temporalNotes: Array.isArray(payload.temporal_notes)
       ? payload.temporal_notes.map((item) => compact(item, 360)).filter(Boolean)
       : [],
+    targetForecasts: Array.isArray(targetForecastPayload)
+      ? targetForecastPayload
+          .filter((item) => item && typeof item === "object")
+          .map((item) => ({
+            targetId: compact(item.target_id ?? item.targetId, 80),
+            label: compact(item.label, 120),
+            prediction: compact(item.prediction, 180),
+            unit: compact(item.unit, 80),
+            horizon: compact(item.horizon, 80),
+            direction: forecastDirection(item.direction),
+            confidence: confidence(item.confidence),
+            rationale: compact(item.rationale, 360),
+            keyEvidence: Array.isArray(item.key_evidence ?? item.keyEvidence)
+              ? (item.key_evidence ?? item.keyEvidence).map((entry) => compact(entry, 240)).filter(Boolean)
+              : [],
+            sourceBoundary: Array.isArray(item.source_boundary ?? item.sourceBoundary)
+              ? (item.source_boundary ?? item.sourceBoundary).map((entry) => compact(entry, 120)).filter(Boolean)
+              : [],
+          }))
+          .filter((item) => item.targetId && item.prediction)
+      : [],
+    reasoningChain: Array.isArray(reasoningChainPayload)
+      ? reasoningChainPayload
+          .filter((item) => item && typeof item === "object")
+          .map((item) => ({
+            step: compact(item.step, 140),
+            conclusion: compact(item.conclusion, 360),
+            evidence: Array.isArray(item.evidence)
+              ? item.evidence.map((entry) => compact(entry, 240)).filter(Boolean)
+              : [],
+          }))
+          .filter((item) => item.step && item.conclusion)
+      : [],
   };
+}
+
+function forecastDirection(value) {
+  if (value === "up" || value === "down" || value === "flat" || value === "mixed" || value === "uncertain") {
+    return value;
+  }
+  return undefined;
 }
 
 function argsSummaryForTool(toolName, args) {
