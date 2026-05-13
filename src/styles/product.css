@@ -292,6 +292,329 @@
   overflow: hidden;
 }
 
+.overview-page .case-map {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  min-height: auto;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.overview-page .case-map .map-card-heading,
+.overview-page .case-map .clean-map,
+.overview-page .case-map .map-traffic-legend,
+.overview-page .case-map .map-reference-panel {
+  position: static;
+}
+
+.overview-page .case-map .map-card-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  max-width: none;
+}
+
+.overview-page .map-live-link {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid #b8d3ef;
+  border-radius: 7px;
+  color: #0f766e;
+  background: rgba(240, 253, 250, 0.82);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.overview-page .map-live-link:hover {
+  border-color: #7fc3b6;
+  background: #ecfdf5;
+}
+
+.overview-page .clean-map.hormuz-schematic {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 520px;
+  border: 1px solid #d2e1f1;
+  border-radius: 8px;
+  background: linear-gradient(140deg, #eef7ff, #fbfdff 48%, #f2f8ff);
+}
+
+.overview-page .hormuz-schematic text {
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 3px;
+  stroke-opacity: 0.85;
+  letter-spacing: 0;
+  pointer-events: none;
+}
+
+.overview-page .bathymetry-lines path {
+  fill: none;
+  stroke: rgba(30, 64, 175, 0.11);
+  stroke-width: 2;
+}
+
+.overview-page .schematic-land {
+  fill: #e2eaf3;
+  stroke: #bdccdd;
+  stroke-width: 1.5;
+}
+
+.overview-page .schematic-land.muted {
+  fill: #edf2f7;
+  stroke: #d4dfec;
+}
+
+.overview-page .schematic-island {
+  fill: #d9e5f0;
+  stroke: #aabdd1;
+  stroke-width: 1.3;
+}
+
+.overview-page .land-label {
+  fill: #64748b;
+  font-size: 17px;
+  font-weight: 720;
+}
+
+.overview-page .land-label.muted {
+  fill: #94a3b8;
+  font-weight: 650;
+}
+
+.overview-page .chokepoint-zone ellipse {
+  fill: rgba(11, 102, 246, 0.07);
+  stroke: rgba(11, 102, 246, 0.34);
+  stroke-width: 3.5;
+  stroke-dasharray: 8 8;
+}
+
+.overview-page .chokepoint-zone circle {
+  fill: #ffffff;
+  stroke: var(--blue);
+  stroke-width: 4;
+}
+
+.overview-page .schematic-layer {
+  opacity: 1;
+  transition:
+    opacity 200ms ease,
+    filter 200ms ease;
+}
+
+.overview-page .schematic-layer.is-dimmed {
+  opacity: 0.2;
+}
+
+.overview-page .schematic-layer.is-focused {
+  filter: drop-shadow(0 8px 14px rgba(37, 99, 235, 0.16));
+}
+
+.overview-page .lane-hit-area {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+  pointer-events: stroke;
+}
+
+.overview-page .schematic-lane-path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.overview-page .schematic-layer.is-focused .schematic-lane-path {
+  stroke-width: 6.6;
+}
+
+.overview-page .schematic-lane-path.dashed {
+  stroke-width: 4;
+  stroke-dasharray: 10 12;
+}
+
+.overview-page .layer-buffer .schematic-lane-path {
+  stroke-width: 3.2;
+}
+
+.overview-page .lane-label {
+  fill: currentColor;
+  font-size: 16px;
+  font-weight: 820;
+}
+
+.overview-page .lane-label-buffer {
+  fill: #64748b;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.overview-page .lane-label-alternative {
+  fill: #b45309;
+}
+
+.overview-page .vessel-marker {
+  color: #0f766e;
+  transform-box: fill-box;
+  transform-origin: center;
+  cursor: default;
+}
+
+.overview-page .vessel-marker circle {
+  fill: rgba(96, 165, 250, 0.12);
+  stroke: rgba(37, 99, 235, 0.2);
+  stroke-width: 1.6;
+  transition:
+    fill 160ms ease,
+    stroke-opacity 160ms ease,
+    filter 160ms ease;
+}
+
+.overview-page .vessel-marker path {
+  fill: currentColor;
+  stroke: #ffffff;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.overview-page .vessel-marker[data-type="tanker"] {
+  color: #1d4ed8;
+}
+
+.overview-page .vessel-marker[data-type="cargo"] {
+  color: #0f766e;
+}
+
+.overview-page .vessel-marker:hover circle {
+  fill: rgba(96, 165, 250, 0.28);
+  stroke-opacity: 0.82;
+  filter: url(#vesselGlow);
+}
+
+.overview-page .map-callout .callout-leader {
+  fill: none;
+  stroke: rgba(71, 85, 105, 0.52);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.overview-page .map-callout .callout-point {
+  fill: #ffffff;
+  stroke: #0b66f6;
+  stroke-width: 2.4;
+}
+
+.overview-page .callout-label {
+  fill: #0f172a;
+  font-weight: 820;
+}
+
+.overview-page .callout-sm .callout-label {
+  font-size: 15px;
+}
+
+.overview-page .callout-md .callout-label {
+  font-size: 22px;
+}
+
+.overview-page .callout-lg .callout-label {
+  fill: #0b66f6;
+  font-size: 26px;
+  font-weight: 880;
+}
+
+.overview-page .sea-callout .callout-label {
+  fill: #7bafd4;
+  font-style: italic;
+  font-weight: 760;
+}
+
+.overview-page .map-traffic-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.overview-page .map-traffic-legend button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 31px;
+  padding: 0 9px;
+  border: 1px solid #d3e2f4;
+  border-radius: 7px;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.overview-page .map-traffic-legend button:hover,
+.overview-page .map-traffic-legend button:focus-visible {
+  border-color: #9fc0ea;
+  color: #1d4ed8;
+  background: #f8fbff;
+  outline: none;
+}
+
+.overview-page .map-traffic-legend button[aria-pressed="true"] {
+  border-color: #1d4ed8;
+  color: #ffffff;
+  background: #1d4ed8;
+}
+
+.overview-page .map-traffic-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.18);
+}
+
+.overview-page .map-traffic-legend button[aria-pressed="true"] i {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.24);
+}
+
+.overview-page .map-reference-panel {
+  padding: 10px 11px;
+  border: 1px solid rgba(191, 215, 255, 0.92);
+  border-radius: 8px;
+  background: rgba(255, 251, 235, 0.72);
+}
+
+.overview-page .map-reference-panel p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.overview-page .map-reference-panel a {
+  margin-left: 4px;
+  color: #0f766e;
+  font-weight: 820;
+  text-decoration: none;
+}
+
+.overview-page .map-reference-panel a:hover {
+  text-decoration: underline;
+}
+
 .overview-boundary-list {
   display: grid;
   gap: 10px;
@@ -445,284 +768,6 @@
 .overview-inline-link {
   width: fit-content;
   font-size: 0.84rem;
-}
-
-.overview-page .map-card-heading {
-  align-items: start;
-}
-
-.overview-page .traffic-map {
-  display: grid;
-  gap: 10px;
-  padding: 18px;
-}
-
-.overview-page .traffic-map .map-card-heading,
-.overview-page .traffic-map .clean-map,
-.overview-page .traffic-map .map-traffic-legend,
-.overview-page .traffic-map .map-reference-panel {
-  position: static;
-}
-
-.overview-page .traffic-map .map-card-heading {
-  max-width: min(520px, calc(100% - 40px));
-}
-
-.overview-page .map-live-link {
-  display: inline-flex;
-  align-items: center;
-  justify-self: end;
-  padding: 6px 9px;
-  border: 1px solid #b8d3ef;
-  border-radius: 7px;
-  color: #0f766e;
-  background: rgba(240, 253, 250, 0.8);
-  font-size: 0.74rem;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.overview-page .chokepoint-zone ellipse {
-  fill: rgba(11, 102, 246, 0.08);
-  stroke: rgba(11, 102, 246, 0.38);
-  stroke-width: 3.5;
-  stroke-dasharray: 8 8;
-}
-
-.overview-page .chokepoint-zone circle {
-  fill: #ffffff;
-  stroke: var(--blue);
-  stroke-width: 4.5;
-}
-
-.overview-page .bathymetry-lines path {
-  fill: none;
-  stroke: rgba(30, 64, 175, 0.12);
-  stroke-width: 2;
-}
-
-.overview-page .map-place-points circle {
-  fill: #ffffff;
-  stroke: #1d4ed8;
-  stroke-width: 3;
-  filter: url(#mapGlow);
-}
-
-.overview-page .map-place-points text {
-  fill: #334155;
-  font-size: 17px;
-  font-weight: 780;
-}
-
-.overview-page .traffic-context-labels .sea {
-  fill: rgba(51, 65, 85, 0.44);
-  font-size: 25px;
-  font-weight: 820;
-  letter-spacing: 0;
-}
-
-.overview-page .map-port-label circle {
-  fill: #ffffff;
-  stroke: #0b66f6;
-  stroke-width: 3;
-  filter: url(#mapGlow);
-}
-
-.overview-page .map-port-label text {
-  fill: #0f172a;
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.88);
-  stroke-width: 4px;
-  font-size: 17px;
-  font-weight: 820;
-}
-
-.overview-page .map-label.strait {
-  fill: #0b66f6;
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-width: 5px;
-  font-size: 25px;
-  font-weight: 860;
-}
-
-.overview-page .map-label.country {
-  fill: #334155;
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.78);
-  stroke-width: 5px;
-  font-size: 23px;
-}
-
-.overview-page .map-label.muted {
-  fill: #708198;
-  font-size: 22px;
-}
-
-.overview-page .traffic-map .clean-map {
-  min-height: 560px;
-  border: 1px solid #d2e1f1;
-  border-radius: 8px;
-}
-
-.overview-page .traffic-map .traffic-route {
-  stroke-width: 4;
-  stroke-dasharray: none;
-  opacity: 0.64;
-}
-
-.overview-page .traffic-map .traffic-route.bypass {
-  stroke-width: 3.2;
-  stroke-dasharray: 9 11;
-  opacity: 0.72;
-}
-
-.overview-page .traffic-route-labels text {
-  fill: #1d4ed8;
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.86);
-  stroke-width: 4px;
-  font-size: 15px;
-  font-weight: 850;
-}
-
-.overview-page .traffic-route-labels .bypass {
-  fill: #b45309;
-}
-
-.overview-page .ais-vessel-layer g {
-  color: #0f766e;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.overview-page .ais-vessel-layer g:hover circle {
-  stroke-opacity: 0.82;
-}
-
-.overview-page .ais-vessel-layer path {
-  fill: currentColor;
-  stroke: #ffffff;
-  stroke-width: 1.5;
-}
-
-.overview-page .ais-vessel-layer circle {
-  fill: rgba(15, 118, 110, 0.12);
-  stroke: rgba(15, 118, 110, 0.22);
-  stroke-width: 1.5;
-}
-
-.overview-page .ais-vessel-layer g[data-type="tanker"] {
-  color: #1d4ed8;
-}
-
-.overview-page .ais-vessel-layer g[data-type="cargo"] {
-  color: #0f766e;
-}
-
-.overview-page .ais-vessel-layer g[data-type="bulk"] {
-  color: #d97706;
-}
-
-.overview-page .ais-vessel-layer g[data-type="support"] {
-  color: #64748b;
-}
-
-.overview-page .map-traffic-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.overview-page .map-traffic-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border: 1px solid #d3e2f4;
-  border-radius: 7px;
-  color: #475569;
-  background: rgba(255, 255, 255, 0.78);
-  font-size: 0.72rem;
-  font-weight: 780;
-}
-
-.overview-page .map-traffic-legend i {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: #0f766e;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
-}
-
-.overview-page .map-traffic-legend span[data-type="tanker"] i {
-  background: #1d4ed8;
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
-}
-
-.overview-page .map-traffic-legend span[data-type="bulk"] i {
-  background: #d97706;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.14);
-}
-
-.overview-page .map-traffic-legend span[data-type="support"] i {
-  background: #64748b;
-  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.14);
-}
-
-.overview-page .traffic-map .map-caption {
-  bottom: 12px;
-  border-color: rgba(251, 191, 36, 0.62);
-  color: #475569;
-  background: rgba(255, 251, 235, 0.92);
-  font-size: 0.78rem;
-}
-
-.overview-page .map-reference-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid rgba(191, 215, 255, 0.92);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 28px rgba(30, 64, 99, 0.08);
-}
-
-.overview-page .map-reference-panel article {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.overview-page .map-reference-panel span {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 780;
-}
-
-.overview-page .map-reference-panel a,
-.overview-page .map-reference-panel strong {
-  color: var(--text);
-  font-size: 0.78rem;
-  font-weight: 820;
-  line-height: 1.3;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.overview-page .map-reference-panel a {
-  color: #0f766e;
-}
-
-.overview-page .map-reference-panel p {
-  grid-column: 1 / -1;
-  margin: 2px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid #e4eef9;
-  color: #475569;
-  font-size: 0.76rem;
-  line-height: 1.45;
 }
 
 .overview-purpose-card {
@@ -1460,6 +1505,10 @@
   .overview-context-map .case-map {
     min-height: auto;
   }
+
+  .overview-page .clean-map.hormuz-schematic {
+    min-height: 470px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1500,18 +1549,36 @@
     min-height: auto;
   }
 
-  .overview-page .traffic-map .clean-map {
+  .overview-page .case-map {
+    padding: 14px;
+  }
+
+  .overview-page .case-map .map-card-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-page .map-live-link {
+    justify-self: start;
+  }
+
+  .overview-page .clean-map.hormuz-schematic {
     min-height: 430px;
   }
 
-  .overview-page .traffic-context-labels,
-  .overview-page .traffic-route-labels,
-  .overview-page .map-label.country {
+  .overview-page .callout-optional {
     display: none;
   }
 
-  .overview-page .map-reference-panel {
-    grid-template-columns: 1fr;
+  .overview-page .land-label {
+    display: none;
+  }
+
+  .overview-page .callout-md .callout-label {
+    font-size: 20px;
+  }
+
+  .overview-page .callout-lg .callout-label {
+    font-size: 24px;
   }
 
   .market-page .market-spark-grid,
@@ -1520,5 +1587,33 @@
   .market-page .market-mini-metrics,
   .market-page .market-series-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .overview-page .clean-map.hormuz-schematic {
+    min-height: 360px;
+  }
+
+  .overview-page .map-traffic-legend button {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+
+  .overview-page .lane-label {
+    display: none;
+  }
+
+  .overview-page .hormuz-schematic text {
+    stroke-width: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-page .case-map *,
+  .overview-page .case-map *::before,
+  .overview-page .case-map *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
