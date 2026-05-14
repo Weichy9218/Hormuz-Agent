@@ -27,3 +27,6 @@ data/raw/*
 data/galaxy/runs/**/search/
 data/galaxy/runs/**/web/
 data/galaxy/runs/**/tool_artifacts/
+
+# 演示文稿（独立子项目，不纳入主仓库）
+slides/

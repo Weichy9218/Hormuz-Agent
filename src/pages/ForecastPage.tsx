@@ -288,6 +288,16 @@ function compactPath(path: string, keepSegments = 2) {
   return `.../${parts.slice(-keepSegments).join("/")}`;
 }
 
+function historyRunLabel(run: GalaxyRunHistoryItem) {
+  const topic = run.questionKind === "custom"
+    ? inferCustomQuestionTopic(run.questionTitle).title
+    : run.questionKind === "brent_weekly_high"
+      ? "Brent 周高预测"
+      : run.taskId.replace(/^hormuz-/, "");
+  const result = run.finalPrediction || displayStatus(run.status);
+  return `${topic} · ${result}`;
+}
+
 function finalPayload(
   projection: ForecastProjection,
   actions: GalaxyActionTraceItem[],
@@ -412,9 +422,15 @@ function GalaxyRunHeader({
     : isCustomPreset
       ? "运行自定义问题"
       : "运行 Brent 预测";
+  const runButtonTitle = isRunning
+    ? "当前已有 live run 正在运行"
+    : !canRun
+      ? "请先输入自定义预测问题"
+      : undefined;
   const finalMetricLabel =
     finalSource === "current run" ? "当前预测" : finalSource === "history" ? "历史预测" : "上次预测";
   const selectedHistoryRun = historyRuns.find((run) => run.runId === selectedHistoryRunId);
+  const viewableHistoryCount = historyRuns.filter((run) => run.artifactPath).length;
 
   return (
     <section className="console-card galaxy-agent-hero">
@@ -492,7 +508,7 @@ function GalaxyRunHeader({
           <div>
             <dt>状态</dt>
             <dd className={`status-chip status-${liveStatus?.status ?? meta?.status ?? "idle"}`}>
-              {displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}
+              {displayStatus(liveStatus?.status ?? meta?.status ?? "idle")}
             </dd>
           </div>
           <div>
@@ -514,7 +530,7 @@ function GalaxyRunHeader({
         <InfoTitle title="运行控制" subtitle="galaxy-selfevolve · 启动 / 状态 / 追踪" />
         <div className="galaxy-run-status-card">
           <span>{displaySource(finalSource)}</span>
-          <strong>{displayStatus(liveStatus?.status ?? meta?.status ?? "last completed")}</strong>
+          <strong>{displayStatus(liveStatus?.status ?? meta?.status ?? "idle")}</strong>
           <small>{liveStatus?.lastUpdatedAt ?? meta?.completedAt ?? meta?.forecastedAt ?? "未知更新时间"}</small>
         </div>
         <dl className="galaxy-run-kv">
@@ -526,7 +542,7 @@ function GalaxyRunHeader({
           <code>{command?.join(" ") ?? ".venv/bin/python main.py --run-config hormuz_test.yaml"}</code>
         </details>
         <div className="galaxy-run-actions">
-          <button type="button" onClick={onRun} disabled={!canRun} title={!canRun ? "请先输入自定义预测问题" : undefined}>
+          <button type="button" onClick={onRun} disabled={!canRun} title={runButtonTitle}>
             {isRunning ? <RefreshCw size={15} className="spin-icon" /> : <Play size={15} />}
             {runButtonLabel}
           </button>
@@ -544,8 +560,8 @@ function GalaxyRunHeader({
           >
             <option value="">最近完成 artifact</option>
             {historyRuns.map((run) => (
-              <option key={run.runId} value={run.runId}>
-                {run.taskId.replace(/^hormuz-/, "")} · {run.finalPrediction || "no prediction"}
+              <option key={run.runId} value={run.artifactPath ? run.runId : ""} disabled={!run.artifactPath}>
+                {historyRunLabel(run)}
               </option>
             ))}
           </select>
@@ -553,7 +569,7 @@ function GalaxyRunHeader({
             {selectedHistoryRun
               ? `${displayStatus(selectedHistoryRun.status)} · ${selectedHistoryRun.completedAt || "未知完成时间"}`
               : historyRuns.length > 0
-                ? `${historyRuns.length} 个本地 run-artifact 可查看`
+                ? `${viewableHistoryCount} 个本地 run-artifact 可查看`
                 : "暂无历史 run-artifact"}
           </small>
         </div>
@@ -561,9 +577,9 @@ function GalaxyRunHeader({
           <p className={`galaxy-run-hint ${customQuestionReady ? "ready" : ""}`}>
             <FileText size={14} />
             {isRunning
-              ? "当前 live run 使用自定义问题；运行完成前预测值保持 pending。"
+              ? "当前 live run 使用自定义问题与通用 ForecastWorkerPrompt；运行完成前预测值保持 pending。"
               : customQuestionReady
-              ? "将以自定义问题启动新的 galaxy run；运行完成前右侧仍显示上次完成结果。"
+              ? "将以自定义问题启动新的 galaxy run，并使用通用 forecast prompt；运行完成前右侧仍显示上次完成结果。"
               : "输入自定义问题后才能启动；当前结果仍来自上次完成 run。"}
           </p>
         ) : null}
@@ -604,21 +620,25 @@ function FinalForecastCard({
       <p>{payload?.rationale ?? final.action?.summary ?? "当前运行尚未记录最终预测。"}</p>
       <div className="galaxy-final-lists">
         <strong>关键证据</strong>
-        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item) => (
-          <p key={item}>{item}</p>
+        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item, idx) => (
+          <p key={`key-${idx}`}>{item}</p>
         ))}
         {payload?.counterEvidenceItems?.length ? <strong>反向证据</strong> : null}
-        {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
+        {payload?.counterEvidenceItems?.map((item, idx) => <p key={`counter-${idx}`}>{item}</p>)}
         {payload?.openConcerns?.length ? <strong>待观察风险</strong> : null}
-        {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
+        {payload?.openConcerns?.map((item, idx) => <p key={`concern-${idx}`}>{item}</p>)}
       </div>
       <div className="galaxy-stats-grid">
-        <span><b>{stats.question_audit}</b> 审计</span>
-        <span><b>{stats.source_search}</b> 检索</span>
-        <span><b>{stats.source_read}</b> 读取</span>
-        <span><b>{stats.calculation}</b> 计算</span>
-        <span><b>{stats.delegation}</b> 委派</span>
-        <span><b>{stats.evidence_extract}</b> 提取</span>
+        {[
+          { label: "审计", count: stats.question_audit },
+          { label: "检索", count: stats.source_search },
+          { label: "读取", count: stats.source_read },
+          { label: "计算", count: stats.calculation },
+          { label: "委派", count: stats.delegation },
+          { label: "提取", count: stats.evidence_extract },
+        ].filter((item) => item.count > 0).map((item) => (
+          <span key={item.label}><b>{item.count}</b> {item.label}</span>
+        ))}
       </div>
     </section>
   );
@@ -648,7 +668,7 @@ function CustomForecastCard({
 
   return (
     <section className="console-card custom-forecast-card">
-      <InfoTitle title={topic.title} subtitle={`${displaySource(finalSource)} · custom question`} />
+      <InfoTitle title={topic.title} subtitle={`${displaySource(finalSource)} · 自定义问题`} />
       <p className="custom-question-caption">{displayedQuestion}</p>
       <div className="custom-forecast-answer">
         <span>预测值</span>
@@ -660,15 +680,15 @@ function CustomForecastCard({
         <p>{topic.sourceBoundary}</p>
       </div>
       <details className="galaxy-final-lists compact">
-        <summary>record_forecast evidence · {evidenceCount || "pending"}</summary>
+        <summary>record_forecast 证据 · {evidenceCount || "pending"}</summary>
         <strong>关键证据</strong>
-        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item) => (
-          <p key={item}>{item}</p>
+        {(payload?.keyEvidenceItems?.length ? payload.keyEvidenceItems : ["等待 record_forecast 载荷"]).map((item, idx) => (
+          <p key={`ck-${idx}`}>{item}</p>
         ))}
         {payload?.counterEvidenceItems?.length ? <strong>反向证据</strong> : null}
-        {payload?.counterEvidenceItems?.map((item) => <p key={item}>{item}</p>)}
+        {payload?.counterEvidenceItems?.map((item, idx) => <p key={`cc-${idx}`}>{item}</p>)}
         {payload?.openConcerns?.length ? <strong>待观察风险</strong> : null}
-        {payload?.openConcerns?.map((item) => <p key={item}>{item}</p>)}
+        {payload?.openConcerns?.map((item, idx) => <p key={`co-${idx}`}>{item}</p>)}
       </details>
       <p className="numeric-forecast-rationale">
         {payload?.rationale ?? final.action?.summary ?? "自定义 run 尚未记录最终预测。运行完成后这里显示 record_forecast rationale。"}
@@ -700,7 +720,7 @@ function ActionTimeline({
 
   return (
     <section className="console-card galaxy-action-timeline">
-      <InfoTitle title="动作时间线" subtitle={`events.jsonl → 脱敏动作追踪（共 ${actions.length} 步）`} />
+      <InfoTitle title="动作时间线" subtitle={`脱敏动作追踪 · 共 ${actions.length} 步`} />
       <div className="galaxy-action-list">
         {actions.map((action) => (
           <button
@@ -898,6 +918,8 @@ export function ForecastPage({
   const [liveArtifact, setLiveArtifact] = useState<GalaxyHormuzRunArtifact | null>(null);
   const [liveTrace, setLiveTrace] = useState<GalaxyActionTrace | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveRunStatus | null>(null);
+  const liveTraceRef = useRef<GalaxyActionTrace | null>(null);
+  const liveStatusRef = useRef<LiveRunStatus | null>(null);
   const [galaxyRunMessage, setGalaxyRunMessage] = useState("");
   const [graphMode, setGraphMode] = useState<"summary" | "full">("summary");
   const [questionPreset, setQuestionPreset] = useState<QuestionPreset>(
@@ -918,6 +940,24 @@ export function ForecastPage({
     sessionStorage.setItem("galaxyCustomQuestion", text);
   }, []);
 
+  const latestArtifactQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("questionKind", questionPreset === "custom" ? "custom" : "brent_weekly_high");
+    if (questionPreset === "custom" && customQuestionText.trim()) {
+      params.set("questionText", customQuestionText.trim());
+    }
+    return params.toString();
+  }, [customQuestionText, questionPreset]);
+  const artifactLookupReady = questionPreset !== "custom" || customQuestionText.trim().length > 0;
+
+  useEffect(() => {
+    liveTraceRef.current = liveTrace;
+  }, [liveTrace]);
+
+  useEffect(() => {
+    liveStatusRef.current = liveStatus;
+  }, [liveStatus]);
+
   const refreshGalaxyHistory = useCallback(async () => {
     const response = await fetch("/api/galaxy-hormuz/history");
     if (!response.ok) throw new Error(`history request failed: ${response.status}`);
@@ -927,9 +967,9 @@ export function ForecastPage({
 
   const runtimeLiveStatus = liveStatus;
   const historyArtifactSelected = selectedHistoryRunId.length > 0 && latestCompletedArtifact != null;
-  const runtimeGalaxyArtifact = liveArtifact ?? latestCompletedArtifact ?? undefined;
+  const runtimeGalaxyArtifact = liveArtifact ?? latestCompletedArtifact;
   const projection = useMemo(
-    () => projectForecastState(runtimeGalaxyArtifact ?? undefined),
+    () => projectForecastState(runtimeGalaxyArtifact),
     [runtimeGalaxyArtifact],
   );
   const brentDailySeries = useMemo(() => projectBrentDailySeries(30), []);
@@ -953,10 +993,14 @@ export function ForecastPage({
   const final = finalPayload(projection, actions, finalSource, runtimeLiveStatus?.runId);
   const artifactQuestion = projection.galaxyRun?.question ?? null;
   const liveQuestionKind = questionKindFromTaskId(runtimeLiveStatus?.taskId ?? runtimeLiveStatus?.runId);
+  const presetQuestionKind: GalaxyQuestionKind =
+    questionPreset === "custom" ? "custom" : "brent_weekly_high";
   const activeQuestionKind =
     runtimeLiveStatus?.status === "running" && liveQuestionKind
       ? liveQuestionKind
-      : artifactQuestion?.metadata?.question_kind ?? questionPreset;
+      : historyArtifactSelected
+        ? artifactQuestion?.metadata?.question_kind ?? presetQuestionKind
+        : presetQuestionKind;
   const liveQuestionText =
     actions.find((action) => action.kind === "question")?.rawPreview?.text ??
     actions.find((action) => action.kind === "question")?.summary ??
@@ -970,9 +1014,13 @@ export function ForecastPage({
       )
       : runtimeLiveStatus?.status === "running" && activeQuestionKind === "custom"
         ? customQuestionPreview(liveQuestionText)
-        : artifactQuestion ?? (questionPreset === "custom"
-          ? customQuestionPreview(customQuestionText)
-          : brentQuestionPreview(localDateText()));
+        : historyArtifactSelected && artifactQuestion
+          ? artifactQuestion
+          : activeQuestionKind === "custom"
+            ? customQuestionPreview(customQuestionText)
+            : artifactQuestion?.metadata?.question_kind === "brent_weekly_high"
+              ? artifactQuestion
+              : brentQuestionPreview(localDateText());
   const showCustomForecast = activeQuestionKind === "custom";
   const showNumericForecast = !showCustomForecast && isNumericForecastQuestion(activeQuestion, final.prediction);
   const handleSelectAction = useCallback((actionId: string | null) => {
@@ -981,11 +1029,23 @@ export function ForecastPage({
   }, []);
 
   const refreshGalaxyArtifact = useCallback(async (message = "已加载最新 artifact。") => {
-    const galaxyResponse = await fetch("/api/galaxy-hormuz/latest");
+    if (!artifactLookupReady) {
+      setLatestCompletedArtifact(null);
+      setSelectedHistoryRunId("");
+      setLiveArtifact(null);
+      setLiveTrace(null);
+      if (!liveStatus || liveStatus.status !== "running") {
+        setLiveStatus(null);
+      }
+      setGalaxyRunMessage("输入自定义问题后才会加载对应 artifact；不会用历史题目冒充当前结果。");
+      return;
+    }
+    const galaxyResponse = await fetch(`/api/galaxy-hormuz/latest?${latestArtifactQuery}`);
     if (!galaxyResponse.ok) {
       throw new Error(`latest artifact request failed: ${galaxyResponse.status}`);
     }
-    setLatestCompletedArtifact(await galaxyResponse.json());
+    const artifact = (await galaxyResponse.json()) as GalaxyHormuzRunArtifact;
+    setLatestCompletedArtifact(artifact);
     setSelectedHistoryRunId("");
     if (!liveStatus || liveStatus.status !== "running") {
       setLiveArtifact(null);
@@ -993,7 +1053,7 @@ export function ForecastPage({
       setLiveStatus(null);
     }
     setGalaxyRunMessage(message);
-  }, [liveStatus]);
+  }, [artifactLookupReady, latestArtifactQuery, liveStatus]);
 
   const handleSelectHistoryRun = useCallback(async (runId: string) => {
     if (!runId) {
@@ -1041,11 +1101,13 @@ export function ForecastPage({
 
   const pollLiveRun = useCallback(async (runId: string, forceFullTrace = false) => {
     const config = runtimeConfig.galaxy;
+    const currentStatus = liveStatusRef.current;
+    const currentTrace = liveTraceRef.current;
     const canRequestDelta =
       !forceFullTrace &&
-      liveStatus?.runId === runId &&
-      liveTrace?.actions.length;
-    const afterIndex = canRequestDelta ? Math.max(...liveTrace.actions.map((action) => action.index)) : -1;
+      currentStatus?.runId === runId &&
+      currentTrace?.actions.length;
+    const afterIndex = canRequestDelta ? Math.max(...currentTrace.actions.map((action) => action.index)) : -1;
     const [statusResponse, traceResponse] = await Promise.all([
       fetch(`${config.statusPath}?runId=${encodeURIComponent(runId)}`),
       fetch(`${config.tracePath}?runId=${encodeURIComponent(runId)}&afterIndex=${afterIndex}`),
@@ -1063,31 +1125,39 @@ export function ForecastPage({
       }
     }
     if (statusPayload.status === "completed") {
+      sessionStorage.removeItem("galaxyActiveRunId");
       setGalaxyRunMessage("galaxy 运行完成，artifact 已更新至当前运行。");
       await refreshGalaxyArtifact("galaxy 运行完成，预测结果来自当前运行。");
       await refreshGalaxyHistory();
     } else if (statusPayload.status === "failed") {
+      sessionStorage.removeItem("galaxyActiveRunId");
       setGalaxyRunMessage(statusPayload.error ?? "galaxy 运行失败，保留上次有效追踪。");
     } else {
+      sessionStorage.setItem("galaxyActiveRunId", statusPayload.runId);
       setGalaxyRunMessage(`运行中 ${statusPayload.runId} · 已耗时 ${statusPayload.elapsed}s`);
     }
-  }, [liveStatus?.runId, liveTrace?.actions, mergeTrace, refreshGalaxyArtifact, refreshGalaxyHistory]);
+  }, [mergeTrace, refreshGalaxyArtifact, refreshGalaxyHistory]);
 
   useEffect(() => {
     if (!liveStatus?.runId || liveStatus.status !== "running") return;
     let cancelled = false;
+    let inFlight = false;
     const tick = async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         await pollLiveRun(liveStatus.runId);
       } catch (error) {
         if (!cancelled) {
           setGalaxyRunMessage(error instanceof Error ? error.message : "追踪轮询失败。");
         }
+      } finally {
+        inFlight = false;
       }
     };
     const interval = window.setInterval(() => {
       void tick();
-    }, 1500);
+    }, 2500);
     void tick();
     return () => {
       cancelled = true;
@@ -1102,6 +1172,22 @@ export function ForecastPage({
   }, [latestCompletedArtifact, refreshGalaxyArtifact]);
 
   useEffect(() => {
+    if (selectedHistoryRunId || liveStatus?.status === "running") return;
+    if (!artifactLookupReady) {
+      setLatestCompletedArtifact(null);
+      setLiveArtifact(null);
+      setLiveTrace(null);
+      return;
+    }
+    void refreshGalaxyArtifact("已按当前问题加载对应 artifact。").catch((error) => {
+      setLatestCompletedArtifact(null);
+      setLiveArtifact(null);
+      setLiveTrace(null);
+      setGalaxyRunMessage(error instanceof Error ? error.message : "当前问题暂无完成 artifact。");
+    });
+  }, [artifactLookupReady, latestArtifactQuery, liveStatus?.status, refreshGalaxyArtifact, selectedHistoryRunId]);
+
+  useEffect(() => {
     void refreshGalaxyHistory().catch((error) => {
       setGalaxyRunMessage(error instanceof Error ? error.message : "历史 run 列表加载失败。");
     });
@@ -1113,12 +1199,19 @@ export function ForecastPage({
   useEffect(() => {
     void (async () => {
       try {
-        const res = await fetch("/api/galaxy-hormuz/run/status");
+        const activeRunId = sessionStorage.getItem("galaxyActiveRunId") ?? "";
+        const statusUrl = activeRunId
+          ? `/api/galaxy-hormuz/run/status?runId=${encodeURIComponent(activeRunId)}`
+          : "/api/galaxy-hormuz/run/status";
+        const res = await fetch(statusUrl);
         if (!res.ok) return;
         const status = (await res.json()) as LiveRunStatus;
         if (status.status === "running" && status.runId) {
           setLiveStatus(status);
+          sessionStorage.setItem("galaxyActiveRunId", status.runId);
           setGalaxyRunMessage(`已重连运行中的任务 · ${status.runId.slice(0, 36)}`);
+        } else if (status.status === "completed" || status.status === "failed") {
+          sessionStorage.removeItem("galaxyActiveRunId");
         }
       } catch {
         // Reconnect failure is non-fatal; last completed artifact already loaded above.
@@ -1175,6 +1268,7 @@ export function ForecastPage({
         exitCode: null,
       };
       setLiveStatus(status);
+      sessionStorage.setItem("galaxyActiveRunId", status.runId);
       setLiveArtifact(null);
       setLiveTrace(null);
       setSelectedActionId(null);
@@ -1235,7 +1329,7 @@ export function ForecastPage({
               className={sidePanelTab === "result" ? "selected" : ""}
               onClick={() => setSidePanelTab("result")}
             >
-              Result
+              预测结果
             </button>
             <button
               type="button"
@@ -1244,7 +1338,7 @@ export function ForecastPage({
               className={sidePanelTab === "inspector" ? "selected" : ""}
               onClick={() => setSidePanelTab("inspector")}
             >
-              Inspector
+              动作详情
             </button>
           </div>
           {sidePanelTab === "result" ? (

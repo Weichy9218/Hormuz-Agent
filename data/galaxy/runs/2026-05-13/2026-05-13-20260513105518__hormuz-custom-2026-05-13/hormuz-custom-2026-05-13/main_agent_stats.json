@@ -1,0 +1,52 @@
+{
+  "agent_role": "main",
+  "llm_calls": 6,
+  "prompt_tokens": 77024,
+  "completion_tokens": 6549,
+  "total_tokens": 83573,
+  "cached_tokens": 42880,
+  "tool_calls": {
+    "get_stock_data": 2,
+    "calculate_technical_indicators": 1,
+    "search_web": 4,
+    "read_artifact": 1,
+    "read_webpage_with_query": 4,
+    "execute_python_code": 1
+  },
+  "mcp_tool_calls_total": 13,
+  "synthetic_tool_calls": {
+    "record_forecast": 1
+  },
+  "synthetic_tool_calls_total": 1,
+  "tool_failures": {
+    "read_artifact": 1
+  },
+  "tool_soft_failures": {},
+  "cached_hits": {},
+  "cached_hits_total": 0,
+  "cached_hits_by_kind": {},
+  "batch_dedups": 0,
+  "findings_without_anchor": {
+    "calculate_technical_indicators": 1,
+    "read_artifact": 1,
+    "get_stock_data": 1
+  },
+  "findings_without_anchor_total": 3,
+  "parallel_downgrades": {},
+  "parallel_downgrades_total": 0,
+  "forced_tool_cap": false,
+  "terminal_reason": "record_forecast",
+  "supervisor_nudges_total": 0,
+  "supervisor_nudge_rules": [],
+  "context_window": {
+    "estimated_input_tokens_peak": 12489,
+    "estimated_input_tokens_last": 12489,
+    "snapshots_recorded": 6,
+    "message_count": 23,
+    "llm_message_count": 15,
+    "structured_compression_enabled": true,
+    "compress_threshold": 32000,
+    "keep_recent_tools": 6,
+    "max_tool_content_chars": 8000
+  }
+}

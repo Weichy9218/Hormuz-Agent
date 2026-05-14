@@ -28,7 +28,7 @@ function galaxyPythonPath() {
   return process.env.GALAXY_PYTHON || resolve(galaxyVenvPath(), "bin/python");
 }
 
-function buildGalaxyCommand(args, question, outputDir) {
+function buildGalaxyCommand(args, question, outputDir, inputQuestionPath) {
   const pythonPath = galaxyPythonPath();
   const venvPath = galaxyVenvPath();
   const useExistingVenv = existsSync(pythonPath);
@@ -39,7 +39,7 @@ function buildGalaxyCommand(args, question, outputDir) {
     "--run-config",
     args.runConfig,
     "--input-data",
-    questionPath,
+    inputQuestionPath,
     "--output-dir",
     outputDir,
     "--task-id",
@@ -76,6 +76,7 @@ function parseArgs(argv) {
     execute: false,
     outputDir: "",
     runConfig: "hormuz_test.yaml",
+    questionPath: "",
     runId: "",
     startedAt: "",
     traceOnly: false,
@@ -100,6 +101,9 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg === "--run-config") {
       args.runConfig = argv[index + 1] ?? args.runConfig;
+      index += 1;
+    } else if (arg === "--question-path") {
+      args.questionPath = argv[index + 1] ?? args.questionPath;
       index += 1;
     } else if (arg === "--run-id") {
       args.runId = argv[index + 1] ?? args.runId;
@@ -290,6 +294,22 @@ function parseJsonMaybe(text) {
   } catch {
     return null;
   }
+}
+
+export async function readQuestionFromFile(filePath) {
+  const rawText = await readFile(filePath, "utf8").catch(() => "");
+  const trimmed = rawText.trim();
+  if (!trimmed) return null;
+
+  const wholeDocument = parseJsonMaybe(trimmed);
+  if (wholeDocument?.task_id) return wholeDocument;
+
+  const rows = trimmed.split(/\r?\n/).filter((line) => line.trim());
+  for (const line of rows.reverse()) {
+    const row = parseJsonMaybe(line);
+    if (row?.task_id) return row;
+  }
+  return null;
 }
 
 function toolCalls(row) {
@@ -698,12 +718,34 @@ function makeRawPreview(kind, title, value, taskDir, rowIndex, extra = {}) {
   };
 }
 
-async function ensureHormuzRunConfig(args, question, outputDir) {
-  if (args.runConfig !== "hormuz_test.yaml") return;
+async function ensureHormuzRunConfig(args, question, outputDir, inputQuestionPath) {
+  if (args.runConfig !== "hormuz_test.yaml" && args.runConfig !== "hormuz_custom.yaml") return;
   const configPath = resolve(galaxyRepo, "config/run/hormuz_test.yaml");
-  if (existsSync(configPath)) return;
-  const relQuestion = relative(galaxyRepo, questionPath);
+  const customConfigPath = resolve(galaxyRepo, "config/run/hormuz_custom.yaml");
+  const relQuestion = relative(galaxyRepo, inputQuestionPath);
   const relOutput = relative(galaxyRepo, outputDir);
+  if (args.runConfig === "hormuz_custom.yaml") {
+    const body = [
+      "agent:",
+      `  name: ${args.agentName}`,
+      `  profile: ${args.agentProfile}`,
+      `  llm: ${args.agentLlm}`,
+      `  tool: ${args.agentTool}`,
+      "  overrides:",
+      "    prompt_class: ForecastWorkerPrompt",
+      "    task_hint_class: ForecastWorkerPrompt",
+      "    max_num_tool_calls: 70",
+      "",
+      "run:",
+      `  input_data: ${relQuestion}`,
+      `  output_dir: ${relOutput}`,
+      "  max_concurrent: 1",
+      "",
+    ].join("\n");
+    await writeFile(customConfigPath, body, "utf8");
+    void question;
+    return;
+  }
   const body = [
     "agent:",
     `  name: ${args.agentName}`,
@@ -750,6 +792,7 @@ async function readJsonlRows(path) {
 export async function buildActionTrace({
   taskDir,
   question,
+  questionFilePath = questionPath,
   summaryRecord,
   finalize,
   stats,
@@ -791,7 +834,7 @@ export async function buildActionTrace({
       kind: "question",
       title: "Forecast question",
       ...truncateText(question.task_question, 4096),
-      rawFilePath: relative(root, questionPath),
+      rawFilePath: relative(root, questionFilePath),
     },
   });
   lastSynthesisActionId = questionAction.actionId;
@@ -1004,7 +1047,7 @@ function isBrentWeeklyHighQuestion(question) {
 }
 
 function fallbackPrediction(question) {
-  return isBrentWeeklyHighQuestion(question) ? "pending" : "B";
+  return question?.metadata?.question_kind === "custom" || isBrentWeeklyHighQuestion(question) ? "pending" : "B";
 }
 
 function sourceObservationId(prefix, dateText) {
@@ -1037,8 +1080,9 @@ function buildPreviousState() {
   };
 }
 
-function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedAt, status, summaryRecord, finalize, note, stats, actionTrace, command, error }) {
+function buildArtifact({ question, questionFilePath, dateText, outputDir, taskDir, runId, startedAt, status, summaryRecord, finalize, note, stats, actionTrace, command, error }) {
   const runArtifactPath = resolve(outputDir, "run-artifact.json");
+  const questionSourcePath = relative(root, questionFilePath || questionPath);
   const forecastedAt = summaryRecord?.ended_at ?? new Date().toISOString();
   const prediction = summaryRecord?.prediction || finalize?.prediction || fallbackPrediction(question);
   const predictedScenario = scenarioFromPrediction(prediction);
@@ -1049,7 +1093,7 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       sourceId: "galaxy-selfevolve",
       publishedAt: `${dateText}T00:00:00+08:00`,
       retrievedAt: forecastedAt,
-      sourceUrl: "data/galaxy/hormuz-daily-question.jsonl",
+      sourceUrl: questionSourcePath,
       title: brentWeeklyHigh ? "Weekly Brent high numeric question" : "Daily Hormuz FutureWorld-style question",
       summary: brentWeeklyHigh
         ? "题目要求预测本交易周 FRED DCOILBRENTEU Brent daily spot price 的最高值，单位 USD/bbl。"
@@ -1231,7 +1275,7 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       pythonPath: existsSync(galaxyPythonPath()) ? galaxyPythonPath() : undefined,
       outputDir: relative(root, outputDir),
       runDir: relative(root, taskDir),
-      questionPath: relative(root, questionPath),
+      questionPath: questionSourcePath,
       command,
       finalPrediction: prediction,
       confidence: confidence(summaryRecord?.confidence || finalize?.confidence),
@@ -1239,7 +1283,7 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
       terminalReason: stats?.terminal_reason,
       metrics: summaryRecord?.metrics || stats || {},
       artifactPaths: {
-        question: relative(root, questionPath),
+        question: questionSourcePath,
         artifact: relative(root, runArtifactPath),
         latestArtifact: relative(root, latestArtifactPath),
         mainAgent: relative(root, resolve(taskDir, "main_agent.jsonl")),
@@ -1276,16 +1320,12 @@ function buildArtifact({ question, dateText, outputDir, taskDir, runId, startedA
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const inputQuestionPath = resolve(args.questionPath || questionPath);
   let question;
   if (args.questionKind === "custom") {
-    // Custom question was written to JSONL by the caller before invoking this script
-    const rawText = await readFile(questionPath, "utf8").catch(() => "");
-    const lastLine = rawText.trim().split("\n").filter(Boolean).at(-1) ?? "";
-    question = parseJsonMaybe(lastLine);
+    question = await readQuestionFromFile(inputQuestionPath);
     if (!question?.task_id) {
-      console.error("[run-galaxy] --question-kind custom requires a pre-written hormuz-daily-question.jsonl; falling back to default");
-      question = buildQuestion(args.date, defaultQuestionKind);
-      args.questionKind = defaultQuestionKind;
+      throw new Error(`[run-galaxy] --question-kind custom requires a valid --question-path JSON or JSONL row: ${inputQuestionPath}`);
     }
   } else {
     question = buildQuestion(args.date, args.questionKind);
@@ -1295,14 +1335,12 @@ async function main() {
   const runId = args.runId || `${timestamp}__${question.task_id}`;
   const outputDir = resolve(args.outputDir || resolve(defaultOutputRoot, args.date, runId));
   const taskDir = resolve(outputDir, question.task_id);
-  await mkdir(dirname(questionPath), { recursive: true });
+  await mkdir(dirname(inputQuestionPath), { recursive: true });
   await mkdir(outputDir, { recursive: true });
-  if (args.questionKind !== "custom") {
-    await writeFile(questionPath, `${JSON.stringify(question, null, 0)}\n`, "utf8");
-  }
-  await ensureHormuzRunConfig(args, question, outputDir);
+  await writeFile(inputQuestionPath, `${JSON.stringify(question, null, 0)}\n`, "utf8");
+  await ensureHormuzRunConfig(args, question, outputDir, inputQuestionPath);
 
-  const galaxyInvocation = buildGalaxyCommand(args, question, outputDir);
+  const galaxyInvocation = buildGalaxyCommand(args, question, outputDir, inputQuestionPath);
   const { command } = galaxyInvocation;
   let status = "adapter_only";
   let error = "";
@@ -1334,6 +1372,7 @@ async function main() {
     outputDir,
     dateText: args.date,
     question,
+    questionFilePath: inputQuestionPath,
     summaryRecord,
     finalize,
     stats,
@@ -1341,6 +1380,7 @@ async function main() {
 
   const artifact = buildArtifact({
     question,
+    questionFilePath: inputQuestionPath,
     dateText: args.date,
     outputDir,
     taskDir,
@@ -1357,11 +1397,17 @@ async function main() {
   });
 
   await writeFile(resolve(outputDir, "run-artifact.json"), `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
-  if (!args.traceOnly) {
+  if (!args.traceOnly && args.questionKind !== "custom") {
     await writeFile(latestArtifactPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
   }
-  console.log(`question: ${relative(root, questionPath)}`);
-  console.log(`artifact: ${relative(root, latestArtifactPath)}`);
+  console.log(`question: ${relative(root, inputQuestionPath)}`);
+  console.log(
+    `artifact: ${
+      args.questionKind === "custom"
+        ? relative(root, resolve(outputDir, "run-artifact.json"))
+        : relative(root, latestArtifactPath)
+    }`,
+  );
   console.log(`run-artifact: ${relative(root, resolve(outputDir, "run-artifact.json"))}`);
   console.log(`status: ${artifact.runMeta.status}`);
 }

@@ -1,6 +1,7 @@
 // Local dev proxy for the Hormuz demo agent; keeps API keys out of browser bundles.
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 import process from "node:process";
@@ -15,6 +16,12 @@ interface AgentRequestBody {
   target?: string;
   questionText?: string;
 }
+
+const DEV_SERVER_WATCH_IGNORES = [
+  "**/data/galaxy/runs/**",
+  "**/data/forecast-agent/runs/**",
+  "**/slides/**",
+];
 
 interface ApiEnv {
   apiKey: string;
@@ -47,6 +54,7 @@ interface GalaxyRunRecord {
   exitCode: number | null;
   command: string[];
   outputTail: string;
+  questionPath?: string;
   error?: string;
 }
 
@@ -376,6 +384,12 @@ const GALAXY_REPO =
   "/Users/weichy/Desktop/Doing-Right-Things/FutureX/papers/galaxy-selfevolve";
 const GALAXY_DEFAULT_QUESTION_KIND = "brent-weekly-high";
 const GALAXY_QUESTION_PATH = path.resolve(process.cwd(), "data/galaxy/hormuz-daily-question.jsonl");
+const GALAXY_ACTIVE_RUN_PATH = path.resolve(process.cwd(), "data/galaxy/active-run.json");
+const GALAXY_RUN_STATUS_FILE = "run-status.json";
+const GALAXY_RUN_QUESTION_FILE = "run-question.json";
+const GALAXY_RUN_LOG_FILE = "runner.log";
+const GALAXY_DEFAULT_RUN_CONFIG = "hormuz_test.yaml";
+const GALAXY_CUSTOM_RUN_CONFIG = "hormuz_custom.yaml";
 
 function shanghaiDate() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -401,6 +415,24 @@ function tailText(text: string, maxLength = 5000) {
   return text.length > maxLength ? text.slice(-maxLength) : text;
 }
 
+function readFileTail(filePath: string, maxLength = 5000) {
+  if (!fs.existsSync(filePath)) return "";
+  try {
+    const stat = fs.statSync(filePath);
+    const start = Math.max(0, stat.size - maxLength);
+    const fd = fs.openSync(filePath, "r");
+    try {
+      const buffer = Buffer.alloc(stat.size - start);
+      fs.readSync(fd, buffer, 0, buffer.length, start);
+      return buffer.toString("utf8");
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return "";
+  }
+}
+
 function elapsedSeconds(startedAt: string) {
   return Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000));
 }
@@ -418,6 +450,78 @@ function readJsonIfExists(filePath: string) {
   } catch {
     return null;
   }
+}
+
+function writeJsonFile(filePath: string, payload: unknown) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+function statusPathForRecord(record: Pick<GalaxyRunRecord, "outputDir">) {
+  return path.join(record.outputDir, GALAXY_RUN_STATUS_FILE);
+}
+
+function questionPathForRun(outputDir: string) {
+  return path.join(outputDir, GALAXY_RUN_QUESTION_FILE);
+}
+
+function runnerLogPathForRecord(record: Pick<GalaxyRunRecord, "outputDir">) {
+  return path.join(record.outputDir, GALAXY_RUN_LOG_FILE);
+}
+
+function persistGalaxyRunStatus(record: GalaxyRunRecord) {
+  writeJsonFile(statusPathForRecord(record), record);
+  writeJsonFile(GALAXY_ACTIVE_RUN_PATH, {
+    runId: record.runId,
+    statusPath: path.relative(process.cwd(), statusPathForRecord(record)),
+    updatedAt: record.lastUpdatedAt,
+  });
+}
+
+function reviveGalaxyRunRecord(raw: Record<string, unknown> | null): GalaxyRunRecord | undefined {
+  if (!raw?.runId || !raw?.taskId || !raw?.outputDir || !raw?.runDir || !raw?.startedAt) return undefined;
+  const outputDir = path.resolve(process.cwd(), String(raw.outputDir));
+  const runDir = path.resolve(process.cwd(), String(raw.runDir));
+  return {
+    runId: String(raw.runId),
+    taskId: String(raw.taskId),
+    pid: typeof raw.pid === "number" ? raw.pid : null,
+    startedAt: String(raw.startedAt),
+    lastUpdatedAt: String(raw.lastUpdatedAt || raw.startedAt),
+    outputDir,
+    runDir,
+    date: String(raw.date || shanghaiDate()),
+    runConfig: String(raw.runConfig || GALAXY_DEFAULT_RUN_CONFIG),
+    status: raw.status === "failed" ? "failed" : raw.status === "completed" ? "completed" : "running",
+    exitCode: typeof raw.exitCode === "number" ? raw.exitCode : null,
+    command: Array.isArray(raw.command) ? raw.command.map(String) : [],
+    outputTail: String(raw.outputTail || ""),
+    questionPath: typeof raw.questionPath === "string" ? path.resolve(process.cwd(), raw.questionPath) : undefined,
+    error: typeof raw.error === "string" ? raw.error : undefined,
+  };
+}
+
+function readGalaxyRunRecordFromStatus(statusPath: string) {
+  return reviveGalaxyRunRecord(readJsonIfExists(statusPath));
+}
+
+function findGalaxyRunStatusRecords() {
+  const records: GalaxyRunRecord[] = [];
+  const stack = [GALAXY_RUNS_ROOT];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || !fs.existsSync(current)) continue;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (entry.isFile() && entry.name === GALAXY_RUN_STATUS_FILE) {
+        const record = readGalaxyRunRecordFromStatus(fullPath);
+        if (record) records.push(record);
+      }
+    }
+  }
+  return records.sort((a, b) => Date.parse(b.lastUpdatedAt || b.startedAt) - Date.parse(a.lastUpdatedAt || a.startedAt));
 }
 
 function summarizeQuestionText(question: unknown) {
@@ -446,10 +550,71 @@ function findGalaxyRunArtifacts() {
   return artifacts;
 }
 
-function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
-  return findGalaxyRunArtifacts()
+function normalizeGalaxyQuestionKind(value: string) {
+  if (value === "brent-weekly-high") return "brent_weekly_high";
+  if (value === "hormuz-traffic-risk") return "hormuz_traffic_risk";
+  return value;
+}
+
+function normalizedQuestionText(value: unknown) {
+  return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function artifactQuestionKind(artifact: Record<string, unknown> | null) {
+  const question = artifact?.question as Record<string, unknown> | undefined;
+  const metadata = question?.metadata as Record<string, unknown> | undefined;
+  return normalizeGalaxyQuestionKind(String(metadata?.question_kind || ""));
+}
+
+function artifactCompletedAt(artifact: Record<string, unknown>) {
+  const meta = artifact.runMeta as Record<string, unknown> | undefined;
+  return Date.parse(String(meta?.completedAt || meta?.forecastedAt || meta?.generatedAt || "0"));
+}
+
+function artifactQuestionIsAligned(artifact: Record<string, unknown> | null) {
+  const meta = artifact?.runMeta as Record<string, unknown> | undefined;
+  const question = artifact?.question as Record<string, unknown> | undefined;
+  const taskId = String(meta?.taskId || "");
+  if (!taskId || question?.task_id !== taskId) return false;
+  const runDir = String(meta?.runDir || "");
+  return path.basename(runDir) === taskId;
+}
+
+function artifactMatchesRequest(
+  artifact: Record<string, unknown> | null,
+  questionKind: string,
+  questionText: string,
+) {
+  if (!artifactQuestionIsAligned(artifact)) return false;
+  const kind = artifactQuestionKind(artifact);
+  if (questionKind && kind !== normalizeGalaxyQuestionKind(questionKind)) return false;
+  if (kind === "custom" && questionText) {
+    const question = artifact?.question as Record<string, unknown> | undefined;
+    const haystack = normalizedQuestionText(
+      `${question?.task_question ?? ""} ${question?.task_description ?? ""}`,
+    );
+    return haystack.includes(normalizedQuestionText(questionText));
+  }
+  return true;
+}
+
+function latestGalaxyArtifactForRequest(questionKind: string, questionText: string) {
+  const artifacts = findGalaxyRunArtifacts()
     .map((artifactPath) => {
       const artifact = readJsonIfExists(artifactPath);
+      if (!artifactMatchesRequest(artifact, questionKind, questionText)) return null;
+      return { artifact, artifactPath };
+    })
+    .filter((item): item is { artifact: Record<string, unknown>; artifactPath: string } => Boolean(item))
+    .sort((a, b) => artifactCompletedAt(b.artifact) - artifactCompletedAt(a.artifact));
+  return artifacts[0] ?? null;
+}
+
+function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
+  const artifactItems = findGalaxyRunArtifacts()
+    .map((artifactPath): GalaxyRunHistoryItem | null => {
+      const artifact = readJsonIfExists(artifactPath);
+      if (!artifactQuestionIsAligned(artifact)) return null;
       const meta = artifact?.runMeta as Record<string, unknown> | undefined;
       if (!meta?.runId || !meta?.taskId) return null;
       const question = artifact?.question as Record<string, unknown> | undefined;
@@ -467,8 +632,33 @@ function galaxyHistoryItems(): GalaxyRunHistoryItem[] {
         runDir: String(meta.runDir || path.dirname(artifactPath)),
       } satisfies GalaxyRunHistoryItem;
     })
-    .filter((item): item is GalaxyRunHistoryItem => Boolean(item))
-    .sort((a, b) => Date.parse(b.completedAt || "0") - Date.parse(a.completedAt || "0"));
+    .filter((item): item is GalaxyRunHistoryItem => Boolean(item));
+  const seen = new Set(artifactItems.map((item) => item.runId));
+  const statusTimes = new Map(findGalaxyRunStatusRecords().map((record) => [record.runId, record.lastUpdatedAt]));
+  const fallbackTime = (item: GalaxyRunHistoryItem) =>
+    Date.parse(item.completedAt || statusTimes.get(item.runId) || "0");
+  const statusItems: GalaxyRunHistoryItem[] = [];
+  for (const record of findGalaxyRunStatusRecords()) {
+    if (seen.has(record.runId)) continue;
+    const question = readJsonIfExists(record.questionPath || questionPathForRun(record.outputDir));
+    if (question?.task_id && question.task_id !== record.taskId) continue;
+    if (path.basename(record.runDir) !== record.taskId) continue;
+    const metadata = question?.metadata as Record<string, unknown> | undefined;
+    statusItems.push({
+      runId: record.runId,
+      taskId: record.taskId,
+      questionKind: String(metadata?.question_kind || (record.taskId.includes("custom") ? "custom" : "unknown")),
+      questionTitle: summarizeQuestionText(question || { task_question: record.taskId }),
+      status: record.status,
+      finalPrediction: "",
+      completedAt: record.status === "running" ? "" : record.lastUpdatedAt,
+      durationSeconds: record.status === "running" ? null : elapsedSeconds(record.startedAt),
+      artifactPath: "",
+      runDir: path.relative(process.cwd(), record.runDir),
+    });
+  }
+  return [...artifactItems, ...statusItems]
+    .sort((a, b) => fallbackTime(b) - fallbackTime(a));
 }
 
 async function importForecastAgentRunner() {
@@ -482,6 +672,8 @@ async function importForecastAgentRunner() {
 }
 
 function recordStatus(record: GalaxyRunRecord) {
+  const runnerLogTail = readFileTail(runnerLogPathForRecord(record));
+  if (runnerLogTail) record.outputTail = runnerLogTail;
   if (record.status !== "running") return record;
   const artifact = readJsonIfExists(path.join(record.outputDir, "run-artifact.json"));
   if (artifact?.runMeta && typeof artifact.runMeta === "object") {
@@ -490,9 +682,25 @@ function recordStatus(record: GalaxyRunRecord) {
       record.status = meta.status === "success" ? "completed" : "failed";
       record.exitCode = meta.status === "success" ? 0 : record.exitCode;
       record.lastUpdatedAt = String(meta.completedAt || meta.forecastedAt || record.lastUpdatedAt);
+      persistGalaxyRunStatus(record);
     }
+  } else if (record.pid && !isPidAlive(record.pid)) {
+    record.status = "failed";
+    record.exitCode = record.exitCode ?? 1;
+    record.error ||= "galaxy runner process is no longer active and no run-artifact.json was written";
+    record.lastUpdatedAt = new Date().toISOString();
+    persistGalaxyRunStatus(record);
   }
   return record;
+}
+
+function isPidAlive(pid: number) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function statusPayload(record: GalaxyRunRecord) {
@@ -510,7 +718,7 @@ function statusPayload(record: GalaxyRunRecord) {
     runConfig: current.runConfig,
     exitCode: current.exitCode,
     command: current.command,
-    outputTail: current.outputTail,
+    outputTail: readFileTail(runnerLogPathForRecord(current)) || current.outputTail,
     error: current.error,
   };
 }
@@ -521,12 +729,19 @@ function runByRequest(
 ) {
   const url = new URL(request.url || "", "http://localhost");
   const runId = url.searchParams.get("runId") || "";
-  if (runId) return runs.get(runId);
+  if (runId) {
+    const memoryRecord = runs.get(runId);
+    if (memoryRecord) return memoryRecord;
+    return findGalaxyRunStatusRecords().find((record) => record.runId === runId);
+  }
   let latest: GalaxyRunRecord | undefined;
   runs.forEach((record) => {
     latest = record;
   });
   if (latest) return latest;
+  const diskRecords = findGalaxyRunStatusRecords();
+  const runningDiskRecord = diskRecords.find((record) => recordStatus(record).status === "running");
+  if (runningDiskRecord) return runningDiskRecord;
   return latestGalaxyRecordFromArtifact();
 }
 
@@ -550,6 +765,7 @@ function latestGalaxyRecordFromArtifact(): GalaxyRunRecord | undefined {
     exitCode: meta.status === "failed" ? 1 : 0,
     command: Array.isArray(meta.command) ? meta.command.map(String) : [],
     outputTail: "",
+    questionPath: typeof meta.questionPath === "string" ? path.resolve(process.cwd(), String(meta.questionPath)) : undefined,
     error: typeof meta.error === "string" ? meta.error : undefined,
   };
 }
@@ -562,14 +778,15 @@ async function liveActionTrace(record: GalaxyRunRecord) {
     buildActionTrace: (input: {
       taskDir: string;
       question: Record<string, unknown>;
+      questionFilePath?: string;
       summaryRecord?: Record<string, unknown>;
       finalize?: Record<string, unknown>;
       stats?: Record<string, unknown>;
       includeTerminal?: boolean;
     }) => Promise<ActionTraceLike>;
   };
-  const questionPath = path.resolve(process.cwd(), "data/galaxy/hormuz-daily-question.jsonl");
-  const question = readJsonIfExists(questionPath) || {
+  const runQuestionPath = record.questionPath || questionPathForRun(record.outputDir);
+  const question = readJsonIfExists(runQuestionPath) || readJsonIfExists(path.resolve(process.cwd(), "data/galaxy/hormuz-daily-question.jsonl")) || {
     task_id: record.taskId,
     task_question: record.taskId,
   };
@@ -594,6 +811,7 @@ async function liveActionTrace(record: GalaxyRunRecord) {
   return mod.buildActionTrace({
     taskDir: record.runDir,
     question,
+    questionFilePath: runQuestionPath,
     summaryRecord,
     stats,
     includeTerminal: recordStatus(record).status !== "running",
@@ -651,6 +869,9 @@ function galaxyRunPlugin() {
     const runId = buildRunId(date, startedAt, taskId);
     const outputDir = path.join(GALAXY_RUNS_ROOT, date, runId);
     const runDir = path.join(outputDir, taskId);
+    const runQuestionPath = questionPathForRun(outputDir);
+    const recordQuestionPath = questionKind === "custom" ? runQuestionPath : GALAXY_QUESTION_PATH;
+    const runConfig = questionKind === "custom" ? GALAXY_CUSTOM_RUN_CONFIG : GALAXY_DEFAULT_RUN_CONFIG;
     fs.mkdirSync(outputDir, { recursive: true });
 
     if (questionText) {
@@ -667,9 +888,10 @@ function galaxyRunPlugin() {
           question_kind: "custom",
           generated_for_date: date,
           timezone: "UTC+8",
+          source_boundary: ["question-defined"],
         },
       };
-      fs.writeFileSync(GALAXY_QUESTION_PATH, `${JSON.stringify(customQuestion)}\n`, "utf8");
+      fs.writeFileSync(runQuestionPath, `${JSON.stringify(customQuestion)}\n`, "utf8");
     }
 
     const command = [
@@ -685,18 +907,40 @@ function galaxyRunPlugin() {
       "--output-dir",
       outputDir,
       "--run-config",
-      "hormuz_test.yaml",
+      runConfig,
+      "--question-path",
+      questionKind === "custom" ? runQuestionPath : GALAXY_QUESTION_PATH,
       "--question-kind",
       questionKind,
     ];
+    if (questionKind === "custom") {
+      command.push("--agent-profile", "forecast", "--agent-name", "forecast_noskill");
+    }
+    const runnerLogPath = path.join(outputDir, GALAXY_RUN_LOG_FILE);
+    fs.writeFileSync(
+      runnerLogPath,
+      [
+        `[vite] detached galaxy run started ${startedAt}`,
+        `[vite] runId=${runId}`,
+        `[vite] command=${command.join(" ")}`,
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const stdoutFd = fs.openSync(runnerLogPath, "a");
+    const stderrFd = fs.openSync(runnerLogPath, "a");
     const child = spawn(command[0], command.slice(1), {
       cwd: process.cwd(),
+      detached: true,
       env: {
         ...process.env,
         GALAXY_REPO,
       },
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["ignore", stdoutFd, stderrFd],
     });
+    fs.closeSync(stdoutFd);
+    fs.closeSync(stderrFd);
+    child.unref();
     const record: GalaxyRunRecord = {
       runId,
       taskId,
@@ -706,30 +950,28 @@ function galaxyRunPlugin() {
       outputDir,
       runDir,
       date,
-      runConfig: "hormuz_test.yaml",
+      runConfig,
       status: "running",
       exitCode: null,
       command,
       outputTail: "",
+      questionPath: recordQuestionPath,
     };
     runs.set(runId, record);
+    persistGalaxyRunStatus(record);
 
-    const appendOutput = (chunk: unknown) => {
-      record.outputTail = tailText(record.outputTail + String(chunk));
-      record.lastUpdatedAt = new Date().toISOString();
-    };
-    child.stdout.on("data", appendOutput);
-    child.stderr.on("data", appendOutput);
     child.on("error", (error) => {
       record.status = "failed";
       record.error = error.message;
       record.lastUpdatedAt = new Date().toISOString();
+      persistGalaxyRunStatus(record);
     });
     child.on("close", (status) => {
       record.exitCode = status ?? 1;
       record.status = status === 0 ? "completed" : "failed";
       record.lastUpdatedAt = new Date().toISOString();
       recordStatus(record);
+      persistGalaxyRunStatus(record);
     });
 
     return record;
@@ -744,8 +986,18 @@ function galaxyRunPlugin() {
           return;
         }
         try {
-          const text = await fs.promises.readFile("data/galaxy/latest-run.json", "utf8");
-          sendJson(response, 200, JSON.parse(text));
+          const url = new URL(request.url || "", "http://localhost");
+          const questionKind = url.searchParams.get("questionKind") || "brent_weekly_high";
+          const questionText = url.searchParams.get("questionText") || "";
+          const match = latestGalaxyArtifactForRequest(questionKind, questionText);
+          if (!match) {
+            sendJson(response, 404, {
+              error: "matching galaxy artifact not found",
+              questionKind,
+            });
+            return;
+          }
+          sendJson(response, 200, match.artifact);
         } catch (error) {
           sendJson(response, 404, {
             error: "latest galaxy artifact not found",
@@ -775,7 +1027,7 @@ function galaxyRunPlugin() {
         const url = new URL(request.url || "", "http://localhost");
         const runId = url.searchParams.get("runId") || "";
         const item = galaxyHistoryItems().find((entry) => entry.runId === runId);
-        if (!item) {
+        if (!item || !item.artifactPath) {
           sendJson(response, 404, { error: "galaxy artifact not found" });
           return;
         }
@@ -799,6 +1051,9 @@ function galaxyRunPlugin() {
         runs.forEach((record) => {
           if (recordStatus(record).status === "running") hasRunningRun = true;
         });
+        if (!hasRunningRun) {
+          hasRunningRun = findGalaxyRunStatusRecords().some((record) => recordStatus(record).status === "running");
+        }
         if (hasRunningRun) {
           sendJson(response, 409, { error: "galaxy run already in progress" });
           return;
@@ -1067,4 +1322,9 @@ function forecastAgentPlugin() {
 
 export default defineConfig({
   plugins: [react(), hormuzAgentPlugin(), forecastAgentPlugin(), galaxyRunPlugin()],
+  server: {
+    watch: {
+      ignored: DEV_SERVER_WATCH_IGNORES,
+    },
+  },
 });

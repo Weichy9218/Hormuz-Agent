@@ -1,0 +1,17 @@
+{
+  "runId": "2026-05-13-20260513093734__hormuz-custom-2026-05-13",
+  "taskId": "hormuz-custom-2026-05-13",
+  "pid": null,
+  "startedAt": "2026-05-13T09:37:34.000Z",
+  "lastUpdatedAt": "2026-05-13T09:38:57.807Z",
+  "outputDir": "/Users/weichy/Desktop/bjzgca/2026春季课/AI Agent实战与开发/hormuz-risk-interface/data/galaxy/runs/2026-05-13/2026-05-13-20260513093734__hormuz-custom-2026-05-13",
+  "runDir": "/Users/weichy/Desktop/bjzgca/2026春季课/AI Agent实战与开发/hormuz-risk-interface/data/galaxy/runs/2026-05-13/2026-05-13-20260513093734__hormuz-custom-2026-05-13/hormuz-custom-2026-05-13",
+  "date": "2026-05-13",
+  "runConfig": "hormuz_test.yaml",
+  "status": "failed",
+  "exitCode": 1,
+  "command": [],
+  "outputTail": "Recovered from partial main_agent.jsonl without record_forecast; original dev process was no longer running.",
+  "questionPath": "/Users/weichy/Desktop/bjzgca/2026春季课/AI Agent实战与开发/hormuz-risk-interface/data/galaxy/runs/2026-05-13/2026-05-13-20260513093734__hormuz-custom-2026-05-13/run-question.json",
+  "error": "Partial custom gold run stopped before record_forecast; no run-artifact.json was written."
+}

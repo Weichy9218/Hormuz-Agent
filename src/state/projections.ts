@@ -331,7 +331,7 @@ export interface ForecastProjection {
 }
 
 export function projectForecastState(galaxyArtifact?: unknown): ForecastProjection {
-  const artifactSource = galaxyArtifact ?? latestGalaxyRun;
+  const artifactSource = galaxyArtifact === null ? null : galaxyArtifact ?? latestGalaxyRun;
   const galaxyRun = isGalaxyArtifact(artifactSource)
     ? buildRunFromGalaxyArtifact({
         artifact: artifactSource,

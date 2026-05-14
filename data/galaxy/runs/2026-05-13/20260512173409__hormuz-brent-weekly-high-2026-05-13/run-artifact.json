@@ -30,8 +30,8 @@
     "runId": "20260512173409__hormuz-brent-weekly-high-2026-05-13",
     "taskId": "hormuz-brent-weekly-high-2026-05-13",
     "status": "success",
-    "generatedAt": "2026-05-12T17:34:09.554Z",
-    "startedAt": "2026-05-12T17:34:09.554Z",
+    "generatedAt": "2026-05-12T17:34:09.000Z",
+    "startedAt": "2026-05-12T17:34:09.000Z",
     "completedAt": "2026-05-12T17:52:54.466025+00:00",
     "forecastedAt": "2026-05-12T17:52:54.466025+00:00",
     "questionDate": "2026-05-13",
@@ -60,7 +60,7 @@
       "--agent-profile",
       "forecast",
       "--agent-llm",
-      "codex_sub2api",
+      "apihy_glm51",
       "--agent-tool",
       "default"
     ],
@@ -159,7 +159,7 @@
           "rawFilePath": "data/galaxy/hormuz-daily-question.jsonl"
         },
         "criticalPath": true,
-        "criticalReason": "forecast question"
+        "criticalReason": "问题定义"
       },
       {
         "actionId": "ga-002",
@@ -432,7 +432,7 @@
           "rawLine": 7
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #7"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-call-call_0fWj5iDykAiV2e7V4IPrRGXA",
@@ -520,7 +520,7 @@
           "toolName": "read_webpage"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #7"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-result-call_0fWj5iDykAiV2e7V4IPrRGXA",
@@ -1219,7 +1219,7 @@
           "rawLine": 23
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #2"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-call-call_nWhofN0CG31PBdwRmJp3CWjf",
@@ -1308,7 +1308,7 @@
           "toolName": "read_webpage"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #2"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-result-call_nWhofN0CG31PBdwRmJp3CWjf",
@@ -1942,7 +1942,7 @@
           "rawLine": 38
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #6"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-result-call_rs9Cb2a4F8CQWMTv4o1OOyQg",
@@ -1974,7 +1974,7 @@
           "toolName": "read_webpage_with_query"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #6"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-turn-14",
@@ -2040,7 +2040,7 @@
           "rawLine": 40
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #3"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-call-call_VAvKDxyeEGZBq9dlIxHx51LH",
@@ -2099,7 +2099,7 @@
           "toolName": "read_webpage"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #3"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-result-call_VAvKDxyeEGZBq9dlIxHx51LH",
@@ -2496,7 +2496,7 @@
           "rawLine": 48
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #5"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-result-call_CeaCErh9ddTjTHKtuNo8U9vC",
@@ -2586,7 +2586,7 @@
           "toolName": "search_web"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #5"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-turn-18",
@@ -2660,7 +2660,7 @@
           "rawLine": 52
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #1"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-call-call_soEvsPMVLkKifmu59Ep7qUL3",
@@ -2748,7 +2748,7 @@
           "toolName": "read_webpage_with_query"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #1"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-result-call_soEvsPMVLkKifmu59Ep7qUL3",
@@ -2870,7 +2870,7 @@
           "rawLine": 56
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #1"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-result-call_Jq9LOcXGVkkEzIO2LHNHrtkk",
@@ -2902,7 +2902,7 @@
           "toolName": "read_webpage_with_query"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #1"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-turn-20",
@@ -3052,7 +3052,7 @@
           "rawLine": 60
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #2"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-result-call_0EI65LgtFAY3gyW49Kt9WDCO",
@@ -3084,7 +3084,7 @@
           "toolName": "read_webpage_with_query"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #2"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-turn-22",
@@ -3184,7 +3184,7 @@
           "rawLine": 62
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #4"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-call-call_uDe3pSCtFXXwEQyRDyDV547S",
@@ -3214,7 +3214,7 @@
           "rawLine": 62
         },
         "criticalPath": true,
-        "criticalReason": "parent of evidence #3"
+        "criticalReason": "证据检索"
       },
       {
         "actionId": "ga-result-call_qW45kg9duKgYh8S0Pv6so9s7",
@@ -3275,7 +3275,7 @@
           "toolName": "read_webpage"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #4"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-result-call_uDe3pSCtFXXwEQyRDyDV547S",
@@ -3306,7 +3306,7 @@
           "toolName": "search_web"
         },
         "criticalPath": true,
-        "criticalReason": "ref'd by record_forecast evidence #3"
+        "criticalReason": "证据锚点"
       },
       {
         "actionId": "ga-turn-23",
@@ -3341,7 +3341,7 @@
           ]
         },
         "criticalPath": true,
-        "criticalReason": "parent of record_forecast"
+        "criticalReason": "最终综合"
       },
       {
         "actionId": "ga-call-call_a3F6aRxTrhBxWU2vkGHwwrkl",
@@ -3391,10 +3391,10 @@
           "fullLength": 2442,
           "rawFilePath": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/hormuz-brent-weekly-high-2026-05-13/main_agent.jsonl",
           "rawLine": 67,
-          "boxedAnswer": "\\boxed{D}"
+          "boxedAnswer": "\\boxed{108.74 USD/bbl}"
         },
         "criticalPath": true,
-        "criticalReason": "record_forecast / boxed answer"
+        "criticalReason": "最终预测"
       },
       {
         "actionId": "ga-result-call_a3F6aRxTrhBxWU2vkGHwwrkl",
@@ -3468,10 +3468,10 @@
           "isTruncated": false,
           "fullLength": 2442,
           "rawFilePath": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/hormuz-brent-weekly-high-2026-05-13/main_agent.jsonl",
-          "boxedAnswer": "\\boxed{D}"
+          "boxedAnswer": "\\boxed{108.74 USD/bbl}"
         },
         "criticalPath": true,
-        "criticalReason": "record_forecast / boxed answer"
+        "criticalReason": "最终预测"
       },
       {
         "actionId": "ga-checkpoint",
@@ -3496,7 +3496,7 @@
           "rawFilePath": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/hormuz-brent-weekly-high-2026-05-13/checkpoint_note.json"
         },
         "criticalPath": true,
-        "criticalReason": "checkpoint after final forecast"
+        "criticalReason": "运行检查点"
       }
     ],
     "graph": {
@@ -3514,7 +3514,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "forecast question"
+            "criticalReason": "问题定义"
           }
         },
         {
@@ -3656,7 +3656,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #7"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -3705,7 +3705,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #7"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -4068,7 +4068,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #2"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -4117,7 +4117,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #2"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -4449,7 +4449,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #6"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -4466,7 +4466,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #6"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -4498,7 +4498,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #3"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -4531,7 +4531,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #3"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -4737,7 +4737,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #5"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -4786,7 +4786,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #5"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -4818,7 +4818,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #1"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -4867,7 +4867,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #1"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -4931,7 +4931,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #1"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -4948,7 +4948,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #1"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -5027,7 +5027,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #2"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -5044,7 +5044,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #2"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -5092,7 +5092,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #4"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -5109,7 +5109,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of evidence #3"
+            "criticalReason": "证据检索"
           }
         },
         {
@@ -5142,7 +5142,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #4"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -5159,7 +5159,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "ref'd by record_forecast evidence #3"
+            "criticalReason": "证据锚点"
           }
         },
         {
@@ -5175,7 +5175,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "parent of record_forecast"
+            "criticalReason": "最终综合"
           }
         },
         {
@@ -5192,7 +5192,7 @@
             "current": false,
             "terminal": true,
             "criticalPath": true,
-            "criticalReason": "record_forecast / boxed answer"
+            "criticalReason": "最终预测"
           }
         },
         {
@@ -5225,7 +5225,7 @@
             "current": false,
             "terminal": true,
             "criticalPath": true,
-            "criticalReason": "record_forecast / boxed answer"
+            "criticalReason": "最终预测"
           }
         },
         {
@@ -5241,7 +5241,7 @@
             "current": false,
             "terminal": false,
             "criticalPath": true,
-            "criticalReason": "checkpoint after final forecast"
+            "criticalReason": "运行检查点"
           }
         }
       ],

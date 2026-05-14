@@ -488,6 +488,30 @@ const marketPageCss = `
   letter-spacing: 0;
 }
 
+.market-m8-regime-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-m8-regime-list li {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 1px solid #fed7aa;
+  border-radius: 7px;
+  color: #9a3412;
+  background: #fff7ed;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
 .market-m8-missing-line {
   stroke: #b91c1c;
   stroke-width: 1.25;
@@ -875,6 +899,10 @@ function overlayOffsets(events: MarketOverlay[]) {
   });
 }
 
+function compactRegimeLabel(label: string) {
+  return label.replace(/^source-backed\s+/i, "");
+}
+
 function visibleRegimeOverlays(overlays: MarketRegimeOverlay[] | undefined, range: WindowRange): VisibleRegimeOverlay[] {
   return (overlays ?? [])
     .map((overlay) => {
@@ -1023,14 +1051,6 @@ function LineChartSvg({
             x={xForMs(overlay.startMs)}
             y={padding.top}
           />
-          <text
-            className="market-m8-structure-label"
-            textAnchor="end"
-            x={Math.min(xForMs(overlay.endMs) - 6, width - padding.right - 8)}
-            y={padding.top + 17}
-          >
-            {overlay.label}
-          </text>
         </g>
       ))}
 
@@ -1221,6 +1241,16 @@ function MarketLineChart({
         {!hasData ? <div className="market-m8-empty">当前区间无数据</div> : null}
       </div>
 
+      {regimes && regimes.length > 0 ? (
+        <ul className="market-m8-regime-list" aria-label="Source-backed regime overlays">
+          {regimes.map((regime) => (
+            <li key={regime.id} title={regime.caveat}>
+              {compactRegimeLabel(regime.label)} · {formatDate(new Date(regime.startMs).toISOString())}
+              {regime.end_at ? `-${formatDate(new Date(regime.endMs).toISOString())}` : " onward"}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <ChartLegend series={series} />
       {note ? <p className="market-m8-chart-note">{note}</p> : null}
     </article>

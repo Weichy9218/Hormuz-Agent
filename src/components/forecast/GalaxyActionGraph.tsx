@@ -236,6 +236,22 @@ function addIfRoom(ids: Set<string>, nextIds: string[], limit = STORY_NODE_LIMIT
   return true;
 }
 
+function lineageIds(
+  action: GalaxyActionTraceItem,
+  allById: Map<string, GalaxyActionTraceItem>,
+) {
+  const ids: string[] = [];
+  const visit = (actionId?: string) => {
+    if (!actionId || ids.includes(actionId)) return;
+    const item = allById.get(actionId);
+    if (!item) return;
+    for (const parentId of item.parentActionIds ?? []) visit(parentId);
+    ids.push(item.actionId);
+  };
+  visit(action.actionId);
+  return ids;
+}
+
 function keyEvidenceActions(actions: GalaxyActionTraceItem[]) {
   const candidates = actions.filter((action) =>
     action.toolName !== "record_forecast" &&
@@ -295,6 +311,13 @@ function storyActionIds(actions: GalaxyActionTraceItem[], selectedActionId?: str
 
   const checkpoint = [...actions].reverse().find((action) => action.kind === "checkpoint");
   addActionId(ids, checkpoint?.actionId);
+
+  const latestAction = [...actions]
+    .reverse()
+    .find((action) => action.kind !== "question" && action.kind !== "supervisor");
+  if (latestAction) {
+    addIfRoom(ids, lineageIds(latestAction, allById));
+  }
 
   for (const action of keyEvidenceActions(actions)) {
     if (ids.size >= STORY_NODE_LIMIT) break;
@@ -416,7 +439,7 @@ function dagreLayout(
       source: edge.source,
       target: edge.target,
       type: edge.label === "returns" ? "step" : "smoothstep",
-      animated: edge.label === "returns" || edge.label === "records" || edge.label === "persists",
+      animated: false,
       label: edge.label,
       className: `galaxy-action-edge ${edge.criticalPath ? "critical-path" : ""} ${targetAction?.kind ?? edge.label}`,
       labelShowBg: true,
@@ -513,10 +536,12 @@ function useStableNodePositions(
 
 function FlowViewportFitter({ fitKey, hasNodes }: { fitKey: string; hasNodes: boolean }) {
   const reactFlow = useReactFlow();
+  const fittedKeyRef = useRef("");
   useEffect(() => {
-    if (!hasNodes) return;
+    if (!hasNodes || fittedKeyRef.current === fitKey) return;
+    fittedKeyRef.current = fitKey;
     const frame = window.requestAnimationFrame(() => {
-      void reactFlow.fitView({ padding: 0.14, duration: 220 });
+      void reactFlow.fitView({ padding: 0.14, duration: 0 });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [fitKey, hasNodes, reactFlow]);

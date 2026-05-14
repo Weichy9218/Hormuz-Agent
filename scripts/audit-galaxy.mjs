@@ -2,16 +2,18 @@
 //
 // Validates the daily Hormuz question and normalized galaxy run artifact before
 // the Forecast page consumes it.
-import { readFile } from "node:fs/promises";
-import { resolve, dirname, basename } from "node:path";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve, dirname, basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readQuestionFromFile } from "./run-galaxy-hormuz.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
 const questionPath = resolve(root, "data/galaxy/hormuz-daily-question.jsonl");
 const artifactPath = resolve(root, "data/galaxy/latest-run.json");
 
-const questionRows = (await readFile(questionPath, "utf8"))
+const dailyQuestionRows = (await readFile(questionPath, "utf8"))
   .split(/\r?\n/)
   .filter((line) => line.trim())
   .map((line) => JSON.parse(line));
@@ -20,6 +22,92 @@ const violations = [];
 const isDemoArtifact = artifact.runMeta?.demo === true;
 const rawPreviewLeakPattern =
   /"role"\s*:\s*"system"|# Role|Working rhythm|chain-of-thought|system prompt|internal prompt/i;
+
+async function auditCustomQuestionParser() {
+  const tempDir = await mkdtemp(join(tmpdir(), "hormuz-custom-question-"));
+  try {
+    const prettyQuestionPath = join(tempDir, "run-question.json");
+    await writeFile(
+      prettyQuestionPath,
+      `${JSON.stringify({
+        task_id: "hormuz-custom-parser-audit",
+        task_question: "Custom parser audit question",
+        metadata: { question_kind: "custom" },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+    const parsed = await readQuestionFromFile(prettyQuestionPath);
+    if (parsed?.task_id !== "hormuz-custom-parser-audit") {
+      violations.push("custom question parser must accept pretty JSON without falling back to Brent");
+    }
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+await auditCustomQuestionParser();
+
+async function readJsonIfExists(filePath) {
+  try {
+    return JSON.parse(await readFile(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+async function findFiles(dir, fileName, out = []) {
+  let entries = [];
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await findFiles(fullPath, fileName, out);
+    } else if (entry.isFile() && entry.name === fileName) {
+      out.push(fullPath);
+    }
+  }
+  return out;
+}
+
+async function auditRunQuestionAlignment() {
+  const statusPaths = await findFiles(resolve(root, "data/galaxy/runs"), "run-status.json");
+  for (const statusPath of statusPaths) {
+    const status = await readJsonIfExists(statusPath);
+    if (!status?.taskId || !status?.runDir || !status?.outputDir) {
+      violations.push(`${statusPath}: run-status.json missing taskId/runDir/outputDir`);
+      continue;
+    }
+    const questionPathFromStatus =
+      typeof status.questionPath === "string" && status.questionPath.trim()
+        ? resolve(root, status.questionPath)
+        : join(dirname(statusPath), "run-question.json");
+    const question = await readJsonIfExists(questionPathFromStatus);
+    if (question?.task_id && question.task_id !== status.taskId) {
+      violations.push(`${statusPath}: run-status taskId ${status.taskId} does not match question.task_id ${question.task_id}`);
+    }
+    if (basename(String(status.runDir)) !== status.taskId) {
+      violations.push(`${statusPath}: runDir basename must match taskId`);
+    }
+    if (status.runId && basename(String(status.outputDir)) !== status.runId) {
+      violations.push(`${statusPath}: outputDir basename must match runId`);
+    }
+    const command = Array.isArray(status.command) ? status.command.map(String) : [];
+    const questionKindArg = command[command.indexOf("--question-kind") + 1] || "";
+    const questionKind = question?.metadata?.question_kind || "";
+    if (questionKindArg === "custom" && questionKind && questionKind !== "custom") {
+      violations.push(`${statusPath}: command declares custom but run-question is ${questionKind}`);
+    }
+    if (questionKindArg === "brent-weekly-high" && questionKind && questionKind !== "brent_weekly_high") {
+      violations.push(`${statusPath}: command declares brent-weekly-high but run-question is ${questionKind}`);
+    }
+  }
+}
+
+await auditRunQuestionAlignment();
 
 function storyActionIdsForAudit(actions) {
   const ids = new Set();
@@ -54,10 +142,25 @@ function parseFinalPrediction(artifact, recordForecast) {
   ).replace(/[^\d.-]/g, ""));
 }
 
-if (questionRows.length !== 1) {
-  violations.push(`daily question file must contain exactly one row, found ${questionRows.length}`);
+if (dailyQuestionRows.length !== 1) {
+  violations.push(`daily question file must contain exactly one row, found ${dailyQuestionRows.length}`);
 }
-const question = questionRows[0];
+const dailyQuestion = dailyQuestionRows[0];
+const artifactQuestionPath =
+  typeof artifact.runMeta?.questionPath === "string" && artifact.runMeta.questionPath.trim()
+    ? resolve(root, artifact.runMeta.questionPath)
+    : questionPath;
+const artifactQuestion = await readQuestionFromFile(artifactQuestionPath);
+const question = artifactQuestion ?? dailyQuestion;
+if (!artifactQuestion) {
+  violations.push(`latest-run questionPath must contain a valid question row: ${artifact.runMeta?.questionPath ?? "missing"}`);
+}
+if (
+  artifact.question?.metadata?.question_kind === "custom" &&
+  artifactQuestionPath === questionPath
+) {
+  violations.push("custom latest-run must reference its per-run questionPath, not the daily question file");
+}
 const questionKind = question?.metadata?.question_kind || "hormuz_traffic_risk";
 const isBrentWeeklyHigh = questionKind === "brent_weekly_high";
 const isCustomQuestion = questionKind === "custom";
@@ -111,8 +214,14 @@ if (!isCustomQuestion && !question?.task_description?.includes("Market data is e
 if (artifact.schemaVersion !== "hormuz-galaxy-run/v1") {
   violations.push("latest-run.json has wrong schemaVersion");
 }
+if (isCustomQuestion) {
+  violations.push("data/galaxy/latest-run.json must remain the default Brent artifact; custom runs stay in per-run run-artifact.json");
+}
 if (artifact.question?.task_id !== question?.task_id) {
-  violations.push("latest-run.json question.task_id must match daily question row");
+  violations.push("latest-run.json question.task_id must match the artifact question row");
+}
+if (artifact.runMeta?.taskId !== question?.task_id) {
+  violations.push("latest-run.json runMeta.taskId must match question.task_id");
 }
 if (artifact.runMeta?.runner !== "galaxy-selfevolve") {
   violations.push("runMeta.runner must be galaxy-selfevolve");
