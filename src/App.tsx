@@ -1,16 +1,34 @@
 // Main reviewer-console shell for page selection and shared forecast target state.
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { AppHeader } from "./components/layout/AppHeader";
-import { ForecastPage } from "./pages/ForecastPage";
-import { MarketPage } from "./pages/MarketPage";
-import { NewsPage } from "./pages/NewsPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import type { DetailPage } from "./types/ui";
 import type { ForecastTarget } from "./types/forecast";
 
+const MarketPage = lazy(() =>
+  import("./pages/MarketPage").then((module) => ({ default: module.MarketPage })),
+);
+const NewsPage = lazy(() =>
+  import("./pages/NewsPage").then((module) => ({ default: module.NewsPage })),
+);
+const ForecastPage = lazy(() =>
+  import("./pages/ForecastPage").then((module) => ({ default: module.ForecastPage })),
+);
+
+function PageFallback({ label }: { label: string }) {
+  return (
+    <section className="page-grid">
+      <div className="console-card page-loading-card">
+        <strong>{label}</strong>
+        <span>Loading page chunk...</span>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const [selectedTarget, setSelectedTarget] = useState<ForecastTarget>("brent");
-  const [activePage, setActivePage] = useState<DetailPage["id"]>("forecast");
+  const [activePage, setActivePage] = useState<DetailPage["id"]>("overview");
   const selectPage = useCallback((page: DetailPage["id"]) => {
     setActivePage(page);
     window.history.replaceState(null, "", page === "overview" ? "/" : `/${page}`);
@@ -52,10 +70,20 @@ function App() {
       />
 
       {activePage === "overview" ? <OverviewPage /> : null}
-      {activePage === "market" ? <MarketPage /> : null}
-      {activePage === "news" ? <NewsPage /> : null}
+      {activePage === "market" ? (
+        <Suspense fallback={<PageFallback label="市场数据" />}>
+          <MarketPage />
+        </Suspense>
+      ) : null}
+      {activePage === "news" ? (
+        <Suspense fallback={<PageFallback label="事件发展" />}>
+          <NewsPage />
+        </Suspense>
+      ) : null}
       {activePage === "forecast" ? (
-        <ForecastPage selectedTarget={selectedTarget} onSelectTarget={setSelectedTarget} />
+        <Suspense fallback={<PageFallback label="Forecast Agent" />}>
+          <ForecastPage selectedTarget={selectedTarget} onSelectTarget={setSelectedTarget} />
+        </Suspense>
       ) : null}
     </main>
   );
