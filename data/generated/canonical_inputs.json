@@ -1,11 +1,11 @@
 {
   "schemaVersion": "hormuz-local-canonical-inputs/v1",
-  "generatedAt": "2026-05-12T13:26:46.814Z",
+  "generatedAt": "2026-05-14T04:20:20.771Z",
   "sourceObservations": [
     {
       "observationId": "obs-local-advisory-imo-strait-of-hormuz-middle-east-data-aspx",
       "sourceId": "official-advisory",
-      "retrievedAt": "2026-05-12T13:26:30.360Z",
+      "retrievedAt": "2026-05-14T04:20:03.034Z",
       "sourceUrl": "https://www.imo.org/en/mediacentre/hottopics/pages/strait-of-hormuz-middle-east-data.aspx",
       "sourceHash": "sha256:a8fa5f5de9efd5717b4b3f31c9d87626d4d7dd2c2a1a5ff976409c6f394a2bd0",
       "title": "Monthly data on transits of ships through the Strait of Hormuz",
@@ -16,9 +16,9 @@
     {
       "observationId": "obs-local-advisory-marad-2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
       "sourceId": "official-advisory",
-      "retrievedAt": "2026-05-12T13:26:30.360Z",
+      "retrievedAt": "2026-05-14T04:20:03.034Z",
       "sourceUrl": "https://www.maritime.dot.gov/msci/2026-001a-strait-hormuz-persian-gulf-gulf-oman-and-arabian-sea-military-operations-and",
-      "sourceHash": "sha256:91232bc1a9cc67d0d7c858cc513eef1c8d614bf0620806426d8647d344d8cdfd",
+      "sourceHash": "sha256:18b8b70b4ab47de2adf95cce4585c052603e4ea12353a2867811201a02bfb08e",
       "title": "2026-001A-Strait of Hormuz, Persian Gulf, Gulf of Oman, and Arabian Sea-Military Operations and Potential Retaliatory Strikes by Iranian Forces",
       "summary": "MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
       "freshness": "fresh",
@@ -27,9 +27,9 @@
     {
       "observationId": "obs-local-advisory-marad-2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commercial-vessels",
       "sourceId": "official-advisory",
-      "retrievedAt": "2026-05-12T13:26:30.360Z",
+      "retrievedAt": "2026-05-14T04:20:03.034Z",
       "sourceUrl": "https://www.maritime.dot.gov/msci/2026-004-persian-gulf-strait-hormuz-and-gulf-oman-iranian-attacks-commercial-vessels",
-      "sourceHash": "sha256:e880b803742fa9ba678d537b3c43bf9a6af6c9b3bb6b00fd15ea0018826eb9c0",
+      "sourceHash": "sha256:1c6ccd1f67869650a890daa58994c6b2a87d48f71b2391f8aef7c20c9cc3e65d",
       "title": "2026-004-Persian Gulf, Strait of Hormuz, and Gulf of Oman-Iranian Attacks on Commercial Vessels",
       "summary": "MARAD maritime_advisory snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
       "freshness": "fresh",
@@ -38,9 +38,9 @@
     {
       "observationId": "obs-local-advisory-ukmto-recent-incidents",
       "sourceId": "official-advisory",
-      "retrievedAt": "2026-05-12T13:26:30.360Z",
+      "retrievedAt": "2026-05-14T04:20:03.034Z",
       "sourceUrl": "https://www.ukmto.org/recent-incidents",
-      "sourceHash": "sha256:0f120e99bdef602253ed6752bb00a68323203ce2e170cc7df50709b42bdc7104",
+      "sourceHash": "sha256:b3597f0d10633b5d1bec0243723aec014e8ade66bcc34a00994dc5f45b1d2c66",
       "title": "Recent Incidents",
       "summary": "UKMTO source_snapshot snapshot/candidate for Strait of Hormuz, Persian Gulf, Gulf of Oman, Arabian Sea; evidence use remains bounded by cross-verification gates.",
       "freshness": "lagging",
@@ -57,13 +57,13 @@
       "licenseStatus": "open"
     },
     {
-      "observationId": "obs-local-fred-brent-spot-2026-05-01",
+      "observationId": "obs-local-fred-brent-spot-2026-05-11",
       "sourceId": "fred-market",
-      "observedAt": "2026-05-01T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "observedAt": "2026-05-11T00:00:00Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
       "title": "Brent spot proxy local FRED observation",
-      "summary": "Brent spot proxy=118.26 USD/bbl on 2026-05-01; generated from local FRED raw/normalized artifacts.",
+      "summary": "Brent spot proxy=106.11 USD/bbl on 2026-05-11; generated from local FRED raw/normalized artifacts.",
       "freshness": "fresh",
       "licenseStatus": "open"
     },
@@ -71,7 +71,7 @@
       "observationId": "obs-local-fred-broad-usd-2026-05-08",
       "sourceId": "fred-market",
       "observedAt": "2026-05-08T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/DTWEXBGS",
       "title": "Broad USD local FRED observation",
       "summary": "Broad USD=118.0392 index on 2026-05-08; generated from local FRED raw/normalized artifacts.",
@@ -79,24 +79,24 @@
       "licenseStatus": "open"
     },
     {
-      "observationId": "obs-local-fred-sp500-2026-05-11",
+      "observationId": "obs-local-fred-sp500-2026-05-13",
       "sourceId": "fred-market",
-      "observedAt": "2026-05-11T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "observedAt": "2026-05-13T00:00:00Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/SP500",
       "title": "S&P 500 local FRED observation",
-      "summary": "S&P 500=7412.84 index on 2026-05-11; generated from local FRED raw/normalized artifacts.",
+      "summary": "S&P 500=7444.25 index on 2026-05-13; generated from local FRED raw/normalized artifacts.",
       "freshness": "fresh",
       "licenseStatus": "open"
     },
     {
-      "observationId": "obs-local-fred-us10y-2026-05-08",
+      "observationId": "obs-local-fred-us10y-2026-05-12",
       "sourceId": "fred-market",
-      "observedAt": "2026-05-08T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "observedAt": "2026-05-12T00:00:00Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/DGS10",
       "title": "US10Y local FRED observation",
-      "summary": "US10Y=4.38 % on 2026-05-08; generated from local FRED raw/normalized artifacts.",
+      "summary": "US10Y=4.46 % on 2026-05-12; generated from local FRED raw/normalized artifacts.",
       "freshness": "fresh",
       "licenseStatus": "open"
     },
@@ -104,7 +104,7 @@
       "observationId": "obs-local-fred-usd-cny-2026-05-08",
       "sourceId": "fred-market",
       "observedAt": "2026-05-08T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/DEXCHUS",
       "title": "USD/CNY local FRED observation",
       "summary": "USD/CNY=6.8005 CNY on 2026-05-08; generated from local FRED raw/normalized artifacts.",
@@ -112,32 +112,32 @@
       "licenseStatus": "open"
     },
     {
-      "observationId": "obs-local-fred-vix-2026-05-08",
+      "observationId": "obs-local-fred-vix-2026-05-12",
       "sourceId": "fred-market",
-      "observedAt": "2026-05-08T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "observedAt": "2026-05-12T00:00:00Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/VIXCLS",
       "title": "VIX local FRED observation",
-      "summary": "VIX=17.19 index on 2026-05-08; generated from local FRED raw/normalized artifacts.",
+      "summary": "VIX=17.99 index on 2026-05-12; generated from local FRED raw/normalized artifacts.",
       "freshness": "fresh",
       "licenseStatus": "open"
     },
     {
-      "observationId": "obs-local-fred-wti-spot-2026-05-04",
+      "observationId": "obs-local-fred-wti-spot-2026-05-11",
       "sourceId": "fred-market",
-      "observedAt": "2026-05-04T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:25.090Z",
+      "observedAt": "2026-05-11T00:00:00Z",
+      "retrievedAt": "2026-05-14T04:19:57.541Z",
       "sourceUrl": "https://fred.stlouisfed.org/series/DCOILWTICO",
       "title": "WTI spot proxy local FRED observation",
-      "summary": "WTI spot proxy=109.76 USD/bbl on 2026-05-04; generated from local FRED raw/normalized artifacts.",
+      "summary": "WTI spot proxy=101.56 USD/bbl on 2026-05-11; generated from local FRED raw/normalized artifacts.",
       "freshness": "fresh",
       "licenseStatus": "open"
     },
     {
-      "observationId": "obs-local-imo-chart-data-raw-traffic-imo-hormuz-monthly-2026-05-12t13-26-46-814z-imo-hormuz-chart-1-png",
+      "observationId": "obs-local-imo-chart-data-raw-traffic-imo-hormuz-monthly-2026-05-14t04-20-20-771z-imo-hormuz-chart-1-png",
       "sourceId": "imo-hormuz-monthly",
-      "observedAt": "2026-05-12T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:46.814Z",
+      "observedAt": "2026-05-14T00:00:00Z",
+      "retrievedAt": "2026-05-14T04:20:20.771Z",
       "sourceUrl": "https://wwwcdn.imo.org/localresources/en/MediaCentre/PublishingImages/Transit_Hormuz_chart_APRIL_2026.png",
       "sourceHash": "sha256:9a53920bd174a5e44255cba54e47058c1eadbad3f3d9b11aa06bc7fdb9660896",
       "title": "IMO Hormuz monthly transit chart snapshot",
@@ -149,9 +149,9 @@
       "observationId": "obs-local-portwatch-daily-2026-05-10",
       "sourceId": "imf-portwatch-hormuz",
       "observedAt": "2026-05-10T00:00:00Z",
-      "retrievedAt": "2026-05-12T13:26:46.814Z",
+      "retrievedAt": "2026-05-14T04:20:20.771Z",
       "sourceUrl": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "sourceHash": "sha256:bebee3d1d8c3fd6a7a27f840ae4a70568fc056305f192379d4222cfbfc0812ab",
+      "sourceHash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "title": "PortWatch daily_transit_calls 2026-05-10",
       "summary": "PortWatch chokepoint6 daily_transit_calls=4 on 2026-05-10. This daily metric is stored with AIS/GNSS caveat and is not mixed with the 60 7d avg transit-calls threshold.",
       "freshness": "lagging",
@@ -172,15 +172,15 @@
     {
       "evidenceId": "ev-local-market-risk-premium",
       "sourceObservationIds": [
-        "obs-local-fred-brent-spot-2026-05-01",
+        "obs-local-fred-brent-spot-2026-05-11",
         "obs-local-fred-broad-usd-2026-05-08",
-        "obs-local-fred-sp500-2026-05-11",
-        "obs-local-fred-us10y-2026-05-08",
+        "obs-local-fred-sp500-2026-05-13",
+        "obs-local-fred-us10y-2026-05-12",
         "obs-local-fred-usd-cny-2026-05-08",
-        "obs-local-fred-vix-2026-05-08",
-        "obs-local-fred-wti-spot-2026-05-04"
+        "obs-local-fred-vix-2026-05-12",
+        "obs-local-fred-wti-spot-2026-05-11"
       ],
-      "claim": "Local FRED bundle shows Brent 118.26 on 2026-05-01 and WTI 109.76 on 2026-05-04, while VIX 17.19 and S&P 500 7412.84 do not form a closure-style cross-asset shock.",
+      "claim": "Local FRED bundle shows Brent 106.11 on 2026-05-11 and WTI 101.56 on 2026-05-11, while VIX 17.99 and S&P 500 7444.25 do not form a closure-style cross-asset shock.",
       "polarity": "support",
       "affects": [
         "market",
@@ -265,7 +265,7 @@
       "sourceObservationIds": [
         "obs-local-portwatch-daily-2026-05-10",
         "obs-local-portwatch-threshold-2026",
-        "obs-local-imo-chart-data-raw-traffic-imo-hormuz-monthly-2026-05-12t13-26-46-814z-imo-hormuz-chart-1-png"
+        "obs-local-imo-chart-data-raw-traffic-imo-hormuz-monthly-2026-05-14t04-20-20-771z-imo-hormuz-chart-1-png"
       ],
       "claim": "PortWatch latest daily_transit_calls=4 on 2026-05-10; the 60 7d avg transit-calls baseline is stored separately and is not directly comparable until metric definitions are verified. This supports keeping traffic_flow_down out of severe/closure evidence.",
       "polarity": "support",
@@ -287,13 +287,13 @@
   ],
   "marketRead": {
     "title": "市场信号混合：油价保留风险溢价，但未形成 closure-style shock",
-    "summary": "Brent 118.26 (2026-05-01), WTI 109.76 (2026-05-04), VIX 17.19 (2026-05-08), S&P 500 7412.84 (2026-05-11); cross-asset pattern supports controlled risk premium, not closure pricing.",
+    "summary": "Brent 106.11 (2026-05-11), WTI 101.56 (2026-05-11), VIX 17.99 (2026-05-12), S&P 500 7444.25 (2026-05-13); cross-asset pattern supports controlled risk premium, not closure pricing.",
     "pricingPattern": "mixed",
     "evidenceIds": [
       "ev-local-market-risk-premium"
     ],
     "caveat": "Market data is evidence input only; it must not act as a second forecast engine or independently raise closure probability.",
-    "asOf": "2026-05-11"
+    "asOf": "2026-05-13"
   },
   "notes": [
     "Generated from local normalized artifacts; no live remote endpoint is read by canonicalStore.",

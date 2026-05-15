@@ -17,7 +17,7 @@ import { GalaxyActionGraph } from "../components/forecast/GalaxyActionGraph";
 import { NumericForecastCard } from "../components/forecast/NumericForecastCard";
 import { InfoTitle } from "../components/shared/InfoTitle";
 import { isNumericForecastQuestion } from "../lib/forecast/numericForecast";
-import { projectBrentDailySeries, projectForecastState } from "../state/projections";
+import { projectForecastState, projectLocalResolutionSeries } from "../state/projections";
 import type { ForecastTarget } from "../types/forecast";
 import type {
   GalaxyActionKind,
@@ -972,7 +972,6 @@ export function ForecastPage({
     () => projectForecastState(runtimeGalaxyArtifact),
     [runtimeGalaxyArtifact],
   );
-  const brentDailySeries = useMemo(() => projectBrentDailySeries(30), []);
   const agentTrace = liveTrace ?? projection.galaxyRun?.actionTrace ?? null;
   const traceKey =
     agentTrace?.runDir ??
@@ -1021,8 +1020,12 @@ export function ForecastPage({
             : artifactQuestion?.metadata?.question_kind === "brent_weekly_high"
               ? artifactQuestion
               : brentQuestionPreview(localDateText());
+  const localResolutionSeries = useMemo(() => projectLocalResolutionSeries(activeQuestion, 30), [activeQuestion]);
   const showCustomForecast = activeQuestionKind === "custom";
-  const showNumericForecast = !showCustomForecast && isNumericForecastQuestion(activeQuestion, final.prediction);
+  const showNumericForecast =
+    !showCustomForecast &&
+    localResolutionSeries != null &&
+    isNumericForecastQuestion(activeQuestion, final.prediction);
   const handleSelectAction = useCallback((actionId: string | null) => {
     setSelectedActionId(actionId);
     if (actionId) setSidePanelTab("inspector");
@@ -1346,7 +1349,7 @@ export function ForecastPage({
               <NumericForecastCard
                 question={activeQuestion}
                 final={final}
-                brentSeries={brentDailySeries}
+                marketSeries={localResolutionSeries}
                 finalSource={finalSource}
                 runtime="galaxy"
               />

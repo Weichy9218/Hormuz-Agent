@@ -1,6 +1,6 @@
 {
-  "built_at": "2026-05-13T06:12:20.927Z",
-  "data_as_of": "2026-05-13T04:09:50.720Z",
+  "built_at": "2026-05-14T04:27:53.343Z",
+  "data_as_of": "2026-05-14T04:21:44.509Z",
   "series": [
     {
       "id": "portwatch-daily-transit-calls-all",
@@ -20125,9 +20125,9 @@
       "provider_id": "imf-portwatch",
       "license_status": "open",
       "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "retrieved_at": "2026-05-13T01:37:59.886Z",
-      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
-      "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
+      "retrieved_at": "2026-05-14T04:20:20.771Z",
+      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-14T04-20-20-771Z-portwatch-daily-chokepoint6-merged.json",
+      "source_hash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "caveat": "PortWatch chokepoint6 霍尔木兹海峡日通行量，来自 AIS/GNSS 船舶信号反演；需注意 GPS 干扰、AIS 伪装、关闭 AIS 的船只和事后修订。覆盖期 2019-01-01 至 2026-05-10；最新日总通行 4 艘；油轮 2 艘；货船 2 艘；估算运力 450300。",
       "evidenceEligible": false
     },
@@ -30895,9 +30895,9 @@
       "provider_id": "imf-portwatch",
       "license_status": "open",
       "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "retrieved_at": "2026-05-13T01:37:59.886Z",
-      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
-      "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
+      "retrieved_at": "2026-05-14T04:20:20.771Z",
+      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-14T04-20-20-771Z-portwatch-daily-chokepoint6-merged.json",
+      "source_hash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "caveat": "PortWatch chokepoint6 霍尔木兹海峡日通行量，来自 AIS/GNSS 船舶信号反演；需注意 GPS 干扰、AIS 伪装、关闭 AIS 的船只和事后修订。覆盖期 2019-01-01 至 2026-05-10；最新日总通行 4 艘；油轮 2 艘；货船 2 艘；估算运力 450300。",
       "evidenceEligible": false
     },
@@ -30913,9 +30913,9 @@
       "provider_id": "imf-portwatch",
       "license_status": "open",
       "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "retrieved_at": "2026-05-13T01:37:59.886Z",
-      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
-      "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
+      "retrieved_at": "2026-05-14T04:20:20.771Z",
+      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-14T04-20-20-771Z-portwatch-daily-chokepoint6-merged.json",
+      "source_hash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "points": [
         {
           "date": "2019-01-01",
@@ -41683,9 +41683,9 @@
       "provider_id": "imf-portwatch",
       "license_status": "open",
       "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "retrieved_at": "2026-05-13T01:37:59.886Z",
-      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
-      "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
+      "retrieved_at": "2026-05-14T04:20:20.771Z",
+      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-14T04-20-20-771Z-portwatch-daily-chokepoint6-merged.json",
+      "source_hash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "points": [
         {
           "date": "2019-01-01",
@@ -52453,9 +52453,9 @@
       "provider_id": "imf-portwatch",
       "license_status": "open",
       "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "retrieved_at": "2026-05-13T01:37:59.886Z",
-      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
-      "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
+      "retrieved_at": "2026-05-14T04:20:20.771Z",
+      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-14T04-20-20-771Z-portwatch-daily-chokepoint6-merged.json",
+      "source_hash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "points": [
         {
           "date": "2019-01-01",
@@ -63223,9 +63223,9 @@
       "provider_id": "imf-portwatch",
       "license_status": "open",
       "source_url": "https://portwatch.imf.org/pages/cb5856222a5b4105adc6ee7e880a1730",
-      "retrieved_at": "2026-05-13T01:37:59.886Z",
-      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-13T01-37-59-886Z-portwatch-daily-chokepoint6-merged.json",
-      "source_hash": "sha256:223a7267979fd9c809540c6d09b9dcfa27b7f838d2c457535d8abdcf864dbf94",
+      "retrieved_at": "2026-05-14T04:20:20.771Z",
+      "raw_path": "data/raw/traffic/imf-portwatch-hormuz/2026-05-14T04-20-20-771Z-portwatch-daily-chokepoint6-merged.json",
+      "source_hash": "sha256:8d76f5c7342274092cf10aba67b970f0e211ba690d024ea256441ff01a11f65f",
       "points": [
         {
           "date": "2019-01-01",
@@ -73993,8 +73993,8 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/CPIAUCSL",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/CPIAUCSL/2026-05-12T13-26-25-090Z.csv",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/CPIAUCSL/2026-05-14T04-19-57-541Z.csv",
       "source_hash": "sha256:9a7e339d081595bbf916bab9ebb50949d3c0bc78b0cb2dea64d6c9d4c7e357a4",
       "points": [
         {
@@ -74061,9 +74061,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/DCOILBRENTEU/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:1df0daa282ded7da3de1a57f2c3342d37864298c83bd929e4482f2f6dc2ca03c",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/DCOILBRENTEU/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:15cba8cc2daaeae5bf07d2e2b4aa1714c838d8fca3a89a4cbe1f31b584e43fca",
       "points": [
         {
           "date": "2025-05-12",
@@ -75056,6 +75056,26 @@
         {
           "date": "2026-05-01",
           "value": 118.26
+        },
+        {
+          "date": "2026-05-05",
+          "value": 114.51
+        },
+        {
+          "date": "2026-05-06",
+          "value": 103.7
+        },
+        {
+          "date": "2026-05-07",
+          "value": 101.82
+        },
+        {
+          "date": "2026-05-08",
+          "value": 103.48
+        },
+        {
+          "date": "2026-05-11",
+          "value": 106.11
         }
       ],
       "caveat": "Brent spot proxy from FRED normalized local history; raw endpoint is not called by the UI.",
@@ -75075,9 +75095,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/DCOILWTICO/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:b7a2ba30a6ec327e2963fb2117fc76ae478c287d5c4ca182e33233c7eff49599",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/DCOILWTICO/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:1a36ceff74e9fe06d9c1dfc96aeeb3b20fe374c1640fc280d29cdab1943f214d",
       "points": [
         {
           "date": "2025-05-12",
@@ -76054,6 +76074,26 @@
         {
           "date": "2026-05-04",
           "value": 109.76
+        },
+        {
+          "date": "2026-05-05",
+          "value": 105.66
+        },
+        {
+          "date": "2026-05-06",
+          "value": 98.75
+        },
+        {
+          "date": "2026-05-07",
+          "value": 98.38
+        },
+        {
+          "date": "2026-05-08",
+          "value": 98.87
+        },
+        {
+          "date": "2026-05-11",
+          "value": 101.56
         }
       ],
       "caveat": "WTI spot proxy from FRED normalized local history; raw endpoint is not called by the UI.",
@@ -76073,9 +76113,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DEXCHUS",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/DEXCHUS/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:7f6a891233cc13cb8008394721c87949830ea16afadecf8b1f00fdb84ae42e94",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/DEXCHUS/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:eeb4842e21a74e5baa2bc422e856023193a7c086534ab10e91c5396fecc8081c",
       "points": [
         {
           "date": "2025-05-12",
@@ -77092,9 +77132,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DGS10",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/DGS10/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:53e7fdb0acb85e4ff15737bf5b23fbf7488c0d313c4a9c1fcb343f9eda59c783",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/DGS10/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:c1c141720c36749d140778f4109f010a54fb01b6f0c2b43adbe1d3ef8cb41860",
       "points": [
         {
           "date": "2025-05-12",
@@ -78091,6 +78131,14 @@
         {
           "date": "2026-05-08",
           "value": 4.38
+        },
+        {
+          "date": "2026-05-11",
+          "value": 4.42
+        },
+        {
+          "date": "2026-05-12",
+          "value": 4.46
         }
       ],
       "caveat": "US 10Y from FRED normalized local history; raw endpoint is not called by the UI.",
@@ -78110,9 +78158,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DTWEXBGS",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/DTWEXBGS/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:2f23a86d34d2a8edb5c15c738f82e7fb839e9b638b1b4359ad80562fbfc80675",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/DTWEXBGS/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:59ed268159f1ffeba45b0a5b36a83d7c826776e2696669cef1ec33081eb78409",
       "points": [
         {
           "date": "2025-05-12",
@@ -79128,9 +79176,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/NASDAQCOM/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:7db8a5791fef1b5262af5d987d97214fd419e435956cb1b8ef057b65d791584f",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/NASDAQCOM/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:852e6e97b68d64b16d18a6da32d1526689ee3993dd91449d2ceb9b70f2fa4dff",
       "points": [
         {
           "date": "2025-05-12",
@@ -80135,6 +80183,14 @@
         {
           "date": "2026-05-11",
           "value": 26274.13
+        },
+        {
+          "date": "2026-05-12",
+          "value": 26088.2
+        },
+        {
+          "date": "2026-05-13",
+          "value": 26402.34
         }
       ],
       "caveat": "NASDAQ from FRED normalized local history; raw endpoint is not called by the UI.",
@@ -80155,9 +80211,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/SP500",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/SP500/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:0a9d7928b9cc99d30c4ec68bed54e523ac10850cb9eb5949668e42a43fa2cf63",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/SP500/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:ed2fbffbe7b39da21873a66c3759d92bf8e5d81b02b9345a5ab4e73608caf933",
       "points": [
         {
           "date": "2025-05-12",
@@ -81162,6 +81218,14 @@
         {
           "date": "2026-05-11",
           "value": 7412.84
+        },
+        {
+          "date": "2026-05-12",
+          "value": 7400.96
+        },
+        {
+          "date": "2026-05-13",
+          "value": 7444.25
         }
       ],
       "caveat": "S&P 500 from FRED normalized local history; raw endpoint is not called by the UI.",
@@ -81181,9 +81245,9 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
-      "raw_path": "data/raw/fred/VIXCLS/2026-05-12T13-26-25-090Z.csv",
-      "source_hash": "sha256:ef20d7692982d62e71b6ccb7da58c78438db7e1c3c462b924be6e0bce707ed9d",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
+      "raw_path": "data/raw/fred/VIXCLS/2026-05-14T04-19-57-541Z.csv",
+      "source_hash": "sha256:42b4095c4bc04c2f04888c26059a1208fe288578d0faf87781cab7ea8fdbcb34",
       "points": [
         {
           "date": "2025-05-12",
@@ -82212,6 +82276,14 @@
         {
           "date": "2026-05-08",
           "value": 17.19
+        },
+        {
+          "date": "2026-05-11",
+          "value": 18.38
+        },
+        {
+          "date": "2026-05-12",
+          "value": 17.99
         }
       ],
       "caveat": "VIX from FRED normalized local history; raw endpoint is not called by the UI.",
@@ -82231,9 +82303,9 @@
       "provider_id": "stooq",
       "license_status": "open",
       "source_url": "https://stooq.com/q/d/?s=xauusd",
-      "retrieved_at": "2026-05-13T01:18:37.251Z",
-      "raw_path": "data/raw/stooq/xauusd/2026-05-13T01-18-37-251Z.json",
-      "source_hash": "sha256:49d0a80b53654347f7e435c4d2627fe3ad67e3b8b1c452a7bea11829808f2004",
+      "retrieved_at": "2026-05-14T04:20:38.792Z",
+      "raw_path": "data/raw/stooq/xauusd/2026-05-14T04-20-38-792Z.json",
+      "source_hash": "sha256:5c799e1214cd056e21de3c6d0941aa5a564257257666d11c032663b1bd558f3f",
       "provider_symbol": "xauusd",
       "field_used": "Close",
       "proxy_for": "gold_spot_usd_per_oz",
@@ -82242,10 +82314,6 @@
         "COMEX futures continuous contract"
       ],
       "points": [
-        {
-          "date": "2025-05-13",
-          "value": 3250.225
-        },
         {
           "date": "2025-05-14",
           "value": 3177.53
@@ -83277,6 +83345,10 @@
         {
           "date": "2026-05-12",
           "value": 4715.34
+        },
+        {
+          "date": "2026-05-13",
+          "value": 4688.94
         }
       ],
       "caveat": "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or futures continuous contract.",

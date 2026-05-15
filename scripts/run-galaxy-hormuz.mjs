@@ -17,6 +17,7 @@ const galaxyRepo =
 const questionPath = resolve(root, "data/galaxy/hormuz-daily-question.jsonl");
 const latestArtifactPath = resolve(root, "data/galaxy/latest-run.json");
 const defaultOutputRoot = resolve(root, "data/galaxy/runs");
+const runQuestionFile = "run-question.json";
 const defaultQuestionKind = "brent-weekly-high";
 const supportedQuestionKinds = new Set(["brent-weekly-high", "hormuz-traffic-risk", "custom"]);
 
@@ -1335,12 +1336,14 @@ async function main() {
   const runId = args.runId || `${timestamp}__${question.task_id}`;
   const outputDir = resolve(args.outputDir || resolve(defaultOutputRoot, args.date, runId));
   const taskDir = resolve(outputDir, question.task_id);
+  const runQuestionPath = resolve(outputDir, runQuestionFile);
   await mkdir(dirname(inputQuestionPath), { recursive: true });
   await mkdir(outputDir, { recursive: true });
   await writeFile(inputQuestionPath, `${JSON.stringify(question, null, 0)}\n`, "utf8");
-  await ensureHormuzRunConfig(args, question, outputDir, inputQuestionPath);
+  await writeFile(runQuestionPath, `${JSON.stringify(question, null, 2)}\n`, "utf8");
+  await ensureHormuzRunConfig(args, question, outputDir, runQuestionPath);
 
-  const galaxyInvocation = buildGalaxyCommand(args, question, outputDir, inputQuestionPath);
+  const galaxyInvocation = buildGalaxyCommand(args, question, outputDir, runQuestionPath);
   const { command } = galaxyInvocation;
   let status = "adapter_only";
   let error = "";
@@ -1372,7 +1375,7 @@ async function main() {
     outputDir,
     dateText: args.date,
     question,
-    questionFilePath: inputQuestionPath,
+    questionFilePath: runQuestionPath,
     summaryRecord,
     finalize,
     stats,
@@ -1380,7 +1383,7 @@ async function main() {
 
   const artifact = buildArtifact({
     question,
-    questionFilePath: inputQuestionPath,
+    questionFilePath: runQuestionPath,
     dateText: args.date,
     outputDir,
     taskDir,
@@ -1400,7 +1403,7 @@ async function main() {
   if (!args.traceOnly && args.questionKind !== "custom") {
     await writeFile(latestArtifactPath, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
   }
-  console.log(`question: ${relative(root, inputQuestionPath)}`);
+  console.log(`question: ${relative(root, runQuestionPath)}`);
   console.log(
     `artifact: ${
       args.questionKind === "custom"

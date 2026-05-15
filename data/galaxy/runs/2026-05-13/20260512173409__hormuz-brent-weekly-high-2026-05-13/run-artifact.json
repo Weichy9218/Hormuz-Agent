@@ -41,7 +41,7 @@
     "pythonPath": "/Users/weichy/Desktop/Doing-Right-Things/FutureX/papers/galaxy-selfevolve/.venv/bin/python",
     "outputDir": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13",
     "runDir": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/hormuz-brent-weekly-high-2026-05-13",
-    "questionPath": "data/galaxy/hormuz-daily-question.jsonl",
+    "questionPath": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/run-question.json",
     "command": [
       "/Users/weichy/Desktop/Doing-Right-Things/FutureX/papers/galaxy-selfevolve/.venv/bin/python",
       "main.py",
@@ -125,7 +125,7 @@
       "stats_path": "/Users/weichy/Desktop/bjzgca/2026春季课/AI Agent实战与开发/hormuz-risk-interface/data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/hormuz-brent-weekly-high-2026-05-13/main_agent_stats.json"
     },
     "artifactPaths": {
-      "question": "data/galaxy/hormuz-daily-question.jsonl",
+      "question": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/run-question.json",
       "artifact": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/run-artifact.json",
       "latestArtifact": "data/galaxy/latest-run.json",
       "mainAgent": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/hormuz-brent-weekly-high-2026-05-13/main_agent.jsonl",
@@ -156,7 +156,7 @@
           "text": "You are an agent that can predict future numeric market outcomes. The event to be predicted:\n\"\"\"\nDuring the trading week containing 2026-05-13 (UTC+8), from 2026-05-13 through 2026-05-15 inclusive, what will be the highest daily Brent crude oil spot price, in USD per barrel, reported by FRED series DCOILBRENTEU?\n\"\"\"\n\nResolve this by taking the maximum released FRED DCOILBRENTEU daily observation whose observation date falls inside that window. Ignore weekends or holidays with no released observation.\n\nYour goal is to make a numeric prediction.\n\nIMPORTANT: Your final answer MUST end with this exact format:\n\\boxed{number}\n\nThe number must be USD/bbl rounded to two decimals. Do not use any other final format. Do not refuse to make a prediction. You must make a clear prediction based on the best data currently available.",
           "isTruncated": false,
           "fullLength": 828,
-          "rawFilePath": "data/galaxy/hormuz-daily-question.jsonl"
+          "rawFilePath": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/run-question.json"
         },
         "criticalPath": true,
         "criticalReason": "问题定义"
@@ -6343,7 +6343,7 @@
       "sourceId": "galaxy-selfevolve",
       "publishedAt": "2026-05-13T00:00:00+08:00",
       "retrievedAt": "2026-05-12T17:52:54.466025+00:00",
-      "sourceUrl": "data/galaxy/hormuz-daily-question.jsonl",
+      "sourceUrl": "data/galaxy/runs/2026-05-13/20260512173409__hormuz-brent-weekly-high-2026-05-13/run-question.json",
       "title": "Weekly Brent high numeric question",
       "summary": "题目要求预测本交易周 FRED DCOILBRENTEU Brent daily spot price 的最高值，单位 USD/bbl。",
       "freshness": "fresh",

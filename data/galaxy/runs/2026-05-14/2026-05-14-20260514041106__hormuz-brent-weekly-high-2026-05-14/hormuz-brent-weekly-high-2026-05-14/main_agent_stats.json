@@ -1,0 +1,56 @@
+{
+  "agent_role": "main",
+  "llm_calls": 19,
+  "prompt_tokens": 355769,
+  "completion_tokens": 27451,
+  "total_tokens": 383220,
+  "cached_tokens": 144640,
+  "tool_calls": {
+    "get_stock_data": 1,
+    "search_web": 16,
+    "read_artifact": 1,
+    "read_webpage_with_query": 20
+  },
+  "mcp_tool_calls_total": 38,
+  "synthetic_tool_calls": {
+    "record_forecast": 1
+  },
+  "synthetic_tool_calls_total": 1,
+  "tool_failures": {
+    "read_artifact": 1
+  },
+  "tool_soft_failures": {},
+  "cached_hits": {
+    "search_web": 4,
+    "read_webpage_with_query": 2
+  },
+  "cached_hits_total": 6,
+  "cached_hits_by_kind": {
+    "relaxed": 4,
+    "exact": 2
+  },
+  "batch_dedups": 0,
+  "findings_without_anchor": {
+    "read_artifact": 1
+  },
+  "findings_without_anchor_total": 1,
+  "parallel_downgrades": {},
+  "parallel_downgrades_total": 0,
+  "forced_tool_cap": false,
+  "terminal_reason": "record_forecast",
+  "supervisor_nudges_total": 1,
+  "supervisor_nudge_rules": [
+    "forgot-finalize"
+  ],
+  "context_window": {
+    "estimated_input_tokens_peak": 23776,
+    "estimated_input_tokens_last": 23776,
+    "snapshots_recorded": 19,
+    "message_count": 62,
+    "llm_message_count": 15,
+    "structured_compression_enabled": true,
+    "compress_threshold": 32000,
+    "keep_recent_tools": 6,
+    "max_tool_content_chars": 8000
+  }
+}

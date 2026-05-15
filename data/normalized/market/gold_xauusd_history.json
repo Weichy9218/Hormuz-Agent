@@ -7,23 +7,16 @@
   "value_field": "close",
   "unit": "USD/oz",
   "source_url": "https://stooq.com/q/d/?s=xauusd",
-  "retrieved_at": "2026-05-13T01:18:37.251Z",
-  "start_date": "2025-05-13",
-  "end_date": "2026-05-12",
-  "requested_start": "2025-05-13",
-  "requested_end": "2026-05-13",
-  "latest_close": 4715.34,
+  "retrieved_at": "2026-05-14T04:20:38.792Z",
+  "start_date": "2025-05-14",
+  "end_date": "2026-05-13",
+  "requested_start": "2025-05-14",
+  "requested_end": "2026-05-14",
+  "latest_close": 4688.94,
   "license_status": "open",
-  "raw_path": "data/raw/stooq/xauusd/2026-05-13T01-18-37-251Z.json",
-  "source_hash": "sha256:49d0a80b53654347f7e435c4d2627fe3ad67e3b8b1c452a7bea11829808f2004",
+  "raw_path": "data/raw/stooq/xauusd/2026-05-14T04-20-38-792Z.json",
+  "source_hash": "sha256:5c799e1214cd056e21de3c6d0941aa5a564257257666d11c032663b1bd558f3f",
   "points": [
-    {
-      "date": "2025-05-13",
-      "open": 3238.655,
-      "high": 3265.145,
-      "low": 3216.195,
-      "close": 3250.225
-    },
     {
       "date": "2025-05-14",
       "open": 3250.22,
@@ -1829,6 +1822,13 @@
       "high": 4773.42,
       "low": 4639.4,
       "close": 4715.34
+    },
+    {
+      "date": "2026-05-13",
+      "open": 4711.95,
+      "high": 4726.55,
+      "low": 4669.89,
+      "close": 4688.94
     }
   ],
   "caveat": "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or futures continuous contract.",
