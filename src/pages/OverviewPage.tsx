@@ -1,17 +1,22 @@
 // Overview is the reviewer entry page: static product framing plus dynamic, sourced previews.
+import { lazy, Suspense } from "react";
 import {
   Activity,
   ArrowRight,
   BarChart3,
   Newspaper,
 } from "lucide-react";
-import { CaseMap } from "../components/map/CaseMap";
 import { InfoTitle } from "../components/shared/InfoTitle";
 import snapshotJson from "../../data/generated/overview_snapshot.json";
 import type { OverviewSnapshot } from "../types/marketChart";
 import type { TimelineEvent } from "../types/timeline";
 
 const snapshot = snapshotJson as OverviewSnapshot;
+const HormuzInteractiveMap = lazy(() =>
+  import("../components/map/HormuzInteractiveMap").then((module) => ({
+    default: module.HormuzInteractiveMap,
+  })),
+);
 
 const pageLinks = [
   {
@@ -226,8 +231,28 @@ function StaticDynamicCard({ snapshot }: { snapshot: OverviewSnapshot }) {
 function ContextMapCard() {
   return (
     <div className="overview-context-map">
-      <CaseMap compact variant="traffic" />
+      <Suspense fallback={<InteractiveMapFallback />}>
+        <HormuzInteractiveMap events={snapshot.latest_events} traffic={snapshot.traffic_snapshot} />
+      </Suspense>
     </div>
+  );
+}
+
+function InteractiveMapFallback() {
+  return (
+    <section className="console-card interactive-map-card interactive-map-fallback" aria-label="map loading">
+      <div className="interactive-map-header">
+        <div>
+          <span className="overview-page-kicker">Interactive map</span>
+          <h3>Hormuz shipping context</h3>
+        </div>
+        <span className="interactive-map-status">loading</span>
+      </div>
+      <div className="interactive-map-frame" />
+      <p className="overview-card-caveat">
+        MapLibre chunk is loading separately from the first page bundle.
+      </p>
+    </section>
   );
 }
 

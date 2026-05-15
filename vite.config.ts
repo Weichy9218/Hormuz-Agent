@@ -22,6 +22,11 @@ const DEV_SERVER_WATCH_IGNORES = [
   "**/data/forecast-agent/runs/**",
   "**/slides/**",
 ];
+const LOCAL_DATA_REFRESH_STATUS_PATH = path.resolve(
+  process.cwd(),
+  "data/generated/news_refresh_status.json",
+);
+const LOCAL_DATA_REFRESH_TAIL_LENGTH = 7000;
 
 interface ApiEnv {
   apiKey: string;
@@ -30,6 +35,7 @@ interface ApiEnv {
 
 type GalaxyRunStatus = "running" | "completed" | "failed";
 type ForecastAgentRunStatus = "running" | "completed" | "failed";
+type LocalDataRefreshStatus = "running" | "completed" | "failed";
 
 interface ActionTraceLike {
   actions?: unknown[];
@@ -79,6 +85,18 @@ interface ForecastAgentRunRecord {
   lastUpdatedAt: string;
   runDir: string;
   status: ForecastAgentRunStatus;
+  exitCode: number | null;
+  command: string[];
+  outputTail: string;
+  error?: string;
+}
+
+interface LocalDataRefreshRunRecord {
+  runId: string;
+  pid: number | null;
+  startedAt: string;
+  lastUpdatedAt: string;
+  status: LocalDataRefreshStatus;
   exitCode: number | null;
   command: string[];
   outputTail: string;
@@ -1320,8 +1338,103 @@ function forecastAgentPlugin() {
   };
 }
 
+function localDataRefreshPlugin() {
+  let activeRefresh: LocalDataRefreshRunRecord | null = null;
+
+  function latestStatusPayload() {
+    return {
+      ok: true,
+      active: activeRefresh?.status === "running" ? activeRefresh : null,
+      latest: readJsonIfExists(LOCAL_DATA_REFRESH_STATUS_PATH),
+    };
+  }
+
+  function startRefresh() {
+    const startedAt = new Date().toISOString();
+    const runId = `local-data-refresh-${startedAt.replace(/\D/g, "").slice(0, 14)}`;
+    const command = ["node", "scripts/refresh-news.mjs"];
+    const child = spawn(command[0], command.slice(1), {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const record: LocalDataRefreshRunRecord = {
+      runId,
+      pid: child.pid ?? null,
+      startedAt,
+      lastUpdatedAt: startedAt,
+      status: "running",
+      exitCode: null,
+      command,
+      outputTail: "",
+    };
+    activeRefresh = record;
+
+    const appendOutput = (chunk: unknown) => {
+      record.outputTail = tailText(
+        record.outputTail + String(chunk),
+        LOCAL_DATA_REFRESH_TAIL_LENGTH,
+      );
+      record.lastUpdatedAt = new Date().toISOString();
+    };
+    child.stdout.on("data", appendOutput);
+    child.stderr.on("data", appendOutput);
+    child.on("error", (error) => {
+      record.status = "failed";
+      record.error = error.message;
+      record.lastUpdatedAt = new Date().toISOString();
+    });
+    child.on("close", (code) => {
+      record.exitCode = code ?? 1;
+      record.status = code === 0 ? "completed" : "failed";
+      record.lastUpdatedAt = new Date().toISOString();
+    });
+
+    return record;
+  }
+
+  return {
+    name: "hormuz-local-data-refresh",
+    configureServer(server: import("vite").ViteDevServer) {
+      server.middlewares.use("/api/local-data/refresh/status", (request, response) => {
+        if (request.method !== "GET") {
+          sendJson(response, 405, { error: "method not allowed" });
+          return;
+        }
+        sendJson(response, 200, latestStatusPayload());
+      });
+
+      server.middlewares.use("/api/local-data/refresh/start", (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { error: "method not allowed" });
+          return;
+        }
+        if (activeRefresh?.status === "running") {
+          sendJson(response, 409, {
+            error: "local data refresh already in progress",
+            active: activeRefresh,
+            latest: readJsonIfExists(LOCAL_DATA_REFRESH_STATUS_PATH),
+          });
+          return;
+        }
+        try {
+          const record = startRefresh();
+          sendJson(response, 202, {
+            ...latestStatusPayload(),
+            active: record,
+          });
+        } catch (error) {
+          sendJson(response, 500, {
+            error: "local data refresh failed to start",
+            detail: error instanceof Error ? error.message : "unknown error",
+          });
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), hormuzAgentPlugin(), forecastAgentPlugin(), galaxyRunPlugin()],
+  plugins: [react(), localDataRefreshPlugin(), hormuzAgentPlugin(), forecastAgentPlugin(), galaxyRunPlugin()],
   server: {
     watch: {
       ignored: DEV_SERVER_WATCH_IGNORES,

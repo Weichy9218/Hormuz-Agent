@@ -15,10 +15,10 @@ import generatedMarketSeries from "../data/generated/market_series.json";
 export { sourceGroups, sourceRegistry, sourceBoundaryFacts } from "./data/sourceRegistry";
 
 export const detailPages: DetailPage[] = [
-  { id: "forecast", label: "预测" },
   { id: "overview", label: "背景总览" },
-  { id: "market", label: "市场背景" },
-  { id: "news", label: "事件背景" },
+  { id: "market", label: "市场数据" },
+  { id: "news", label: "事件发展" },
+  { id: "forecast", label: "Forecast Agent" },
 ];
 
 export const narrativeEvents: NarrativeEvent[] = [

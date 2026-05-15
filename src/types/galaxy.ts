@@ -15,13 +15,13 @@ export interface GalaxyQuestionRow {
   metadata?: {
     case_id?: "hormuz";
     question_kind?: "brent_weekly_high" | "hormuz_traffic_risk" | "custom";
-    target_series_id?: "DCOILBRENTEU";
+    target_series_id?: string;
     generated_for_date?: string;
     timezone?: string;
     horizon?: "7d" | "this_week";
     target?: "brent";
-    target_series?: "DCOILBRENTEU";
-    unit?: "USD/bbl";
+    target_series?: string;
+    unit?: string;
     resolution_window?: "weekly" | {
       start_date: string;
       end_date: string;

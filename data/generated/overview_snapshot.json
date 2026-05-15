@@ -1,6 +1,6 @@
 {
-  "built_at": "2026-05-13T06:12:20.927Z",
-  "data_as_of": "2026-05-13T04:09:50.720Z",
+  "built_at": "2026-05-14T04:27:53.343Z",
+  "data_as_of": "2026-05-14T04:21:44.509Z",
   "baseline": [
     {
       "fact_id": "oil-flow",
@@ -182,52 +182,52 @@
     "delta_vs_baseline_pct": -96.27,
     "vessel_type": "all",
     "source_id": "imf-portwatch-hormuz",
-    "retrieved_at": "2026-05-13T01:37:59.886Z",
+    "retrieved_at": "2026-05-14T04:20:20.771Z",
     "caveat": "PortWatch chokepoint6 Strait of Hormuz daily all transit calls; AIS/GNSS caveat applies. coverage=2019-01-01-2026-05-10; n_total=4; n_tanker=2; n_cargo=2; capacity=450300."
   },
   "market_snapshot": [
     {
       "target": "brent",
       "label": "Brent spot proxy",
-      "value": 118.26,
+      "value": 106.11,
       "unit": "USD/bbl",
-      "delta_1d": -5.97999999999999,
-      "delta_7d": 6.400000000000006,
+      "delta_1d": 2.6299999999999955,
+      "delta_7d": -12.150000000000006,
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
     },
     {
       "target": "wti",
       "label": "WTI spot proxy",
-      "value": 109.76,
+      "value": 101.56,
       "unit": "USD/bbl",
-      "delta_1d": 4.38000000000001,
-      "delta_7d": 9.870000000000005,
+      "delta_1d": 2.6899999999999977,
+      "delta_7d": -8.200000000000003,
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
     },
     {
       "target": "vix",
       "label": "VIX",
-      "value": 17.19,
+      "value": 17.99,
       "unit": "index",
-      "delta_1d": 0.11000000000000298,
-      "delta_7d": 0.20000000000000284,
+      "delta_1d": -0.39000000000000057,
+      "delta_7d": 0.6099999999999994,
       "source_id": "fred-market",
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
     },
@@ -242,20 +242,20 @@
       "provider_id": "fred",
       "license_status": "open",
       "source_url": "https://fred.stlouisfed.org/series/DTWEXBGS",
-      "retrieved_at": "2026-05-12T13:26:25.090Z",
+      "retrieved_at": "2026-05-14T04:19:57.541Z",
       "status": "active",
       "caveat": "FRED normalized local snapshot."
     },
     {
       "target": "gold",
       "label": "Gold spot",
-      "value": 4715.34,
+      "value": 4688.94,
       "unit": "USD/oz",
       "source_id": "stooq-market",
       "provider_id": "stooq",
       "license_status": "open",
       "source_url": "https://stooq.com/q/d/?s=xauusd",
-      "retrieved_at": "2026-05-13T01:18:37.251Z",
+      "retrieved_at": "2026-05-14T04:20:38.792Z",
       "status": "active",
       "caveat": "Stooq XAU/USD daily OHLC history; Market chart uses Close as spot proxy, not an LBMA benchmark or futures continuous contract."
     },
@@ -268,7 +268,7 @@
       "provider_id": "pending",
       "license_status": "pending",
       "source_url": null,
-      "retrieved_at": "2026-05-13T06:12:20.927Z",
+      "retrieved_at": "2026-05-14T04:27:53.343Z",
       "status": "pending_source",
       "caveat": "Pending offshore CNH source."
     }
@@ -309,7 +309,8 @@
       "raw_path": "data/raw/polymarket/events/pending.json",
       "source_hash": null,
       "selected_for_overview": true,
-      "caveat": "External market, not our forecast; seeded reference only until curate-polymarket.mjs refreshes live metadata."
+      "caveat": "External market, not our forecast; seeded reference only until curate-polymarket.mjs refreshes live metadata.",
+      "stale": true
     }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "task_id": "hormuz-brent-weekly-high-2026-05-14",
+  "task_question": "You are an agent that can predict future numeric market outcomes. The event to be predicted:\n\"\"\"\nDuring the trading week containing 2026-05-14 (UTC+8), from 2026-05-14 through 2026-05-15 inclusive, what will be the highest daily Brent crude oil spot price, in USD per barrel, reported by FRED series DCOILBRENTEU?\n\"\"\"\n\nResolve this by taking the maximum released FRED DCOILBRENTEU daily observation whose observation date falls inside that window. Ignore weekends or holidays with no released observation.\n\nYour goal is to make a numeric prediction.\n\nIMPORTANT: Your final answer MUST end with this exact format:\n\\boxed{number}\n\nThe number must be USD/bbl rounded to two decimals. Do not use any other final format. Do not refuse to make a prediction. You must make a clear prediction based on the best data currently available.",
+  "task_description": "Scope: This is the Hormuz case-room numeric market question generated for 2026-05-14 (UTC+8). Resolution source is FRED series DCOILBRENTEU; the target is the highest daily Brent crude oil spot price from 2026-05-14 through 2026-05-15. Hormuz maritime/news evidence may inform risk premium, but the resolved target is numeric Brent price, not a scenario label. Market data is evidence input only and must be clearly separated from unresolved maritime-flow claims. The answer must be one numeric USD/bbl value rounded to two decimals.",
+  "metadata": {
+    "case_id": "hormuz",
+    "question_kind": "brent_weekly_high",
+    "generated_for_date": "2026-05-14",
+    "timezone": "UTC+8",
+    "horizon": "this_week",
+    "target": "brent",
+    "target_series": "DCOILBRENTEU",
+    "unit": "USD/bbl",
+    "resolution_window": {
+      "start_date": "2026-05-14",
+      "end_date": "2026-05-15",
+      "timezone": "UTC+8"
+    },
+    "source_boundary": [
+      "fred-market",
+      "official-advisory",
+      "public-news-context",
+      "ais-flow-pending"
+    ]
+  }
+}

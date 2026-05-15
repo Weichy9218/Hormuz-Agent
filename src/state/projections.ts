@@ -222,21 +222,33 @@ export function projectMarketState(
 
 // --- Forecast ---------------------------------------------------------------
 
-export interface BrentDailyPoint {
+export interface LocalResolutionPoint {
   date: string;
   value: number;
 }
 
-export interface BrentDailySeriesProjection {
-  seriesId: "DCOILBRENTEU";
-  target: "brent";
+export interface LocalResolutionSeriesProjection {
+  seriesId: string;
+  target: string;
   label: string;
-  unit: "USD/bbl";
+  unit: string;
   source: string;
   sourceUrl: string;
   retrievedAt: string;
-  points: BrentDailyPoint[];
+  points: LocalResolutionPoint[];
 }
+
+const fredTargetLabels: Record<string, string> = {
+  brent: "Brent crude oil spot price",
+  wti: "WTI crude oil spot price",
+  vix: "VIX",
+  broad_usd: "Broad USD index",
+  usd_cny: "USD/CNY",
+  us10y: "US 10Y Treasury yield",
+  sp500: "S&P 500",
+  nasdaq: "NASDAQ Composite",
+  us_cpi: "US CPI",
+};
 
 function parseCsvLine(line: string) {
   const values: string[] = [];
@@ -260,7 +272,10 @@ function parseCsvLine(line: string) {
   return values;
 }
 
-function parseFredBrentDailySeries(): BrentDailySeriesProjection {
+function parseFredResolutionSeries(
+  seriesId: string,
+  expectedTarget?: string,
+): LocalResolutionSeriesProjection | null {
   const rows = fredSeriesCsv
     .split(/\r?\n/)
     .filter((line) => line.trim())
@@ -275,34 +290,46 @@ function parseFredBrentDailySeries(): BrentDailySeriesProjection {
   const sourceUrlIndex = column("source_url");
   const retrievedAtIndex = column("retrieved_at");
 
-  let sourceUrl = "https://fred.stlouisfed.org/series/DCOILBRENTEU";
+  let sourceUrl = `https://fred.stlouisfed.org/series/${seriesId}`;
   let retrievedAt = "";
-  const points: BrentDailyPoint[] = [];
+  let target = expectedTarget ?? "";
+  let unit = "";
+  const points: LocalResolutionPoint[] = [];
 
   for (const row of rows) {
-    if (row[seriesIndex] !== "DCOILBRENTEU" || row[targetIndex] !== "brent") continue;
+    if (row[seriesIndex] !== seriesId) continue;
+    if (expectedTarget && row[targetIndex] !== expectedTarget) continue;
     const value = Number.parseFloat(row[valueIndex] ?? "");
     if (!Number.isFinite(value)) continue;
-    if ((row[unitIndex] ?? "USD/bbl") !== "USD/bbl") continue;
+    if (!target) target = row[targetIndex] ?? "";
+    if (!unit) unit = row[unitIndex] ?? "";
     sourceUrl = row[sourceUrlIndex] || sourceUrl;
     retrievedAt = row[retrievedAtIndex] || retrievedAt;
     points.push({ date: row[dateIndex], value });
   }
 
+  if (!points.length) return null;
+
   return {
-    seriesId: "DCOILBRENTEU",
-    target: "brent",
-    label: "Brent crude oil spot price",
-    unit: "USD/bbl",
-    source: "FRED DCOILBRENTEU",
+    seriesId,
+    target,
+    label: fredTargetLabels[target] ?? target.replaceAll("_", " "),
+    unit: unit || "value",
+    source: `FRED ${seriesId}`,
     sourceUrl,
     retrievedAt,
     points: points.sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
 
-export function projectBrentDailySeries(window = 30): BrentDailySeriesProjection {
-  const series = parseFredBrentDailySeries();
+export function projectLocalResolutionSeries(
+  question?: { metadata?: { target?: string; target_series?: string; target_series_id?: string } } | null,
+  window = 30,
+): LocalResolutionSeriesProjection | null {
+  const seriesId = question?.metadata?.target_series_id ?? question?.metadata?.target_series;
+  if (!seriesId) return null;
+  const series = parseFredResolutionSeries(seriesId, question?.metadata?.target);
+  if (!series) return null;
   return {
     ...series,
     points: series.points.slice(-window),

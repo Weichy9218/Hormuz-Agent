@@ -7,6 +7,10 @@ export function parseForecastNumber(value: unknown) {
 }
 
 export function isNumericForecastQuestion(question?: GalaxyQuestionRow | null, prediction?: unknown) {
+  const hasLocalSeriesTarget = Boolean(
+    question?.metadata?.target_series_id ?? question?.metadata?.target_series,
+  );
+  const hasNumericUnit = Boolean(question?.metadata?.unit);
   return question?.metadata?.question_kind === "brent_weekly_high" ||
-    (question?.metadata?.target_series === "DCOILBRENTEU" && parseForecastNumber(prediction) != null);
+    (hasLocalSeriesTarget && (hasNumericUnit || parseForecastNumber(prediction) != null));
 }
