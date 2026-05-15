@@ -26,7 +26,17 @@ const newsTimeline = newsTimelineJson as NewsTimelineBundle;
 const marketChart = marketChartJson as MarketChartBundle;
 
 type TopicCloudItem = NewsTimelineBundle["topic_cloud"][number];
+type TimeRangeKey = "7d" | "30d" | "90d" | "all";
+
 const timelineDisplayTagStop = new Set(["core_event", "hormuz", "iran"]);
+const timeRangeOptions: Array<{ key: TimeRangeKey; label: string; days: number | null }> = [
+  { key: "7d", label: "7d", days: 7 },
+  { key: "30d", label: "30d", days: 30 },
+  { key: "90d", label: "90d", days: 90 },
+  { key: "all", label: "all", days: null },
+];
+const severityOptions: TimelineSeverity[] = ["severe", "elevated", "watch", "deescalation", "routine"];
+const sourceTypeOptions: TimelineSourceType[] = ["official", "media", "open-source"];
 
 const topicCloud: TopicCloudItem[] =
   newsTimeline.topic_cloud?.length
@@ -110,7 +120,7 @@ const newsPageUi = {
   heroGrid: {
     display: "grid",
     gridColumn: "1 / -1",
-    gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.58fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
     gap: 18,
     alignItems: "stretch",
     padding: 22,
@@ -147,7 +157,7 @@ const newsPageUi = {
   },
   metricGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 110px), 1fr))",
     gap: 10,
   },
   filterCard: {
@@ -211,7 +221,7 @@ const newsPageUi = {
   },
   filterGroups: {
     display: "grid",
-    gridTemplateColumns: "minmax(180px, 0.7fr) minmax(220px, 1fr) minmax(190px, 0.8fr) minmax(260px, 1.2fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
     gap: 12,
   },
   filterGroup: {
@@ -630,7 +640,7 @@ function staticPath(path?: string | null) {
   return `/${path.replace(/^\/+/, "")}`;
 }
 
-function toggleValue(values: string[], value: string) {
+function toggleValue<T extends string>(values: T[], value: T) {
   return values.includes(value)
     ? values.filter((item) => item !== value)
     : [...values, value];
@@ -667,10 +677,33 @@ function displayTags(event: TimelineEvent) {
 function filterEvents(
   events: TimelineEvent[],
   filters: {
+    timeRange: TimeRangeKey;
+    severities: TimelineSeverity[];
+    sourceTypes: TimelineSourceType[];
     topics: string[];
   },
 ) {
+  const anchorMs = events.reduce((latest, event) => {
+    const eventMs = Date.parse(event.event_at);
+    return Number.isFinite(eventMs) ? Math.max(latest, eventMs) : latest;
+  }, 0);
+  const selectedRange = timeRangeOptions.find((option) => option.key === filters.timeRange);
+  const minEventMs =
+    selectedRange?.days && anchorMs > 0
+      ? anchorMs - (selectedRange.days - 1) * 24 * 60 * 60 * 1000
+      : null;
+
   return events.filter((event) => {
+    if (minEventMs !== null) {
+      const eventMs = Date.parse(event.event_at);
+      if (!Number.isFinite(eventMs) || eventMs < minEventMs) return false;
+    }
+    if (filters.severities.length > 0 && !filters.severities.includes(event.severity_hint)) {
+      return false;
+    }
+    if (filters.sourceTypes.length > 0 && !filters.sourceTypes.includes(event.source_type)) {
+      return false;
+    }
     if (filters.topics.length > 0) {
       if (!filters.topics.some((topic) => eventMatchesTopic(event, topic))) return false;
     }
@@ -842,6 +875,132 @@ function TopicCloudPanel({
             </button>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+function TimelineFilterBar({
+  resultCount,
+  severities,
+  sourceTypes,
+  timeRange,
+  onSeveritiesChange,
+  onSourceTypesChange,
+  onTimeRangeChange,
+}: {
+  resultCount: number;
+  severities: TimelineSeverity[];
+  sourceTypes: TimelineSourceType[];
+  timeRange: TimeRangeKey;
+  onSeveritiesChange: (value: TimelineSeverity[]) => void;
+  onSourceTypesChange: (value: TimelineSourceType[]) => void;
+  onTimeRangeChange: (value: TimeRangeKey) => void;
+}) {
+  const allSeverities = severities.length === 0;
+  const allSourceTypes = sourceTypes.length === 0;
+
+  return (
+    <section className="console-card" style={newsPageUi.filterCard}>
+      <div style={newsPageUi.filterHeader}>
+        <InfoTitle
+          title="Filter bar"
+          subtitle="time-range · severity · source-type"
+        />
+        <span style={newsPageUi.sourceChip}>{resultCount} 条匹配事件</span>
+      </div>
+      <div style={newsPageUi.filterGroups}>
+        <div style={newsPageUi.filterGroup}>
+          <span style={newsPageUi.filterLabel}>time-range</span>
+          <div style={newsPageUi.buttonWrap}>
+            {timeRangeOptions.map((option) => (
+              <button
+                aria-pressed={timeRange === option.key}
+                key={option.key}
+                onClick={() => onTimeRangeChange(option.key)}
+                style={{
+                  ...newsPageUi.filterButton,
+                  ...(timeRange === option.key ? newsPageUi.filterButtonSelected : {}),
+                }}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={newsPageUi.filterGroup}>
+          <span style={newsPageUi.filterLabel}>severity</span>
+          <div style={newsPageUi.buttonWrap}>
+            <button
+              aria-pressed={allSeverities}
+              onClick={() => onSeveritiesChange([])}
+              style={{
+                ...newsPageUi.filterButton,
+                ...(allSeverities ? newsPageUi.filterButtonSelected : {}),
+              }}
+              type="button"
+            >
+              all
+            </button>
+            {severityOptions.map((severity) => {
+              const selected = severities.includes(severity);
+              return (
+                <button
+                  aria-pressed={selected}
+                  key={severity}
+                  onClick={() => onSeveritiesChange(toggleValue(severities, severity))}
+                  style={{
+                    ...newsPageUi.filterButton,
+                    ...(selected ? newsPageUi.filterButtonSelected : {}),
+                  }}
+                  type="button"
+                >
+                  {severityLabel(severity)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div style={newsPageUi.filterGroup}>
+          <span style={newsPageUi.filterLabel}>source-type</span>
+          <div style={newsPageUi.buttonWrap}>
+            <button
+              aria-pressed={allSourceTypes}
+              onClick={() => onSourceTypesChange([])}
+              style={{
+                ...newsPageUi.filterButton,
+                ...(allSourceTypes ? newsPageUi.filterButtonSelected : {}),
+              }}
+              type="button"
+            >
+              all
+            </button>
+            {sourceTypeOptions.map((sourceType) => {
+              const selected = sourceTypes.includes(sourceType);
+              return (
+                <button
+                  aria-pressed={selected}
+                  key={sourceType}
+                  onClick={() => onSourceTypesChange(toggleValue(sourceTypes, sourceType))}
+                  style={{
+                    ...newsPageUi.filterButton,
+                    ...(selected ? newsPageUi.filterButtonSelected : {}),
+                  }}
+                  type="button"
+                >
+                  {sourceLabel(sourceType)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div style={newsPageUi.filterGroup}>
+          <span style={newsPageUi.filterLabel}>topic tag</span>
+          <small style={newsPageUi.mutedNote}>
+            Topic filtering lives in the event word cloud below; combine it with time, severity, and source filters.
+          </small>
+        </div>
       </div>
     </section>
   );
@@ -1308,6 +1467,9 @@ function TopicIndexCard() {
 
 export function NewsPage() {
   const sortedEvents = useMemo(() => sortEvents(newsTimeline.events), []);
+  const [timeRange, setTimeRange] = useState<TimeRangeKey>("all");
+  const [severities, setSeverities] = useState<TimelineSeverity[]>([]);
+  const [sourceTypes, setSourceTypes] = useState<TimelineSourceType[]>([]);
   const [topics, setTopics] = useState<string[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(() =>
     typeof window === "undefined" ? null : decodeURIComponent(window.location.hash.replace(/^#/, "")) || null,
@@ -1326,9 +1488,12 @@ export function NewsPage() {
   const visibleEvents = useMemo(
     () =>
       filterEvents(sortedEvents, {
+        timeRange,
+        severities,
+        sourceTypes,
         topics,
       }),
-    [sortedEvents, topics],
+    [severities, sortedEvents, sourceTypes, timeRange, topics],
   );
 
   useEffect(() => {
@@ -1386,6 +1551,16 @@ export function NewsPage() {
           </article>
         </div>
       </section>
+
+      <TimelineFilterBar
+        onSeveritiesChange={setSeverities}
+        onSourceTypesChange={setSourceTypes}
+        onTimeRangeChange={setTimeRange}
+        resultCount={visibleEvents.length}
+        severities={severities}
+        sourceTypes={sourceTypes}
+        timeRange={timeRange}
+      />
 
       <TopicCloudPanel
         onTopicsChange={setTopics}
